@@ -137,10 +137,9 @@ int getMedian(int[] arr, int lo, int hi) {
 }
 
 void insertionSort(int[] arr, int lo, int hi) {
-  for (int i = lo + 1; i < end; i++) {
-    for (int j = i; j > lo; j--) {
-      if (arr[j - 1] > arr[j]) swap(arr, j - 1, j);
-      else break;
+  for (int i = lo + 1; i < hi; i++) {
+    for (int j = i; j > lo && arr[j - 1] > arr[j]; j--) {
+      swap(arr, j - 1, j);
     }
   }
 }
@@ -236,37 +235,85 @@ LinkedList is based on a doubly-linked list. Its add() and remove() is fast whil
 Stack
 
 ```java
-int[] arr;
-int size;
+class ArrayStack {
+  Integer[] arr;
+  Integer size;
 
-void push(int n) {
-  arr[size++] = i;
-}
+  ArrayStack(int initSize) {
+    if (initSize < 0) {
+      throw new IllegalArgumentException("The init size is less than 0");
+    }
+    arr = new Integer[initSize];
+    size = 0;
+  }
 
-int pop() {
-  return arr[--size];
+  Integer peek() {
+    if (size == 0) {
+      return null;
+    }
+    return arr[size - 1];
+  }
+
+  void push(int obj) {
+    if (size == arr.length) {
+      throw new ArrayIndexOutOfBoundsException("The queue is full");
+    }
+    arr[size++] = obj;
+  }
+
+  Integer pop() {
+    if (size == 0) {
+      throw new ArrayIndexOutOfBoundsException("The queue is empty");
+    }
+    return arr[--size];
+  }
 }
 ```
 
 Queue
 
 ```java
-int[] arr;
-int size, first, last;
+class ArrayQueue {
+  Integer[] arr;
+  Integer size;
+  Integer first;
+  Integer last;
 
-void push(int n) {
-  size++;
-  arr[last++] = n;
-  if (last == arr.length) {
+  ArrayQueue(int initSize) {
+    if (initSize < 0) {
+      throw new IllegalArgumentException("The init size is less than 0");
+    }
+    arr = new Integer[initSize];
+    size = 0;
+    first = 0;
     last = 0;
   }
-}
 
-int poll() {
-  size--;
-  int tmp = first;
-  first = first == arr.length - 1 ? 0 : first + 1;
-  return arr[tmp];
+  Integer peek() {
+    if (size == 0) {
+      return null;
+    }
+    return arr[first];
+  }
+
+  void push(int obj) {
+    if (size == arr.length) {
+      throw new ArrayIndexOutOfBoundsException("The queue is full");
+    }
+    size++;
+    arr[last] = obj;
+    last = last == arr.length - 1 ? 0 : last + 1;
+  }
+
+  Integer poll() {
+    if (size == 0) {
+      throw new ArrayIndexOutOfBoundsException("The queue is empty");
+    }
+    size--;
+    int tmp = first;
+    first = first == arr.length - 1 ? 0 : first + 1;
+    return arr[tmp];
+  }
 }
 ```
 
@@ -321,9 +368,9 @@ class GetMinStack {
   }
 
   void push(int num) {
-    if (min.isEmpty()) min.push(num);
-    else if (num <= getMin()) min.push(num);
-    else {
+    if (min.isEmpty() || num <= getMin()) {
+      min.push(num);
+    } else {
       int newMin = min.peek();
       min.push(newMin);
     }
@@ -343,49 +390,97 @@ class GetMinStack {
 }
 ```
 
-### Stack and Queue Interconvert
+### Stack and Queue convert
 
 > Stack and Queue convert
 
 Stack -> Queue
 
 ```java
-Stack<T> stackPush, stackPop;
+class TwoStacksQueue {
+  Stack<Integer> stackPush;
+  Stack<Integer> stackPop;
 
-void push(T n) {
-  stackPush.push(n);
-}
-
-T poll() {
-  if (stackPop.empty()) {
-    while(!stackPush.empty) stackPop.push(stackPush.pop());
+  TwoStacksQueue() {
+    stackPush = new Stack<Integer>();
+    stackPop = new Stack<Integer>();
   }
-  return stackPop.pop();
+
+  void push(int pushInt) {
+    stackPush.push(pushInt);
+  }
+
+  int poll() {
+    if (stackPop.empty() && stackPush.empty()) {
+      throw new RuntimeException("Queue is empty!");
+    } else if (stackPop.empty()) {
+      while (!stackPush.empty()) {
+        stackPop.push(stackPush.pop());
+      }
+    }
+    return stackPop.pop();
+  }
+
+  int peek() {
+    if (stackPop.empty() && stackPush.empty()) {
+      throw new RuntimeException("Queue is empty!");
+    } else if (stackPop.empty()) {
+      while (!stackPush.empty()) {
+        stackPop.push(stackPush.pop());
+      }
+    }
+    return stackPop.peek();
+  }
 }
 ```
 
 Queue -> Stack
 
 ```java
-Queue<T> queue, help;
+class TwoQueuesStack {
+  Queue<Integer> queue;
+  Queue<Integer> help;
 
-void push(T n) {
-  queue.add(n);
-}
-
-T pop() {
-  while(queue.size != 1) {
-    help.add(queue.poll());
+  TwoQueuesStack() {
+    queue = new LinkedList<Integer>();
+    help = new LinkedList<Integer>();
   }
-  T res = queue.poll();
-  swap();
-  return res;
-}
 
-void swap() {
-  Queue<T> tmp = help; 
-  help = queue; 
-  queue = tmp;
+  void push(int pushInt) {
+    queue.add(pushInt);
+  }
+
+  int peek() {
+    if (queue.isEmpty()) {
+      throw new RuntimeException("Stack is empty!");
+    }
+    while (queue.size() != 1) {
+      help.add(queue.poll());
+    }
+    int res = queue.poll();
+    help.add(res);
+    swap();
+    return res;
+  }
+
+  int pop() {
+    if (queue.isEmpty()) {
+      throw new RuntimeException("Stack is empty!");
+    }
+    while (queue.size() != 1) {
+      help.add(queue.poll());
+    }
+    int res = queue.poll();
+    swap();
+    return res;
+  }
+
+  void swap() {
+    Queue<Integer> tmp = help;
+    help = queue;
+    queue = tmp;
+  }
+
 }
 ```
 
@@ -394,20 +489,21 @@ void swap() {
 ```java
 class Pet {
   String type;
+
   Pet(String type) {
     this.type = type;
-  } 
+  }
 
   String getPetType() {
     return this.type;
   }
-} 
+}
 
 class Dog extends Pet {
   Dog() {
     super("dog");
   }
-} 
+}
 
 class Cat extends Pet {
   Cat() {
@@ -441,9 +537,17 @@ class PetEnterQueue {
     this.count = count;
   }
 
-  Pet getPet() {return this.pet;}
-  long getCount() {return this.count;}
-  String getEnterPetType() {return this.pet.getPetType();}
+  Pet getPet() {
+    return this.pet;
+  }
+
+  long getCount() {
+    return this.count;
+  }
+
+  String getEnterPetType() {
+    return this.pet.getPetType();
+  }
 }
 ```
 
@@ -454,34 +558,70 @@ eg. Assume that we need a queue to record the feeding order of cats and dogs. Fe
 Then define a queue for Dog and a queue for Cat.
 
 ```java
-Queue<PetEnterQueue> dogQ, catQ;
-long count;
+class DogCatQueue {
+  Queue<PetEnterQueue> dogQ;
+  Queue<PetEnterQueue> catQ;
+  long count;
 
-DogCatQueue() {
-  dogQ = new LinkedList<>();
-  catQ = new LinkedList<>();
-  count = 0;
-}
+  DogCatQueue() {
+    this.dogQ = new LinkedList<PetEnterQueue>();
+    this.catQ = new LinkedList<PetEnterQueue>();
+    this.count = 0;
+  }
 
-void add(Pet pet) {
-  if (pet.getPetType().equals("dog")) {
-    dogQ.add(new PetEnterQueue(pet, this.count++));
+  void add(Pet pet) {
+    if (pet.getPetType().equals("dog")) {
+      this.dogQ.add(new PetEnterQueue(pet, this.count++));
+    } else if (pet.getPetType().equals("cat")) {
+      this.catQ.add(new PetEnterQueue(pet, this.count++));
+    } else {
+      throw new RuntimeException("err, not dog or cat");
+    }
   }
-  else if (pet.getPetType().equals("cat")) {
-    catQ.add(new PetEnterQueue(pet, this.count++));
-  }
-  else {
-    //exception
-  }
-}
 
-Pet pollAll() {
-  if (dogQ.peek().getCount() < catQ.peek().getCount()) {
-    return dogQ.poll().getPet();
+  Pet pollAll() {
+    if (!this.dogQ.isEmpty() && !this.catQ.isEmpty()) {
+      if (this.dogQ.peek().getCount() < this.catQ.peek().getCount()) {
+        return this.dogQ.poll().getPet();
+      } else {
+        return this.catQ.poll().getPet();
+      }
+    } else if (!this.dogQ.isEmpty()) {
+      return this.dogQ.poll().getPet();
+    } else if (!this.catQ.isEmpty()) {
+      return this.catQ.poll().getPet();
+    } else {
+      throw new RuntimeException("err, queue is empty!");
+    }
   }
-  else {
-    return catQ.poll().getPet();
+
+  Dog pollDog() {
+    if (!this.isDogQueueEmpty()) {
+      return (Dog) this.dogQ.poll().getPet();
+    } else {
+      throw new RuntimeException("Dog queue is empty!");
+    }
   }
+
+  Cat pollCat() {
+    if (!this.isCatQueueEmpty()) {
+      return (Cat) this.catQ.poll().getPet();
+    } else
+      throw new RuntimeException("Cat queue is empty!");
+  }
+
+  boolean isEmpty() {
+    return this.dogQ.isEmpty() && this.catQ.isEmpty();
+  }
+
+  boolean isDogQueueEmpty() {
+    return this.dogQ.isEmpty();
+  }
+
+  boolean isCatQueueEmpty() {
+    return this.catQ.isEmpty();
+  }
+
 }
 ```
 
@@ -498,33 +638,44 @@ Pet pollAll() {
 > All operations should be done in $$O(1)$$ time
 
 ```java
-class Pool<T> {
-  HashMap<T, Integer> keyIndexMap;
-  HashMap<Integer, T> indexKeyMap;
+class Pool<K> {
+  HashMap<K, Integer> keyIndexMap;
+  HashMap<Integer, K> indexKeyMap;
   int size;
 
-  void insert(T key) {
-    if (!keyIndexMap.containsKey(key)) {
-      keyIndexMap.put(key, size);
-      indexKeyMap.put(size++, key);
+  Pool() {
+    this.keyIndexMap = new HashMap<K, Integer>();
+    this.indexKeyMap = new HashMap<Integer, K>();
+    this.size = 0;
+  }
+
+  void insert(K key) {
+    if (!this.keyIndexMap.containsKey(key)) {
+      this.keyIndexMap.put(key, this.size);
+      this.indexKeyMap.put(this.size++, key);
     }
   }
 
-  void delete(T key) {
-    if (keyIndexMap.containsKey(key)) {
-      int deleteIndex = keyIndexMap.get(key);
-      int lastIndex = --size;
-      T lastKey = indexKeyMap.get(lastIndex);
-      keyIndexMap.put(lastkey, deleteIndex);
-      indexKeyMap.put(deleteIndex, lastKey);
-      keyIndexMap.remove(key);
-      indexKeyMap.remove(lastIndex);
+  void delete(K key) {
+    if (this.keyIndexMap.containsKey(key)) {
+      int deleteIndex = this.keyIndexMap.get(key);
+      int lastIndex = --this.size;
+      K lastKey = this.indexKeyMap.get(lastIndex);
+      this.keyIndexMap.put(lastKey, deleteIndex);
+      this.indexKeyMap.put(deleteIndex, lastKey);
+      this.keyIndexMap.remove(key);
+      this.indexKeyMap.remove(lastIndex);
     }
   }
 
-  T getRandom() {
-    return indexKeyMap.get(Math.randomInt(0, size));
+  K getRandom() {
+    if (this.size == 0) {
+      return null;
+    }
+    int randomIndex = (int) (Math.random() * this.size);
+    return this.indexKeyMap.get(randomIndex);
   }
+
 }
 ```
 
@@ -542,11 +693,16 @@ class Pool<T> {
 
 ```java
 void main(int[][] matrix) {
-  int tr = 0, tc = 0, dr = matrix.length - 1, dc = matrix[0].length - 1;
-  while(tr <= dr && tc <= dc) print(matrix, tr++, tc++, dr--, dc--);
+  int tR = 0;
+  int tC = 0;
+  int dR = matrix.length - 1;
+  int dC = matrix[0].length - 1;
+  while (tR <= dR && tC <= dC) {
+    printEdge(matrix, tR++, tC++, dR--, dC--);
+  }	
 }
 
-void print(int[][] matrix, int tr, int tc, int dr, int dc) {
+void print(int[][] matrix, int tR, int tC, int dR, int dC) {
   //print a square determined by (tr, tc) in the topleft and (dr, dc) in the bottomright
   if (tR == dR) { 
     // only one row
@@ -559,20 +715,17 @@ void print(int[][] matrix, int tr, int tc, int dr, int dc) {
     int curC = tC;
     int curR = tR;
     while (curC != dC) { // left to right in tr row
-      System.out.print(m[tR][curC] + " ");
-      curC++;
+      System.out.print(m[tR][curC++] + " ");
     }
     while (curR != dR) { // up to down in dc column
-      System.out.print(m[curR][dC] + " ");
+      System.out.print(m[curR++][dC] + " ");
       curR++;
     }
     while (curC != tC) { // right to left in dr row
-      System.out.print(m[dR][curC] + " ");
-      curC--;
+      System.out.print(m[dR][curC--] + " ");
     }
     while (curR != tR) { // down to up in tc column
-      System.out.print(m[curR][tC] + " ");
-      curR--;
+      System.out.print(m[curR--][tC] + " ");
     }
   }
 }
@@ -667,7 +820,7 @@ boolean isContains(int[][] matrix, int K) {
   int row = 0, col = matrix[0].length - 1;
   while(row < matrix.length && col > -1) {
     if (matrix[row][col] == K) return true;
-    //matrix[row - 1][col] < matrix[row][col] < matrix[row][col + 1];
+    // matrix[row - 1][col] < matrix[row][col] < matrix[row][col + 1];
     else if (matrix[row][col] > K) col--;
     else row++;
   }
@@ -1146,7 +1299,7 @@ int getWater(int[] arr) {
 }
 ```
 
-best two-pointer. $$O(n)$$&$$O(1)$$: Use 2 pointers left and right. Record leftMax from 0 and rightMax from n - 1. leftMax is the max from 0 to left - 1 while rightMax is the max from right + 1 to n - 1.  If leftMax is smaller than rightMax, the max from left + 1 to n - 1 won't be smaller than rightMax. Then the water blocks in left can be computed. Otherwise, we can compute the water in right.
+best two-pointer. $$O(n)$$&$$O(1)$$: Use 2 pointers `left` and `right`. Record `leftMax` from 0 and `rightMax` from n - 1. `leftMax` is the max from 0 to left - 1 while `rightMax` is the max from right + 1 to n - 1.  If `leftMax` is smaller than `rightMax`, the max from left + 1 to n - 1 won't be smaller than `rightMax`. Then the water blocks in `left` can be computed. Otherwise, we can compute the water in `right`.
 
 ```java
 int getWater(int[] arr) {
@@ -1174,7 +1327,7 @@ brute force $$O(n^3)$$&$$O(1)$$: for every i, compute every subarray's sum from 
 
 better brute force $$O(n^2)$$&$$O(n)$$: utilize sum[i...j] = sum[0...j] - sum[0...i]
 
-best $$O(n)$$&$$O(1)$$:  if arr[i] is positive, sum[...i...] will be larger, otherwise it will be smaller. So we remember sum[0...i] and record the max of sum[0...i]. If sum[0...i] increases, record it if it's larger than the old max. If sum[0...i] decreases to be negative, reset it to 0 which means we abandon arr[i] and compute from i + 1. In a word, we only want the diff between the most increasing part's top and bottom. curSum guarantees that we won't miss the possible start, maxSum guarantees that we won't miss the possible end. In this way, if sum[i...j] is the result, k <= i and m >= j, sum[k...i] and sum[j...m] should be negative. Otherwise, sum[k...j] or sum[i...m] will be larger.
+best $$O(n)$$&$$O(1)$$:  if `arr[i]` is positive, `sum[...i...]` will be larger, otherwise it will be smaller. So we remember `sum[0...i]` and record the max of `sum[0...i]` as `maxSum`. If `sum[0...i]` increases, record it if it's larger than the old max. If `sum[0...i]` decreases to be negative, reset it to 0 which means we abandon `arr[i]` and compute from `i + 1`. In a word, we only want the diff between the most increasing part's top and bottom. curSum guarantees that we won't miss the possible start, `maxSum` guarantees that we won't miss the possible end. In this way, if `sum[i...j]` is the result, k <= i and m >= j, `sum[k...i]` and `sum[j...m]` should be negative. Otherwise, `sum[k...j]` or `sum[i...m]` will be larger.
 
 ```java
 int maxSum(int[] arr) {
@@ -1290,11 +1443,10 @@ int[] getMaxWindow(int[] arr, int w) {
 }
 ```
 
-### Maximum Length of Repeated Subarray
+### [Maximum Length of Repeated Subarray](https://leetcode.com/problems/maximum-length-of-repeated-subarray/description/)
 
 > Given two integer arrays A and B, return the maximum length of an subarray that appears in both arrays.
 >
-> [Maximum Length of Repeated Subarray](https://leetcode.com/problems/maximum-length-of-repeated-subarray/description/)
 
 DP solution:
 

@@ -39,14 +39,14 @@ Set next[0] = -1, next[1] = 0, next[i] means if matching fails, set j to next[i]
 int[] getNextArray(char[] ms) {
   if (ms.length == 1) return new int[]{-1};
   int[] next = new int[ms.length];
-  next[0] = -1; //start position
+  next[0] = -1; // start position
   next[1] = 0;
-  int pos = 2; //computing current position of next
-  int cn = 0; //start with next[pos - 1], current next value
+  int pos = 2; // computing current position of next
+  int cn = 0; // start with next[pos - 1], current next value
   while(pos < next.length) {
-    if (ms[pos - 1] == ms[cn]) next[pos++] = ++cn; //ms[0...cn] == ms[pos-cn-1...pos-1]
-    else if (cn > 0) cn = next[cn]; //shrink to ms[0..ms[cn]]
-    else next[pos++] = 0; //return to start
+    if (ms[pos - 1] == ms[cn]) next[pos++] = ++cn; // ms[0...cn] == ms[pos-cn-1...pos-1]
+    else if (cn > 0) cn = next[cn]; // shrink to ms[0..ms[cn]]
+    else next[pos++] = 0; // return to start
   }
   return next;
 }
@@ -188,11 +188,10 @@ int maxLcpsLength(String str) {
   int max = Integer.MIN_VALUE;
   for (int i = 0; i < charArr.length; i++) {
     r[i] = i < R ? Math.min(r[2 * C - i], R - i) : 1;//give the least possbile r
-    while(i + r[i] < charArr.length && i - r[i] > -1) {//valid indexes
-      //try to extend
+    while(i + r[i] < charArr.length && i - r[i] > -1 && charArr[i + r[i]] == charArr[i - r[i]]) {
+      //try to extend in valid indexes
       //if i <= R && rj != R, this will fail at once
-      if (charArr[i + r[i]] == charArr[i - r[i]]) r[i]++;
-      else break;//r[i] will be ri + 1
+      r[i]++;
     }
 
     if (i + r[i] > R) {
@@ -500,8 +499,8 @@ merge&reverse:	[n - k, n - k + 1, ..., n - 1, 0, 1, ..., n - k - 1]
 ```java
 void rotate(char[] chs, int k) {
   if (chs == null || k <= 0 || k > chs.length) return;
-  reverse(chs, 0, chs.length - k - 1);
-  reverse(chs, chs.length - k, chs.length - 1);
+  reverse(chs, 0, k - 1);
+  reverse(chs, k, chs.length - 1);
   reverse(chs, 0, chs.length - 1);
 }
 

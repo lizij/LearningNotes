@@ -2,21 +2,23 @@
 
 [TOC]
 
-# 触摸事件的分发
+# View事件
 
-## 原理
+## 事件分发
+
+### 原理
 
 事件分发流程图分为3层，从上往下依次是Activity、ViewGroup、View
 
-![](https://upload-images.jianshu.io/upload_images/966283-b9cb65aceea9219b.png)
+![image](http://images2015.cnblogs.com/blog/641601/201509/641601-20150911224348356-1715684255.jpg)
 
-* 事件从左上角那个白色箭头开始，由Activity的dispatchTouchEvent做分发
+* 事件从左上角开始，由Activity的dispatchTouchEvent做分发
 * 箭头的上面字代表方法返回值，（return true、return false、return super.xxxxx(),super 的意思是调用父类实现）
 * dispatchTouchEvent和 onTouchEvent的框里有个【**true---->消费**】的字，表示的意思是如果方法返回true，那么代表事件就此消费，不会继续往别的地方传了，事件终止
 * 目前图中的事件是仅仅针对ACTION_DOWN的
 * 只有return super.dispatchTouchEvent(ev) 才是往下走，返回true 或者 false 事件就被消费了（终止传递）
 
-## 关键点
+### 关键点
 
 1. 默认实现流程：整个事件流向应该是从Activity---->ViewGroup--->View 从上往下调用dispatchTouchEvent方法，一直到叶子节点（View）的时候，再由View--->ViewGroup--->Activity从下往上调用onTouchEvent方法
 2. 事件消费：dispatchTouchEvent 和 onTouchEvent 一旦return true,事件就停止传递了（到达终点）（没有谁能再收到这个事件）。看下图中只要return true事件就没再继续传下去了，对于return true我们经常说事件被消费了，消费了的意思就是事件走到这里就是终点，不会往下传，没有谁能再收到这个事件了。dispatchTouchEvent 和 onTouchEvent return false的时候事件都回传给父控件的onTouchEvent处理
@@ -36,7 +38,7 @@
 
    如果ACTION_DOWN事件是在dispatchTouchEvent消费，那么事件到此为止停止传递，如果ACTION_DOWN事件是在onTouchEvent消费的，那么会把ACTION_MOVE或ACTION_UP事件传给该控件的onTouchEvent处理并结束传递
 
-## 总结
+### 总结
 
 1. 触摸事件的处理涉及三个方法：dispatchTouchEvent()、onInterceptEvent()、onTouchEvent()
 2. 从Activity的dispatch开始传递，如果没有拦截，则一直传递到子view。
@@ -45,6 +47,95 @@
 5. OnTouchListener的处理优先级高于onTouchEvent()
 
 [图解 Android 事件分发机制](https://www.jianshu.com/p/e99b5e8bd67b)
+
+## 滑动冲突处理
+
+* 确定冲突的有关控件
+* 找准冲突发生的点
+* 确定是用内部还是外部的方式
+
+### 外部拦截
+
+特点：子view代码无需修改，符合view事件分发机制
+
+操作：需要在父ViewGroup，重写onInterceptTouchEvent方法，根据业务需要，判断哪些事件是父Viewgroup需要的，需要的话就对该事件进行拦截，然后交由onTouchEvent方法处理，若不需要，则不拦截，然后传递给子view或子viewGroup
+
+```java
+public boolean onInterceptTouchEvent(MotionEvent ev) {
+  int y = (int) ev.getY();
+  switch (ev.getAction()){
+    case MotionEvent.ACTION_DOWN:
+      yDown = y;
+      isIntercept = false;
+      break;
+    case MotionEvent.ACTION_MOVE:
+      yMove = y;
+      if (yMove - yDown < 0){
+        //根据业务需求更改判断条件，判断是时候需要拦截
+        isIntercept = false;
+      }else if(yMove - yDown > 0 && getChildAt(0).getScrollY() == 0){
+        isIntercept = true;
+      }else if(yMove - yDown > 0 && getChildAt(0).getScrollY() > 0){
+        isIntercept = false;
+      }
+      break;
+    case MotionEvent.ACTION_UP:
+      isIntercept = false;
+      break;
+  }
+  return isIntercept;         //返回true表示拦截，返回false表示不拦截
+}
+```
+
+### 内部拦截
+
+特点：父viewgroup需要重写onInterceptTouchEvent，不符合view事件分发机制
+
+操作：在子view中拦截事件，父viewGroup默认是不拦截任何事件的，所以，当事件传递到子view时， 子view根据自己的实际情况来，如果该事件是需要子view来处理的，那么子view就自己消耗处理，如果该事件不需要由子view来处理，那么就调用getParent().requestDisallowInterceptTouchEvent()方法来通知父viewgroup来拦截这个事件，也就是说，叫父容器来处理这个事件，这刚好和view的分发机制相反
+
+子View
+
+```java
+public boolean dispatchTouchEvent(MotionEvent ev) {
+  int y = (int) ev.getY();
+  switch (ev.getAction()) {
+    case MotionEvent.ACTION_DOWN:
+      getParent().requestDisallowInterceptTouchEvent(true);
+      yDown = y;
+      break;
+    case MotionEvent.ACTION_MOVE:
+      yMove = y;
+      Log.e("mes", yMove + "！！！");
+      int scrollY = getScrollY();
+      if (scrollY == 0&&yMove-yDown>0) {
+        //根据业务需求判断是否需要通知父viewgroup来拦截处理该事件
+        //允许父View进行事件拦截
+        Log.e("mes",yMove-yDown+"拦截");
+        getParent().requestDisallowInterceptTouchEvent(false);
+      }
+      break;
+    case MotionEvent.ACTION_UP:
+      break;
+  }
+  return super.dispatchTouchEvent(ev);
+}
+```
+
+父ViewGroup
+
+```java
+public boolean onInterceptTouchEvent(MotionEvent ev) {
+  if (ev.getAction()==MotionEvent.ACTION_DOWN){
+    return false;
+  } else {
+    return true;
+  }
+}
+```
+
+[View滑动冲突处理方法（外部拦截法、内部拦截法）](http://blog.csdn.net/z_l_p/article/details/53488085)
+
+[Android事件冲突场景分析及一般解决思路](https://www.jianshu.com/p/c62fb2f25057)
 
 # 序列化
 
@@ -60,17 +151,117 @@
 
 ## Serializable和Parcelable的区别
 
-1. S是Java的序列化方案，P是Android的。在使用内存的时候，Parcelable 类比Serializable性能高，所以推荐使用Parcelable类。
-2. S在序列化的时候会产生大量的临时变量，导致频繁GC，P则不会。因此在内存中使用时（如网络中传递或进程间传递）推荐使用P。
-3. P被设计为IPC通信数据序列化方案，不适用于保存在磁盘上，如果需要保存则应该用S。
-4. S只需要继承Serializable接口即可，P则需要重写writeToParcel方法、重写describeContents方法、实例化Parcelable.Creator。
+1. Serializable是JAVA中的序列化接口，虽然使用起来简单但是开销很大，序列化和反序列化过程都要大量的I/O操作。
+2. Parcelable是Android中的序列化方式，更适合使用在Android平台上。它的缺点就是使用起来稍微麻烦一点，但是效率高。
+3. Parcelable主要用在内存序列化上，Serializable主要用于将对象序列化到存储设备中或者通过网络传输
 
-# startService和bindService的区别
+# Service
 
-1. startService启动的Service在调用者自己退出而没有调用stopService时会继续在后台运行。
-2. bindService启动的Service生命周期会和调用者绑定，调用者退出时Service也会调用unBind()->onDestory()退出。
-3. 先调用startService再调用bindService时Service也只会走一遍生命周期。
-4. 除了startService和bindService，Service的生命周期只有三个方法：onCreate()、onStartCommand()、onDestroy()
+## startService和bindService
+
+### startService
+
+ `onCreate()`--->`onStartCommand()` ---> `onDestory()`
+
+>  如果服务已经开启，不会重复的执行`onCreate()`， 而是会调用`onStart()`和`onStartCommand()`
+>
+>  服务停止的时候调用 `onDestory()`。服务只会被停止一次
+
+一旦服务开启跟调用者(开启者)就没有任何关系了。开启者退出了，开启者挂了，服务还在后台长期的运行。
+
+开启者**不能调用**服务里面的方法
+
+### bindService
+
+`onCreate()` --->`onBind()`--->`onunbind()`--->`onDestory()`
+
+>  绑定服务不会调用`onstart()`或者`onstartcommand()`方法
+
+bind的方式开启服务，绑定服务，调用者挂了，服务也会跟着挂掉。
+绑定者**可以调用**服务里面的方法
+
+Service
+
+```java
+public class MyService extends Service {
+  public MyService() {
+  }
+
+  @Override
+  public IBinder onBind(Intent intent) {
+    //返回MyBind对象
+    return new MyBinder();
+  }
+
+  private void methodInMyService() {
+    Toast.makeText(getApplicationContext(), "服务里的方法执行了。。。",
+                   Toast.LENGTH_SHORT).show();
+  }
+
+  /**
+     * 该类用于在onBind方法执行后返回的对象，
+     * 该对象对外提供了该服务里的方法
+     */
+  private class MyBinder extends Binder implements IMyBinder {
+
+    @Override
+    public void invokeMethodInMyService() {
+      methodInMyService();
+    }
+  }
+}
+
+public interface IMyBinder { // 自定义的MyBinder接口用于保护服务中不想让外界访问的方法
+  void invokeMethodInMyService();
+}
+```
+
+Activity
+
+```java
+public class MainActivity extends Activity {
+
+  private MyConn conn;
+  private Intent intent;
+  private IMyBinder myBinder;
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+  }
+
+  //开启服务按钮的点击事件
+  public void start(View view) {
+    intent = new Intent(this, MyService.class);
+    conn = new MyConn();
+    //绑定服务，
+    // 第一个参数是intent对象，表面开启的服务。
+    // 第二个参数是绑定服务的监听器
+    // 第三个参数一般为BIND_AUTO_CREATE常量，表示自动创建bind
+    bindService(intent, conn, BIND_AUTO_CREATE);
+  }
+
+  //调用服务方法按钮的点击事件
+  public void invoke(View view) {
+    myBinder.invokeMethodInMyService();
+  }
+
+  private class MyConn implements ServiceConnection {
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder){
+      //iBinder为服务里面onBind()方法返回的对象，所以可以强转为IMyBinder类型
+      myBinder = (IMyBinder) iBinder;
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+    }
+  }
+}
+```
+
+[Android 服务两种启动方式的区别](https://www.jianshu.com/p/2fb6eb14fdec)
 
 # 线程与Looper
 
@@ -173,17 +364,19 @@ Activity的生命周期都是依靠主线程的Looper.loop，当收到不同Mess
 * 访问网络和数据库
 * 开销很大的计算，比如改变位图的大小，需要在一个单独的子线程中完成
 
-# Activity启动模式
+# Activity
+
+## 启动模式
 
 ```xml
 <activity android:name=".xxActivity" android:launchMode="standard/singleTop/singleTask/singleInstance" android:taskAffinity="com.example.xxx.yyy"/>
 ```
 
-## standard
+### standard
 
 默认的启动模式，每次启动一个Activity都会新建一个实例不管栈中是否已有该Activity的实例
 
-## singleTop
+### singleTop
 
 1. 当前栈中已有该Activity的实例并且该实例位于栈顶时，不会新建实例，而是复用栈顶的实例，并且会将Intent对象传入，回调onNewIntent方法
 2. 当前栈中已有该Activity的实例但是该实例不在栈顶时，其行为和standard启动模式一样，依然会创建一个新的实例
@@ -191,7 +384,7 @@ Activity的生命周期都是依靠主线程的Looper.loop，当收到不同Mess
 
 > standard和singleTop启动模式都是在原任务栈中新建Activity实例，不会启动新的Task，即使你指定了taskAffinity属性
 
-## singleTask
+### singleTask
 
 根据taskAffinity去寻找当前是否存在一个对应名字的任务栈
 
@@ -202,21 +395,131 @@ Activity的生命周期都是依靠主线程的Looper.loop，当收到不同Mess
 
 此外，我们可以将两个不同App中的Activity设置为相同的taskAffinity，这样虽然在不同的应用中，但是Activity会被分配到同一个Task中去
 
-## singleInstance
+### singleInstance
 
 除了具备singleTask模式的所有特性外，与它的区别就是，这种模式下的Activity会单独占用一个Task栈，具有全局唯一性，即整个系统中就这么一个实例，由于栈内复用的特性，后续的请求均不会创建新的Activity实例，除非这个特殊的任务栈被销毁了。以singleInstance模式启动的Activity在整个系统中是单例的，如果在启动这样的Activiyt时，已经存在了一个实例，那么会把它所在的任务调度到前台，重用这个实例
 
 [彻底弄懂Activity四大启动模式](http://blog.csdn.net/mynameishuangshuai/article/details/51491074)
 
-# Android进程间通信方法
+## 生命周期
+
+### 一个Activity的生命周期
+
+![](http://hi.csdn.net/attachment/201109/1/0_1314838777He6C.gif)
+
+完整生存期：onCreate() - onDestroy()，内存初始化和释放
+
+可见生存期：onStart() - onStop()，活动可见，不一定可交互，资源加载和释放
+
+前台生存期：onResume() - onPause()，运行状态，可交互
+
+如果一个Activity没有被完全遮挡住，是不会触发onStop的
+
+[基础总结篇之一：Activity生命周期](http://blog.csdn.net/liuhe688/article/details/6733407)
+
+### 一个Activity调用另一个Activity的生命周期
+
+1. A.onCreate()
+2. A.onStart()
+3. A.onResume()
+4. 启动B
+5. A.onPause()
+6. B.onCreate()
+7. B.onStart()
+8. B.onResume()
+9. A.onStop()
+10. 返回A
+11. B.onPause()
+12. A.onRestart()
+13. A.onStart()
+14. A.onResume()
+15. B.onStop()
+16. B.onDestroy()
+
+## 异常情况下Activity数据的保存和恢复
+
+### 保存和恢复数据
+
+可以通过onRestoreInstanceState和onCreate方法判读Activity是否被重建了，如果被重建了，那么我们就可以取出之前保存的数据并进行恢复，onRestoreInstanceState的调用时机在onStart之后。需要注意的是：在正常情况下Activity的创建和销毁不会调用onSaveInstanceState和onRestoreInstanceState方法
+
+例如
+
+```java
+@Override
+public void onSaveInstanceState(Bundle outState) {
+  super.onSaveInstanceState(outState, outPersistentState);
+  outState.putString("editText",myEdit.getText().toString());
+}
+
+@Override
+public void onRestoreInstanceState(Bundle savedInstanceState) {
+  super.onRestoreInstanceState(savedInstanceState, persistentState);
+  String str = savedInstanceState.getString("editText");
+  myEdit.setText(str);
+}
+```
+
+### 防止Activity重建
+
+在AndroidManifest.xml中对Activity的configChange属性进行配置。例如我们不希望屏幕旋转时重建，则需要设置为` android:configChanges="orientation"`
+
+常用的配置选项还有
+
+* orientation：屏幕方向发生了改变，例如横竖屏切换
+* locale：设备的本地位置发生了改变，例如切换了系统语言
+* keyboard：键盘类型发生了改变，例如插入了外接键盘
+* keyboardHidden：键盘的可访问性发生了改变，例如移除了外接键盘
+
+[异常情况下Activity数据的保存和恢复](http://blog.csdn.net/huaheshangxo/article/details/50829752#如何保存和恢复数据)
+
+## 启动过程
+
+启动Activity涉及到Instrumentation,ActivityThread,ActivityManagerService(AMS)
+
+启动Activity的请求会由Instrumentation来处理，然后它通过Binder向AMS发送请求，AMS内部维护着一个ActivityStack并负责栈内的Activity的状态同步，AMS通过ActivityThread的scheduleLaunchActivity方法去同步Activity的状态从而完成生命周期方法的调用
+
+### Instrumentation
+
+Instrumentation可以把测试包和目标测试应用加载到同一个进程中运行。既然各个控件和测试代码都运行在同一个进程中了，测试代码当然就可以调用这些控件的方法了，同时修改和验证这些控件的一些数据
+
+Android Instrumentation是Android系统里面的一套控制方法或者”钩子“。这些钩子可以在正常的生命周期（正常是由操作系统控制的)之外控制Android控件的运行，其实指的就是Instrumentation类提供的各种流程控制方法
+
+一般在开发Android程序的时候，需要写一个manifest文件，其结构是：
+
+```xml
+<application android:icon="@drawable/icon" android:label="@string/app_name">
+  <activity android:name=".TestApp" android:label="@string/app_name">
+  </activity>
+</application>12345
+```
+
+这样，在启动程序的时候就会先启动一个Application，然后在此Application运行过程中根据情况加载相应的Activity，而Activity是需要一个界面的。
+
+但是Instrumentation并不是这样的。可以将Instrumentation理解为一种没有图形界面的，具有启动能力的，用于监控其他类(用Target Package声明)的工具类。
+
+### IntentFilter
+
+为了匹配过滤列表，需要同时匹配过滤列表中的action,category,data信息，否则匹配失败。另外，一个Activity中可以有多个intent-filter，一个Intent只要能匹配任何一组intent-filter即可成功启动对应的Activity
+
+* action：要求Intent中的action存在且必须和过滤规则中的其中一个action相同，区分大小写
+
+* category：要求Intent中如果含有category，那么所有的category都必须和过滤规则中的其中一个category相同才匹配
+
+  intent中的category可以为空，因为在intent-filter中系统自动加上了DEFAULT这个category用来匹配空值
+
+* data：要求Intent中必须含有data数据，并且data数据能够完全匹配过滤规则中的某一个data
+
+# 进程间通信方法（IPC）
 
 ## 文件共享
 
-例如共同读写/sdcard目录下的某个文件
+两个进程通过读/写同一个文件来交换数据，比如A进程把数据写入文件，B进程通过读取这个文件来获取数据。
+
+文件共享方式适合在对数据同步要求不高的进程之间进行通信，并且要妥善处理并发读/写的问题
 
 ## Bundle
 
-Bundle类是一个key-value对，两个activity之间的通讯可以通过bundle类来实现，通过Intent传递
+四大组件中的三大组件（Activity,Service,Receiver）都是支持在Intent中传递Bundle数据的，由于Bundle实现了Parcelable接口，所以他可以方便地在不同的进程间传输。基于这一点，我们在一个进程中启动了另一个进程的时候，就可以在Bundle中附加我们需要传输的信息，并通过Intent传送出去。但是，传输的数据必须能够被序列化，比如基本类型、实现了Serializable/Parcelable的对象以及一些Android支持的特殊对象
 
 ```java
 Intent intent = new Intent();    
@@ -231,14 +534,25 @@ startActivity(intent);
 
 AIDL通过定义服务端暴露的接口，以提供给客户端来调用，AIDL使服务器可以并行处理，而Messenger封装了AIDL之后只能串行运行，所以Messenger一般用作消息传递
 
-通过编写aidl文件来设计想要暴露的接口，编译后会自动生成响应的java文件，服务器将接口的具体实现写在Stub中，用iBinder对象传递给客户端，客户端bindService的时候，用asInterface的形式将iBinder还原成接口，再调用其中的方法
+通过编写aidl文件来设计想要暴露的接口，编译后会自动生成响应的java文件，服务器将接口的具体实现写在Stub中，用IBinder对象传递给客户端，客户端bindService的时候，用asInterface的形式将IBinder还原成接口，再调用其中的方法
+
+支持以下几种数据：
+
+* 基本数据类型
+* String和CharSequence
+* List：只支持ArrayList，且里面的每个元素都必须被AIDL支持
+* Map：只支持HashMap，且里面的每个元素都必须被AIDL支持
+* 实现了Parcelable的对象
+* 其他AIDL接口
+
+> 除了基本数据类型，其他类型的参数上必须标上方向：in，out或inout
 
 定义AIDL，新建一个`.aidl`文件
 
 ```java
-package aidl;
+package com.example.aidl;
 interface IMyInterface {
-  String getInfo(String s);
+  String getInfo(in String s);
 }
 ```
 
@@ -249,6 +563,7 @@ public class MyService extends Service {
   public final static String TAG = "MyService";
   
   private IBinder binder = new IMyInterface.Stub() {
+    
     @Override       
     public String getInfo(String s) throws RemoteException { 
       Log.i(TAG, s); 
@@ -274,7 +589,7 @@ public class MyService extends Service {
 ```xml
 <service
          android:name=".server.MyService"
-         android:process="com.xxx.remote" />
+         android:process=":remote" />
 ```
 
 定义Activity，用于发送消息和接收回复
@@ -325,29 +640,35 @@ public class MainActivity extends AppCompatActivity {
 
 Messager实现IPC通信，底层是使用了AIDL方式。和AIDL方式不同的是，Messager方式是利用Handler形式处理，因此，它是线程安全的，这也表示它不支持并发处理。相反，AIDL方式是非线程安全的，支持并发处理。服务端（被动方）提供一个Service来处理客户端（主动方）连接，维护一个Handler来创建Messenger，在onBind时返回Messenger的binder。双方用Messenger来发送数据，用Handler来处理数据。Messenger处理数据依靠Handler，所以是串行的，也就是说，Handler接到多个message时，就要排队依次处理
 
-例如：在进程A中创建一个Message，将这个Message对象通过IMessenger.send(message)方法传递到进程B
-
 > Message对象本身是无法被传递到进程B的，send(message)方法会使用一个Parcel对象对Message对象编集，再将Parcel对象传递到进程B中，然后解编集，得到一个和进程A中Message对象内容一样的对象），再把Message对象加入到进程B的消息队列里，Handler会去处理它
 
-进程B（接收方）
+服务端
 
 ```java
-public class RemoteService extends Service {  
-  public static final int GET_RESULT = 1;  
+public class RemoteService extends Service {
+  private static final String TAG = "RemoteService"
   private final Messenger mMessenger = new Messenger(new Handler() {  
-    private int remoteInt = 1;//返回到进程A的值  
     @Override  
     public void handleMessage(Message msg) {  
-      if (msg.what == GET_RESULT) {
-        // 接收到来自A的消息，并回复remoteInt++的结果
-        try {  
-          msg.replyTo.send(Message.obtain(null, GET_RESULT, remoteInt++, 0));  
-        } catch (RemoteException e) {  
-          e.printStackTrace();  
-        }  
-      } else {  
-        super.handleMessage(msg);  
-      }  
+      switch (msg.what) {
+        case Constants.MSG_FROM_CLIENT:
+          Log.i(TAG, "receive msg from client:" + msg.getData().getString("msg"));
+          
+          // 回复消息
+          Messager client = msg.replyTo;
+          Message replyMessage = Message.obtain(null, Constants.MSG_FROM_SERVICE);
+          Bundle data = new Bundle();
+    data.putString("reply", "reply message");
+    replyMessage.setData(data);
+          try {
+            client.send(replyMessage);
+          } catch (RemoteException e) {
+            e.printStackTrace();
+          }
+          break;
+        default:
+          super.handleMessage(msg);
+      }
     }  
   });  
 
@@ -358,54 +679,53 @@ public class RemoteService extends Service {
 }  
 ```
 
-进程A（发送方）
+客户端
 
 ```java
-private Messenger mService;  
-private boolean isBinding = false;  
+private Messenger mGetReplyMessenger = new Messenger(new Handler() {
+  @Override  
+  public void handleMessage(Message msg) {  
+    switch (msg.what) {
+      case Constants.MSG_FROM_SERVICE:
+        // 接收服务器消息
+        Log.i(TAG, "receive msg from service:" + msg.getData().getString("msg"));
+        break;
+      default:
+        super.handleMessage(msg);
+    }
+  }  
+});  
 
+private Messenger mService;  
+  
 private ServiceConnection mConnection = new ServiceConnection() {  
   @Override  
   public void onServiceConnected(ComponentName name, IBinder service) {  
-    mService = new Messenger(service);  
-    isBinding = true;  
+    mService = new Messenger(service);
+    
+    // 发送消息
+    Message msg = Message.obtain(null, Constants.MSG_FROM_CLIENT);
+    Bundle data = new Bundle();
+    data.putString("msg", "message");
+    msg.setData(data);
+    msg.replyTo = mGetReplyMessenger;
+    try {
+      mService.send(msg);
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
   }  
 
   @Override public void onServiceDisconnected(ComponentName name) {  
     mService = null;  
-    isBinding = false;  
   } 
 };
-
-private Messenger mMessenger = new Messenger(new Handler() {  
-  @Override  
-  public void handleMessage(Message msg) {
-    // 处理B回复的消息
-    if (msg.what == RemoteServiceProxy.GET_RESULT) {  
-      Log.i("TAG", "Int form process B is " + msg.arg1);//msg.arg1就是remoteInt  
-    } else {  
-      super.handleMessage(msg);  
-    }  
-  }  
-});
 ```
 
-A绑定B的服务
+客户端绑定服务端的服务
 
 ```java
 bindService(new Intent(this, RemoteService.class), mConnection, Context.BIND_AUTO_CREATE); 
-```
-
-A向B发送消息，并处理B回复的消息
-
-```java
-Message message = Message.obtain(null, RemoteServiceProxy.GET_RESULT);  
-message.replyTo = mMessenger;  
-try {  
-  mService.send(message);  
-} catch (RemoteException e) {  
-  e.printStackTrace();  
-}
 ```
 
 [Android的进阶学习（五）--Messenger的使用和理解](https://www.jianshu.com/p/af8991c83fcb)
@@ -428,14 +748,20 @@ Android不允许在主线程中请求网络，而且请求网络必须要注意�
 
 [Android：这是一份很详细的Socket使用攻略](http://blog.csdn.net/carson_ho/article/details/53366856)
 
-# Android线程间通信
+# 线程间通信
 
 ## AsyncTask
 
-相当于是Handler的封装
+Android提供的轻量级异步类，可以直接继承。其实现原理也是基于异步消息处理机制的
+
+AsyncTask定义了三种泛型类型*Params，Progress和Result*
+
+* **Params**：在执行AsyncTask时需要传入的参数，可用于在后台任务中使用（doInBackground方法的参数类型）如HTTP请求的URL
+* **Progress**：后台任务执行时，如果需要在界面上显示当前的进度，则指定进度类型
+* **Result**：后台任务的返回结果类型
 
 ```java
-class myAsync extends AsyncTask<String, Integer, String> {
+class myAsync extends AsyncTask<Params, Progress, Result> {
 
   //下面这个方法在主线程中执行，在doInBackground函数执行前执行
   @Override
@@ -445,31 +771,21 @@ class myAsync extends AsyncTask<String, Integer, String> {
 
   //下面这个方法在子线程中执行，用来处理耗时行为
   @Override
-  protected String doInBackground(String... arg0) {
-    for (int i = 0; i < 20; i++) {
-      try {
-        Thread.sleep(1000); //暂停1秒，然后继续执行
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      } 
-      publishProgress(i);//实时更新当前进度
-    }
-    return "xxx";
+  protected String doInBackground(Params... arg0) {
+    Result res;
+    return res;
   }
 
   //下面这个方法在主线程中执行，用于显示子线程任务执行的进度
   @Override
-  protected void onProgressUpdate(Integer... values) {
+  protected void onProgressUpdate(Progress values) {
     super.onProgressUpdate(values);
-    tvTextView.setText(values[0]+"");
   }
 
   //下面这个方法在主线程中执行，在doinBackground方法执行完后执行
   @Override
-  protected void onPostExecute(String result) {
+  protected void onPostExecute(Result result) {
     super.onPostExecute(result);
-    tvTextView.setText(result);
   }
 }
 ```
@@ -477,6 +793,13 @@ class myAsync extends AsyncTask<String, Integer, String> {
 [AsyncTask 实现Android的线程通信](http://blog.csdn.net/qq_15267341/article/details/79056947)
 
 ## Handler&Message
+
+### 使用
+
+1. 主线程中创建一个Handler对象，并重写handleMessage()方法 
+2. 当子线程需要进行UI操作时，就创建一个Message对象，并通过handler.sendMessage()将这条消息发送出去 
+3. 这条消息被添加到MessageQueue的队列中等待被处理 
+4. Looper一直尝试从MessageQueue中提出待处理消息，分发会Handler的handleMessage()方法中
 
 ### 原理
 
@@ -506,77 +829,6 @@ Handler 、 Looper 、Message 这三者都与Android异步消息处理线程相�
 ## 共享内存
 
 最简单的方式就是公共变量
-
-# Activity生命周期
-
-## 一个Activity的生命周期
-
-![](http://hi.csdn.net/attachment/201109/1/0_1314838777He6C.gif)
-
-完整生存期：onCreate() - onDestroy()，内存初始化和释放
-
-可见生存期：onStart() - onStop()，活动可见，不一定可交互，资源加载和释放
-
-前台生存期：onResume() - onPause()，运行状态，可交互
-
-如果一个Activity没有被完全遮挡住，是不会触发onStop的
-
-[基础总结篇之一：Activity生命周期](http://blog.csdn.net/liuhe688/article/details/6733407)
-
-## 一个Activity调用另一个Activity的生命周期
-
-1. A.onCreate()
-2. A.onStart()
-3. A.onResume()
-4. 启动B
-5. A.onPause()
-6. B.onCreate()
-7. B.onStart()
-8. B.onResume()
-9. A.onStop()
-10. 返回A
-11. B.onPause()
-12. A.onRestart()
-13. A.onStart()
-14. A.onResume()
-15. B.onStop()
-16. B.onDestroy()
-
-# 异常情况下Activity数据的保存和恢复
-
-## 保存和恢复数据
-
-可以通过onRestoreInstanceState和onCreate方法判读Activity是否被重建了，如果被重建了，那么我们就可以取出之前保存的数据并进行恢复，onRestoreInstanceState的调用时机在onStart之后。需要注意的是：在正常情况下Activity的创建和销毁不会调用onSaveInstanceState和onRestoreInstanceState方法
-
-例如
-
-```java
-@Override
-public void onSaveInstanceState(Bundle outState) {
-  super.onSaveInstanceState(outState, outPersistentState);
-  outState.putString("editText",myEdit.getText().toString());
-}
-
-@Override
-public void onRestoreInstanceState(Bundle savedInstanceState) {
-  super.onRestoreInstanceState(savedInstanceState, persistentState);
-  String str = savedInstanceState.getString("editText");
-  myEdit.setText(str);
-}
-```
-
-## 防止Activity重建
-
-在AndroidManifest.xml中对Activity的configChange属性进行配置。例如我们不希望屏幕旋转时重建，则需要设置为` android:configChanges="orientation"`
-
-常用的配置选项还有
-
-* orientation：屏幕方向发生了改变，例如横竖屏切换
-* locale：设备的本地位置发生了改变，例如切换了系统语言
-* keyboard：键盘类型发生了改变，例如插入了外接键盘
-* keyboardHidden：键盘的可访问性发生了改变，例如移除了外接键盘
-
-[异常情况下Activity数据的保存和恢复](http://blog.csdn.net/huaheshangxo/article/details/50829752#如何保存和恢复数据)
 
 # ListView优化
 
@@ -693,7 +945,7 @@ public void run() throws Exception {
 
 [OkHttp使用完全教程](https://www.jianshu.com/p/ca8a982a116b)
 
-# App优化
+# 性能优化
 
 常见的优化：App启动、布局、响应、内存、电池使用、网络
 
@@ -704,95 +956,6 @@ public void run() throws Exception {
 * 通过减少/压缩数据传输量，缓存响应，弱网不自动加载图片等方式优化网络请求
 
 [Android App优化, 要怎么做?](https://www.jianshu.com/p/f7006ab64da7)
-
-# View滑动冲突处理
-
-* 确定冲突的有关控件
-* 找准冲突发生的点
-* 确定是用内部还是外部的方式
-
-## 外部拦截
-
-特点：子view代码无需修改，符合view事件分发机制
-
-操作：需要在父ViewGroup，重写onInterceptTouchEvent方法，根据业务需要，判断哪些事件是父Viewgroup需要的，需要的话就对该事件进行拦截，然后交由onTouchEvent方法处理，若不需要，则不拦截，然后传递给子view或子viewGroup
-
-```java
-public boolean onInterceptTouchEvent(MotionEvent ev) {
-  int y = (int) ev.getY();
-  switch (ev.getAction()){
-    case MotionEvent.ACTION_DOWN:
-      yDown = y;
-      isIntercept = false;
-      break;
-    case MotionEvent.ACTION_MOVE:
-      yMove = y;
-      if (yMove - yDown < 0){
-        //根据业务需求更改判断条件，判断是时候需要拦截
-        isIntercept = false;
-      }else if(yMove - yDown > 0 && getChildAt(0).getScrollY() == 0){
-        isIntercept = true;
-      }else if(yMove - yDown > 0 && getChildAt(0).getScrollY() > 0){
-        isIntercept = false;
-      }
-      break;
-    case MotionEvent.ACTION_UP:
-      isIntercept = false;
-      break;
-  }
-  return isIntercept;         //返回true表示拦截，返回false表示不拦截
-}
-```
-
-## 内部拦截
-
-特点：父viewgroup需要重写onInterceptTouchEvent，不符合view事件分发机制
-
-操作：在子view中拦截事件，父viewGroup默认是不拦截任何事件的，所以，当事件传递到子view时， 子view根据自己的实际情况来，如果该事件是需要子view来处理的，那么子view就自己消耗处理，如果该事件不需要由子view来处理，那么就调用getParent().requestDisallowInterceptTouchEvent()方法来通知父viewgroup来拦截这个事件，也就是说，叫父容器来处理这个事件，这刚好和view的分发机制相反
-
-子View
-
-```java
-public boolean dispatchTouchEvent(MotionEvent ev) {
-  int y = (int) ev.getY();
-  switch (ev.getAction()) {
-    case MotionEvent.ACTION_DOWN:
-      getParent().requestDisallowInterceptTouchEvent(true);
-      yDown = y;
-      break;
-    case MotionEvent.ACTION_MOVE:
-      yMove = y;
-      Log.e("mes", yMove + "！！！");
-      int scrollY = getScrollY();
-      if (scrollY == 0&&yMove-yDown>0) {
-        //根据业务需求判断是否需要通知父viewgroup来拦截处理该事件
-        //允许父View进行事件拦截
-        Log.e("mes",yMove-yDown+"拦截");
-        getParent().requestDisallowInterceptTouchEvent(false);
-      }
-      break;
-    case MotionEvent.ACTION_UP:
-      break;
-  }
-  return super.dispatchTouchEvent(ev);
-}
-```
-
-父ViewGroup
-
-```java
-public boolean onInterceptTouchEvent(MotionEvent ev) {
-  if (ev.getAction()==MotionEvent.ACTION_DOWN){
-    return false;
-  } else {
-    return true;
-  }
-}
-```
-
-[View滑动冲突处理方法（外部拦截法、内部拦截法）](http://blog.csdn.net/z_l_p/article/details/53488085)
-
-[Android事件冲突场景分析及一般解决思路](https://www.jianshu.com/p/c62fb2f25057)
 
 # dp和px的关系
 
@@ -873,37 +1036,93 @@ void replaceFragment(Fragment fragment) {
    * 在Activity中调用Fragment中的方法，接口回调；
    * 在Fragment中调用Fragment中的方法findFragmentById/Tag
 
-# 自定义View
+# View工作原理
 
 ## View的绘制过程
 
-* Measure：View会先做一次测量，算出自己需要占用多大的面积。View的Measure过程给我们暴露了一个接口onMeasure
+### 窗口结构
 
-  ```java
-  protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {}
-  ```
+![image](http://upload-images.jianshu.io/upload_images/2397836-f1f6a200704884a2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&_=6219915)
 
-* Layout：View给我们暴露了onLayout方法，用于调整布局
+DecorView是一个应用窗口的根容器，它本质上是一个FrameLayout。DecorView有唯一一个子View，它是一个垂直LinearLayout，包含两个子元素，一个是TitleView（ActionBar的容器），另一个是ContentView（窗口内容的容器）。关于ContentView，它是一个FrameLayout（android.R.id.content)，我们平常用的setContentView就是设置它的子View。上图还表达了每个Activity都与一个Window（具体来说是PhoneWindow）相关联，用户界面则由Window所承载
 
-  ```java
-  protected void onLayout(boolean changed, int left, int top, int right, int bottom) {}
-  ```
+### ViewRoot
 
-* Draw：在画板canvas上画出我们需要的View样式
+View的绘制是由ViewRoot来负责的。每个应用程序窗口的decorView都有一个与之关联的ViewRoot对象，这种关联关系是由WindowManager来维护的。Activity启动时，ActivityThread.handleResumeActivity()方法中建立了ViewRoot和decorView的关联关系。
 
-  ```java
-  protected void onDraw(Canvas canvas) {}
-  ```
+当建立好了decorView与ViewRoot的关联后，ViewRoot类的requestLayout()方法会被调用，以完成应用程序用户界面的初次布局。实际被调用的是ViewRootImpl类的requestLayout()方法
+
+```java
+@Override
+public void requestLayout() {
+  if (!mHandlingLayoutInLayoutRequest) {
+    // 检查发起布局请求的线程是否为主线程 
+    checkThread();
+    mLayoutRequested = true;
+    scheduleTraversals();
+  }
+}
+```
+
+上面的方法中调用了scheduleTraversals()方法来调度一次完成的绘制流程，该方法会向主线程发送一个“遍历”消息，最终会导致ViewRootImpl的performTraversals()方法被调用，开始View绘制的三个阶段
+
+### 三个阶段
+
+View的工作流程主要是指measure、layout、drow这三大流程，即测量、布局和绘制，其中measure确定View的测量宽/高，layout确定View的最终宽/高和四个顶点的位置，而draw则将View绘制到屏幕上
+
+![image](http://upload-images.jianshu.io/upload_images/2397836-19c08de6439514a7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&_=6219915)
+
+#### measure
+
+计算出控件树中的各个控件要显示其内容的话，需要多大尺寸
+
+measure过程要分情况来看，如果只是一个原始的View，那么通过measure方法就完成了其测量过程。如果是一个ViewGroup，除了完成自己的测量过程外，还会遍历去调用所有子元素的measure方法，各个子元素再递归去执行这个流程。
+
+#### layout
+
+layout的作用是ViewGroup用来确定子元素的位置，当ViewGroup的位置被确定为后，它在onLayout中会遍历所有的子元素并调用其layout方法
+
+layout方法的大致流程如下：首先通过setFrame方法来设定View的四个顶点的位置，即初始化mLeft、mTop、mRight和mBottom四个参数，这四个参数描述了View相对其父View的位置。在setFrame()方法中会判断View的位置是否发生了改变，若发生了改变，则需要对子View进行重新布局，对子View的局部是通过onLayout()方法实现了
+
+#### draw
+
+将View绘制到屏幕上面
+
+```java
+public void draw(Canvas canvas) {
+  // ...
+  // 绘制背景，只有dirtyOpaque为false时才进行绘制，下同
+  int saveCount;
+  if (!dirtyOpaque) {
+    drawBackground(canvas);
+  }
+
+  // ...
+
+  // 绘制自身内容
+  if (!dirtyOpaque) onDraw(canvas);
+
+  // 绘制子View
+  dispatchDraw(canvas);
+
+  // ...
+  // 绘制滚动条等
+  onDrawForeground(canvas);
+
+}
+```
 
 ## 自定义View
 
 ### 通常情况
 
-大部分时候只需重写两个函数：onMeasure()、onDraw()。onMeasure负责对当前View的尺寸进行测量，onDraw负责把当前这个View绘制出来。
+1. 如果想控制View在屏幕上的渲染效果，就在重写onDraw()方法，在里面进行相应的处理。
+2. 如果想要控制用户同View之间的交互操作，则在onTouchEvent()方法中对手势进行控制处理。
+3. 如果想要控制View中内容在屏幕上显示的尺寸大小，就重写onMeasure()方法中进行处理。
+4. 在 XML文件中设置自定义View的XML属性。
+5. 如果想避免失去View的相关状态参数的话，就在onSaveInstanceState() 和 onRestoreInstanceState()方法中保存有关View的状态信息。
 
-> 举个例子，比如我们希望我们的View是个正方形，如果在xml中指定宽高为`wrap_content`，如果使用View类提供的measure处理方式，显然无法满足我们的需求
-
-### 3种方法
+### 自定义控件
 
 组合控件：将一些小的控件组合起来形成一个新的控件，这些小的控件多是系统自带的控件。比如很多应用中普遍使用的标题栏控件，其实用的就是组合控件
 
@@ -1010,11 +1229,11 @@ public class MyViewGroup extends ViewGroup {
 ]}
 ```
 
-# Binder通信机制
+# Binder
 
 ## 运行机制
 
-Binder基于Client-Server通信模式，除了Client端和Server端，还有两角色一起合作完成进程间通信功能
+Binder基于Client-Server通信模式，其中Client、Server和Service Manager运行在用户空间，Binder驱动程序运行内核空间
 
 * Client进程：使用服务的进程
 * Server进程：提供服务的进程
@@ -1033,7 +1252,7 @@ Server进程向Service Manager进程注册服务（可访问的方法接口）�
 
 [Android面试一天一题（Day 35：神秘的Binder机制）](https://www.jianshu.com/p/c7bcb4c96b38)
 
-# Android内存泄露
+# 内存泄露
 
 ## 原理
 
@@ -1827,19 +2046,6 @@ public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback,
 
 [Android SurfaceView入门学习](https://www.jianshu.com/p/15060fc9ef18)
 
-# 图片加载器设计
-
-## 基本功能
-
-* 图片同步和异步加载
-* 图片压缩
-* 内存和磁盘缓存
-* 网络拉取
-
-## 详细设计
-
-参见《Android开发艺术探索》12.2.3节
-
 # 并发和并行的区别
 
 并发是指一个处理器同时处理多个任务，是逻辑上的同时发生
@@ -1863,9 +2069,11 @@ public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback,
 
 **线程：**线程对应用来说非常常见，比如每次new Thread().start都会创建一个新的线程。该线程与App所在进程之间资源共享，从Linux角度来说进程与线程除了是否共享资源外，并没有本质的区别，都是一个task_struct结构体，**在CPU看来进程或线程无非就是一段可执行的代码，CPU采用CFS调度算法，保证每个task都尽可能公平的享有CPU时间片**
 
-# MVC
+# MVC&MVP
 
-## 定义
+## MVC
+
+### 定义
 
 MVC是一个架构模式，它分离了表现与交互。它被分为三个核心部件：模型、视图、控制器
 
@@ -1879,18 +2087,18 @@ MVC是一个架构模式，它分离了表现与交互。它被分为三个核�
 
 **Android中最典型MVC是ListView，要显示的数据是Model，界面中的ListView是View，控制数据怎样在ListView中显示是Controller，即Adapter**
 
-## 优势
+### 优势
 
 * **耦合性低**：view和control分离，允许更改view，却不用修改model和control，很容易改变应用层的数据层和业务规则
 * **可维护性**：分离view和control使得应用更容易维护和修改(分工明确，逻辑清晰)
 
-## 控制流程
+### 控制流程
 
 * 所有的终端用户请求被发送到控制器。
 * 控制器依赖请求去选择加载哪个模型，并把模型附加到对应的视图。
 * 附加了模型数据的最终视图做为响应发送给终端用户。
 
-# MVP
+## MVP
 
 在MVP里，Presenter完全把Model和View进行了分离，主要的程序逻辑在Presenter里实现。而且，Presenter与具体的View是没有直接关联的，而是通过定义好的接口进行交互，从而使得在变更View时候可以保持Presenter的不变，即重用！
 
@@ -1900,7 +2108,7 @@ MVC是一个架构模式，它分离了表现与交互。它被分为三个核�
 
 虽然 MVC 中的 View的确“可以”访问Model，但是我们不建议在 View 中依赖Model，而是要求尽可能把所有业务逻辑都放在 Controller 中处理，而 View 只和 Controller 交互
 
-## 优势
+### 优势
 
 1. 模型与视图完全分离，我们可以修改视图而不影响模型 
 2. 可以更高效地使用模型，因为所有的交互都发生在一个地方：Presenter内部 
@@ -2050,14 +2258,305 @@ IntentService在执行onCreate的方法的时候，其实开了一个线程Handl
 
 ## 种类
 
-1. View Animation（视图动画）
+### View Animation（视图动画）
 
-   视图动画，也叫Tween（补间）动画可以在一个视图容器内执行一系列简单变换（位置、大小、旋转、透明度）。譬如，如果你有一个TextView对象，您可以移动、旋转、缩放、透明度设置其文本，当然，如果它有一个背景图像，背景图像会随着文本变化。
+视图动画，也就是所谓补间动画，Tween动画。指通过指定View的初始状态、变化时间、方式，通过一系列的算法去进行图形变换，从而形成动画效果，主要有Alpha、Scale、Translate、Rotate四种效果。注意：**只是在视图层实现了动画效果，并没有真正改变View的属性。view的实际位置还是移动前的位置**
 
-2. Drawable Animation（Drawable动画）
+### Drawable Animation（Drawable动画）
 
-   Drawable动画其实就是Frame动画（帧动画），它允许你实现像播放幻灯片一样的效果，这种动画的实质其实是Drawable，所以这种动画的XML定义方式文件一般放在res/drawable/目录下。
+也就是所谓的帧动画，Frame动画。指通过指定每一帧的图片和播放时间，有序的进行播放而形成动画效果。可以理解成多张图片播放，图片不能过大。
 
-3. Property Animation（属性动画）
+### Property Animation（属性动画）
 
-   属性动画，这个是在Android 3.0中才引进的，它可以直接更改我们对象的属性。在上面提到的Tween Animation中，只是更改View的绘画效果而View的真实属性是不改变的。假设你用Tween动画将一个Button从左边移到右边，无论你怎么点击移动后的Button，他都没有反应。而当你点击移动前Button的位置时才有反应，因为Button的位置属性木有改变。而Property Animation则可以直接改变View对象的属性值，这样可以让我们少做一些处理工作，提高效率与代码的可读性。
+属性动画，这个是在Android 3.0中才引进的，它可以直接更改我们对象的属性。在上面提到的Tween Animation中，只是更改View的绘画效果而View的真实属性是不改变的。假设你用Tween动画将一个Button从左边移到右边，无论你怎么点击移动后的Button，他都没有反应。而当你点击移动前Button的位置时才有反应，因为Button的位置属性木有改变。而Property Animation则可以直接改变View对象的属性值，这样可以让我们少做一些处理工作，提高效率与代码的可读性。
+
+# BroadcastReceiver
+
+## 注册方式
+
+静态注册
+
+```xml
+<receiver android:name=".Receiver" >  
+  <intent-filter>  
+    <action android:name="android.intent.action.BOOT_COMPLETED" />  
+  </intent-filter>  
+</receiver>  
+```
+
+动态注册
+
+```java
+MyBroadcastReceiver broadcast= new MyBroadcastReceiver();  
+IntentFilter filter = new IntentFilter("android.intent.action.BOOT_COMPLETED");  
+registerReceiver(broadcast, filter); 
+```
+
+> 动态注册的广播 永远要快于 静态注册的广播,不管静态注册的优先级设置的多高,不管动态注册的优先级有多低
+>
+> 动态注册广播不是 常驻型广播 ，也就是说广播跟随activity的生命周期。注意: 在activity结束前，移除广播接收器
+>
+> 静态注册是常驻型 ，也就是说当应用程序关闭后，如果有信息广播来，程序也会被系统调用自动运行
+
+# Bitmap加载
+
+## 高效加载
+
+> 由于Bitmap的特殊性以及Android对单个应用所施加的内存限制，比如16MB，这导致加载Bitmap的时候容易出现内存溢出
+
+核心思想就是采用BitmapFactory.Options来加载所需尺寸的图片
+
+通过BitmapFactory.Options来缩放图片，主要用到了它的inSampleSize参数，即采样率。当其为1时不缩放，为2时，即采样后的图片其宽、高均为原图的1/2，而像素为原图的1/4，所以占的内存也为原图的1/4.（采样率小于1没效果）
+
+inSampleSize的取值应该总是为2的指数，如果不为2的指数，系统会向下取整并选择一个最近的2的指数来代替。比如3，系统会使用2来代替
+
+获取采样率的过程： 
+
+1. 将BitmapFactory.Options的inJustDecodeBounds参数设为true并加载图像 
+2. 从BitmapFactory.Options中取出图片的原始宽高信息，他们对应于outWidth和outHeight参数 
+3. 根据采样率的规则并结合目标View的所需大小计算出采样率inSampleSize. 
+4. 将BitmapFactory.Options的inJustDecodeBounds参数设为false，然后重新加载图片。
+
+> inJustDecodeBounds为true时，BitmapFactory只会解析图片的原始宽高信息，并不会真正去加载图片。
+
+## 缓存策略
+
+当程序第一次从网上加载图片后，就将其缓存到存储设备上，这样下次使用这张图片就不会再从网上下载了。
+
+很多时候为了提高应用的用户体验，往往还会把图片在内存中也缓存一份，这样当应用打算从网络上请求一张图片时，程序会首先从内存中取获取，然后再从存储中获取，如果都没有最后才从网络下载。这样既提高了程序的效率又节约了不必要的流量开销。
+
+在使用缓存时，要为其指定一个最大容量。当容量满了以后，采用LRU(Least Recently Used)近期最少使用算法来移除缓存内容
+
+## 优化列表卡顿
+
+核心思想：不要在主线程中做太耗时的操作即可。
+
+1. 不要再getView中执行耗时操作。必须使用异步的方式来处理。
+2. 控制异步任务的执行频率。以照片墙为例，如果用户频繁的上下滑动，必定带来大量UI更新，所以解决思路就是：在滑动时停止加载图片，等列表停下来以后再加载图片。
+3. 通过开启硬件加速解决卡顿。
+
+## ImageLoader设计
+
+### 基本功能
+
+加载方式：同步和异步
+
+缓存：内存和磁盘
+
+图片压缩，网络拉取
+
+### 代码设计
+
+图片压缩
+
+```java
+public class ImageResizer {
+  private static final String TAG = "ImageResizer";
+
+  public ImageResizer() {
+  }
+
+  public Bitmap decodeSampledBitmapFromResource(Resources res,
+                                                int resId, int reqWidth, int reqHeight) {
+    // First decode with inJustDecodeBounds=true to check dimensions
+    final BitmapFactory.Options options = new BitmapFactory.Options();
+    options.inJustDecodeBounds = true;
+    BitmapFactory.decodeResource(res, resId, options);
+    // Calculate inSampleSize
+    options.inSampleSize = calculateInSampleSize(options, reqWidth,
+                                                 reqHeight);
+    // Decode bitmap with inSampleSize set
+    options.inJustDecodeBounds = false;
+    return BitmapFactory.decodeResource(res, resId, options);
+  }
+
+  public Bitmap decodeSampledBitmapFromFileDescriptor(FileDescriptor fd, int reqWidth, int reqHeight) {
+  }
+}
+```
+
+缓存创建
+
+```java
+private LruCache<String, Bitmap> mMemoryCache;
+private DiskLruCache mDiskLruCache;
+
+private ImageLoader(Context context) {
+  mContext = context.getApplicationContext();
+  int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+  int cacheSize = maxMemory / 8;
+  mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
+    @Override
+    protected int sizeOf(String key, Bitmap bitmap) {
+      return bitmap.getRowBytes() * bitmap.getHeight() / 1024;
+    }
+  };
+  File diskCacheDir = getDiskCacheDir(mContext, "bitmap");
+  if (!diskCacheDir.exists()) {
+    diskCacheDir.mkdirs();
+  }
+  if (getUsableSpace(diskCacheDir) > DISK_CACHE_SIZE) {
+    try {
+      mDiskLruCache = DiskLruCache.open(diskCacheDir, 1, 1,
+                                        DISK_CACHE_SIZE);
+      mIsDiskLruCacheCreated = true;
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+}
+
+private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
+  if (getBitmapFromMemCache(key) == null) {
+    mMemoryCache.put(key, bitmap);
+  }
+}
+
+private Bitmap getBitmapFromMemCache(String key) {
+  return mMemoryCache.get(key);
+}
+```
+
+缓存添加和获取
+
+```java
+private Bitmap loadBitmapFromHttp(String url, int reqWidth, int reqHeight)
+  throws IOException {
+  if (Looper.myLooper() == Looper.getMainLooper()) {
+    throw new RuntimeException("can not visit network from UI Thread.");
+  }
+  if (mDiskLruCache == null) {
+    return null;
+  }
+
+  String key = hashKeyFormUrl(url);
+  DiskLruCache.Editor editor = mDiskLruCache.edit(key);
+  if (editor != null) {
+    OutputStream outputStream = editor.newOutputStream(DISK_CACHE_INDEX);
+    if (downloadUrlToStream(url, outputStream)) {
+      editor.commit();
+    } else {
+      editor.abort();
+    }
+    mDiskLruCache.flush();
+  }
+  return loadBitmapFromDiskCache(url, reqWidth, reqHeight);
+}
+
+private Bitmap loadBitmapFromDiskCache(String url, int reqWidth,
+                                       int reqHeight) throws IOException {
+  if (Looper.myLooper() == Looper.getMainLooper()) {
+    Log.w(TAG, "load bitmap from UI Thread, it's not recommended!");
+  }
+  if (mDiskLruCache == null) {
+    return null;
+  }
+
+  Bitmap bitmap = null;
+  String key = hashKeyFormUrl(url);
+  DiskLruCache.Snapshot snapShot = mDiskLruCache.get(key);
+  if (snapShot != null) {
+    FileInputStream fileInputStream = (FileInputStream)snapShot.getInputStream(DISK_CACHE_INDEX);
+    FileDescriptor fileDescriptor = fileInputStream.getFD();
+    bitmap = mImageResizer.decodeSampledBitmapFromFileDescriptor(fileDescriptor,
+                                                                 reqWidth, reqHeight);
+    if (bitmap != null) {
+      addBitmapToMemoryCache(key, bitmap);
+    }
+  }
+
+  return bitmap;
+}
+```
+
+同步加载
+
+```java
+public Bitmap loadBitmap(String uri, int reqWidth, int reqHeight) {
+  Bitmap bitmap = loadBitmapFromMemCache(uri);
+  if (bitmap != null) {
+    Log.d(TAG, "loadBitmapFromMemCache,url:" + uri);
+    return bitmap;
+  }
+
+  try {
+    bitmap = loadBitmapFromDiskCache(uri, reqWidth, reqHeight);
+    if (bitmap != null) {
+      Log.d(TAG, "loadBitmapFromDisk,url:" + uri);
+      return bitmap;
+    }
+    bitmap = loadBitmapFromHttp(uri, reqWidth, reqHeight);
+    Log.d(TAG, "loadBitmapFromHttp,url:" + uri);
+  } catch (IOException e) {
+    e.printStackTrace();
+  }
+
+  if (bitmap == null && !mIsDiskLruCacheCreated) {
+    Log.w(TAG, "encounter error, DiskLruCache is not created.");
+    bitmap = downloadBitmapFromUrl(uri);
+  }
+
+  return bitmap;
+}
+```
+
+异步加载
+
+```java
+public void bindBitmap(final String uri, final ImageView imageView) {
+  bindBitmap(uri, imageView, 0, 0);
+}
+
+public void bindBitmap(final String uri, final ImageView imageView,
+                       final int reqWidth, final int reqHeight) {
+  imageView.setTag(TAG_KEY_URI, uri);
+  Bitmap bitmap = loadBitmapFromMemCache(uri);
+  if (bitmap != null) {
+    imageView.setImageBitmap(bitmap);
+    return;
+  }
+
+  Runnable loadBitmapTask = new Runnable() {
+
+    @Override
+    public void run() {
+      Bitmap bitmap = loadBitmap(uri, reqWidth, reqHeight);
+      if (bitmap != null) {
+        LoaderResult result = new LoaderResult(imageView, uri, bitmap);
+        mMainHandler.obtainMessage(MESSAGE_POST_RESULT, result).sendToTarget();
+      }
+    }
+  };
+  THREAD_POOL_EXECUTOR.execute(loadBitmapTask);
+}
+
+private static class LoaderResult {
+  public ImageView imageView;
+  public String uri;
+  public Bitmap bitmap;
+
+  public LoaderResult(ImageView imageView, String uri, Bitmap bitmap) {
+    this.imageView = imageView;
+    this.uri = uri;
+    this.bitmap = bitmap;
+  }
+}
+
+private Handler mMainHandler = new Handler(Looper.getMainLooper()) {
+  @Override
+  public void handleMessage(Message msg) {
+    LoaderResult result = (LoaderResult) msg.obj;
+    ImageView imageView = result.imageView;
+    String uri = (String) imageView.getTag(TAG_KEY_URI);
+    if (uri.equals(result.uri)) {
+      imageView.setImageBitmap(result.bitmap);
+    } else {
+      Log.w(TAG, "set image bitmap,but url has changed, ignored!");
+    }
+  };
+};
+```
+
+> 如果采用普通线程去加载图片，随着列表滑动可能产生大量线程，不利于整体效率提升
+>
+> AsyncTask在3.0以上不支持并发，同样不适合

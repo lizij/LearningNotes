@@ -492,7 +492,12 @@ In Java, TreeMap is implemented by Red Black Tree with ordered keys.
 
 Build a max heap(max) and a min heap(min). Assuming we have a sorted array, the first n/2 part is in max while the last n/2 part is in min. The median is one or the average of the 2 heaps' roots.
 
-Now add numbers in 2 heaps separately. To balance the size of 2 heaps, we need to adjust 2 heaps by poll one's root and add it in the other if their size's difference is larger than 1.
+Now add numbers in 2 heaps separately. 
+
+1. maxHeap.isEmpty() == true || maxHeap.peek() >= num || minHeap.peek() > num: add to maxHeap
+2. else: add to minHeap
+
+To balance the size of 2 heaps, we need to adjust 2 heaps by poll one's root and add it in the other if their size's difference is larger than 1.
 
 ```java
 class MedianHolder{
@@ -637,7 +642,7 @@ int findMaximizedCapital(int k, int W, int[] Profits, int[] Capital) {
 
 > Fold a paper n times, print all folds's direction
 
-For example, fold 3 times, d for down, u for up
+For example, fold 3 times, `d` for down, `u` for up
 
 ```
 1.    d
@@ -667,7 +672,7 @@ class Node {
   int value;
   Node left;
   Node right;
-  Node parent;// head.parent = null
+  Node parent; // head.parent = null
 
   Node(int data) {
     this.value = data;
@@ -683,7 +688,7 @@ The descent of the node is:
 
 * If the node.right != null: the leftmost node of the subtree
 * If the node.right == null:
-  * If the node.parent.left == node: parent
+  * If the node.parent.left == node.parent
   * If the node.parent.right == node: find the parent.parent until meet the last case or null (root node).
 
 ```java

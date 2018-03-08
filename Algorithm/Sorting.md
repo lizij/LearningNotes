@@ -51,7 +51,7 @@ void bubbleSort(int[] arr) {
   for (int e = arr.length - 1; e > 0; e--) {
     for (int i = 0; i < e; i++) {
       if (arr[i] > arr[i + 1]) swap(arr, i, i + 1);//stable
-      // if (arr[i] >= arr[i + 1]) swap(arr, i, i + 1); //not stable
+      // if (arr[i] >= arr[i + 1]) swap(arr, i, i + 1); // not stable
     }
   }
 }
@@ -65,8 +65,8 @@ Similiar with BubbleSort, in every loop, the first part is sorted. Move the smal
 void insertionSort(int[] arr) {
   if (arr == null) return;
   for (int i = 1; i < arr.length; i++) {
-    for (int j = i; j >= 0 && arr[j] < arr[j - 1]; j--) {//stable
-      //for (int j = i - 1; j >= 0 && arr[j] >= arr[j + 1]; j--) {//not stable
+    for (int j = i; j >= 0 && arr[j - 1] > arr[j]; j--) {//stable
+      // for (int j = i - 1; j >= 0 && arr[j] >= arr[j + 1]; j--) { //not stable
       swap(arr, j, j - 1);
     }
   }
@@ -397,12 +397,6 @@ If there is a way to partition odd & even and keep them stable, there must be a 
 There is truly a way to stable quicksort. However, it's very difficult to implement and it needs extra space (in paper:0 & 1 stable sort)
 
 Therefore, the answer to this problem is impossble.
-
-### Recusion to non-recursion
-
-> Are all recursion ways can be changed to non-recursion ways?
-
-Yes. Recursion is only a way to use stack. If the coder manipulates the stack manually, all recursions ways can be changed to no-recursion ways.
 
 ### Small sum
 

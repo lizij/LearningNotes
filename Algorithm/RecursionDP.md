@@ -8,6 +8,8 @@ Recursion is the process a procedure goes through when one of the steps of the p
 
 Disassemble a big problem into several smaller-scale same type of the problem
 
+Recursion is only a way to use stack. If the coder manipulates the stack manually, all recursions ways can be changed to no-recursion ways.
+
 > Recursion may contains a lot of replicate computing. Using memorization to solve this
 
 [More](https://en.wikipedia.org/wiki/Recursion)
