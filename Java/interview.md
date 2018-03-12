@@ -1,9 +1,11 @@
 # Java面试题
 [TOC]
 
-# static&final
+# 修饰符
 
-## final
+## static&final
+
+### final
 
 final可以修饰：属性，方法，类，局部变量（方法中的变量）
 
@@ -14,7 +16,7 @@ final可以修饰：属性，方法，类，局部变量（方法中的变量）
 
 对于基本类型数据，final会将值变为一个常数（创建后不能被修改）；但是对于对象句柄（亦可称作引用或者指针），final会将句柄变为一个常数（进行声明时，必须将句柄初始化到一个具体的对象。而且不能再将句柄指向另一个对象。但是，对象的本身是可以修改的。这一限制也适用于数组，数组也属于对象，数组本身也是可以修改的。方法参数中的final句柄，意味着在该方法内部，我们不能改变参数句柄指向的实际东西，也就是说在方法内部不能给形参句柄再另外赋值）。
 
-## static
+### static
 
 static可以修饰：属性，方法，代码段，内部类（静态内部类或嵌套内部类）
 
@@ -26,6 +28,196 @@ static可以修饰：属性，方法，代码段，内部类（静态内部类�
 * static不可以修饰局部变量。
 
 [java中static、final、static final的区别](http://blog.csdn.net/qq1623267754/article/details/36190715)
+
+## 权限修饰符
+
+### 定义
+
+* public：可以被所有其他类所访问
+
+  具有最大的访问权限，可以访问任何一个在classpath下的类、接口、异常等。它往往用于对外的情况，也就是对象或类对外的一种接口的形式
+
+* private：只能被自己访问和修改
+
+  访问权限仅限于类的内部，是一种封装的体现，例如，大多数成员变量都是修饰符为private的，它们不希望被其他任何外部的类访问
+
+* protected：自身、子类及同一个包中类可以访问
+
+  主要的作用就是用来保护子类的。它的含义在于子类可以用它修饰的成员，其他的不可以，它相当于传递给子类的一种继承的东西
+
+* default：同一包中的类可以访问，声明时没有加修饰符，认为是friendly
+
+  有时候也称为friendly，它是针对本包访问而设计的，任何处于本包下的类、接口、异常等，都可以相互访问，即使是父类没有用protected修饰的成员也可以
+
+|           | 类内部  | 本包    | 子类    | 外部包   |
+| --------- | ---- | ----- | ----- | ----- |
+| public    | True | True  | True  | True  |
+| protected | True | True  | True  | False |
+| default   | True | True  | False | False |
+| private   | True | False | False | False |
+
+> 注意：java的访问控制是停留在编译层的，也就是它不会在.class文件中留下任何的痕迹，只在编译的时候进行访问控制的检查。其实，通过反射的手段，是可以访问任何包下任何类中的成员，例如，访问类的私有成员也是可能的。
+
+### 通过反射调用访问private变量和方法
+
+例如
+
+```java
+public class Exam{  
+  private String field1="私有属性";  
+  public String field2="公有属性";  
+  public void fun1(){  
+    System.out.println("fun1:这是一个public访问权限方法");  
+  }  
+
+  private void fun2(){  
+    System.out.println("fun2:这是一个private访问权限方法");  
+  }  
+
+  private void fun3(String arg){  
+    System.out.println("fun3:这是一个private访问权限且带参数的方法，参数为："+arg);  
+  }  
+}  
+```
+
+在将Exam.java编译为class文件后，通过反射调用访问private变量和方法
+
+```java
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+public class Test02 {
+  public static void main(String args[]){
+    Exam e = new Exam();
+    try {
+      Field field1 = e.getClass().getDeclaredField("field1");
+      Field field2 = e.getClass().getDeclaredField("field2");
+      field1.setAccessible(true);
+      System.out.println("field1: "+field1.get(e));
+      field1.set(e,"重新设置一个field1值");
+      System.out.println("field1: "+field1.get(e));
+      System.out.println("field2: "+field2.get(e));
+      field2.set(e,"重新设置一个field2值");
+      System.out.println("field2: "+field2.get(e));
+    } catch (NoSuchFieldException e1) {
+      e1.printStackTrace();
+    }catch (IllegalArgumentException e1) {
+      e1.printStackTrace();
+    } catch (IllegalAccessException e1) {
+      e1.printStackTrace();
+    }
+
+    try {
+
+      Method method1 = e.getClass().getDeclaredMethod("fun1");
+      method1.invoke(e);
+
+      Method method2 = e.getClass().getDeclaredMethod("fun2");
+      method2.setAccessible(true);
+      method2.invoke(e);
+
+      Method method3 = e.getClass().getDeclaredMethod("fun3",String.class);
+      method3.setAccessible(true);
+      method3.invoke(e,"fun3的参数");
+    } catch (NoSuchMethodException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    } catch (SecurityException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    }catch (IllegalAccessException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    } catch (IllegalArgumentException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    } catch (InvocationTargetException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    }
+  }
+}
+```
+
+运行结果为
+
+![](http://img.blog.csdn.net/20141001175741868?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvY29kZWZ1bmphdmE=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+[java利用反射访问类的私有(private)属性及方法](http://blog.csdn.net/codefunjava/article/details/39718843)
+
+### 如何防止被反射调用
+
+通过调用堆栈判断
+
+```java
+class Dummy {
+  private void safeMethod() {
+    StackTraceElement[] st = new Exception().getStackTrace();
+    // If a method was invoked by reflection, the stack trace would be similar
+    // to something like this:
+    /*
+        java.lang.Exception
+            at package1.b.Dummy.safeMethod(SomeClass.java:38)
+            at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+            at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+            at sun.reflect.16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.invoke(16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.java:43)
+        ->    at java.lang.reflect.Method.invoke(Method.java:601)
+            at package1.b.Test.main(SomeClass.java:65)
+        */
+    //5th line marked by "->" is interesting one so I will try to use that info
+
+    if (st.length > 5 &&
+        st[4].getClassName().equals("java.lang.reflect.Method"))
+      throw new RuntimeException("safeMethod() is accessible only by Dummy object");
+
+    // Now normal code of method
+    System.out.println("code of safe method");
+  }
+
+  // I will check if it is possible to normally use that method inside this class
+  public void trySafeMethod(){
+    safeMethod();
+  }
+
+  Dummy() {
+    safeMethod();
+  }
+}
+
+class Dummy1 extends Dummy {}
+
+class Test {
+  public static void main(String[] args) throws Exception {
+    Dummy1 d1 = new Dummy1(); // safeMethod can be invoked inside a superclass constructor
+    d1.trySafeMethod(); // safeMethod can be invoked inside other Dummy class methods
+    System.out.println("-------------------");
+
+    // Let's check if it is possible to invoke it via reflection
+    Method m2 = Dummy.class.getDeclaredMethod("safeMethod");
+    // m.invoke(d);//exception java.lang.IllegalAccessException
+    m2.setAccessible(true);
+    m2.invoke(d1);
+  }
+}
+```
+
+```shell
+code of safe method
+code of safe method
+-------------------
+Exception in thread "main" java.lang.reflect.InvocationTargetException
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+    at sun.reflect.16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.invoke(16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:601)
+    at package1.b.Test.main(MyClass2.java:87)
+Caused by: java.lang.RuntimeException: method safeMethod() is accessible only by Dummy object
+    at package1.b.Dummy.safeMethod(MyClass2.java:54)
+    ... 5 more
+```
+
+[How do I access private methods and private data members via reflection?](https://stackoverflow.com/questions/11483647/how-do-i-access-private-methods-and-private-data-members-via-reflection)
 
 # Java异常
 
@@ -49,7 +241,7 @@ static可以修饰：属性，方法，代码段，内部类（静态内部类�
 
 [深入理解java异常处理机制](http://blog.csdn.net/hguisu/article/details/6155636)
 
-# Java内存空间：方法区、堆、栈
+# 内存空间：方法区、堆、栈
 
 **栈：** 存放基本类型的变量数据和对象的引用，但对象本身不存放在栈中，而是存放在堆（new出来的对象）或者常量池中（字符串常量对象存放在常量池中。）存取速度比堆要快，仅次于寄存器
 
@@ -382,38 +574,6 @@ OutClassTest.InnerStaticClass inner = new OutClassTest.InnerStaticClass();
 OutClassTest.InnerStaticClass.static_value
 OutClassTest.InnerStaticClass.getMessage
 ```
-
-# 线程池
-
-线程：进程中负责程序执行的执行单元。一个进程中至少有一个线程。
-
-多线程：解决多任务同时执行的需求，合理使用CPU资源。多线程的运行是根据CPU切换完成，如何切换由CPU决定，因此多线程运行具有不确定性。
-
-线程池：基本思想还是一种对象池的思想，开辟一块内存空间，里面存放了众多(未死亡)的线程，池中线程执行调度由池管理器来处理。当有线程任务时，从池中取一个，执行完成后线程对象归池，这样可以避免反复创建线程对象所带来的性能开销，节省了系统的资源。
-
-1. 避免线程的创建和销毁带来的性能开销。
-2. 避免大量的线程间因互相抢占系统资源导致的阻塞现象。
-3. 能够对线程进行简单的管理并提供定时执行、间隔执行等功能。
-
-# wait 和 sleep的区别
-
-1. sleep是Thread类的方法,wait是Object类中定义的方法
-
-2. Thread.sleep和Object.wait都会暂停当前的线程，不过sleep方法没有释放锁，而wait方法释放了锁，使得其他线程可以使用同步控制块或者方法。
-
-3. sleep不出让系统资源；wait是进入线程等待池等待
-
-   出让系统资源，其他线程可以占用CPU。一般wait不会加时间限制，因为如果wait线程的运行资源不够，再出来也没用，要等待其他线程调用notify/notifyAll唤醒等待池中的所有线程，才会进入就绪队列等待OS分配系统资源。sleep(milliseconds)可以用时间指定使它自动唤醒过来，如果时间不到只能调用interrupt()强行打断。
-
-   Thread.sleep(0)的作用是“触发操作系统立刻重新进行一次CPU竞争”。
-
-4. wait，notify和notifyAll只能在同步控制方法或者同步控制块里面使用，而sleep可以在任何地方使用
-
-补充：
-
-1. Thread.sleep不会导致锁行为的改变，如果当前线程是拥有锁的，那么Thread.sleep不会让线程释放锁。
-2. 线程的状态参考 Thread.State的定义。新创建的但是没有执行（还没有调用start())的线程处于“就绪”，或者说Thread.State.NEW状态
-3. Thread.State.BLOCKED（阻塞）表示线程正在获取锁时，因为锁不能获取到而被迫暂停执行下面的指令，一直等到这个锁被别的线程释放。BLOCKED状态下线程，OS调度机制需要决定下一个能够获取锁的线程是哪个，这种情况下，就是产生锁的争用，无论如何这都是很耗时的操作
 
 [Java常见面试题](http://blog.csdn.net/shineflowers/article/details/40047479)
 
@@ -798,9 +958,9 @@ T 可以是类也可以是接口，在泛型中没有implement关键字
 
 指定多个绑定类型：例如<? extends T & U>
 
-# 其他
+## 其他
 
-## 运行时类型查询只适用于原始类型
+### 运行时类型查询只适用于原始类型
 
 ```java
 Pair<String> ps = new Pair<String>();
@@ -892,199 +1052,27 @@ public synchronized void fun() {
 }
 ```
 
+### wait和sleep的区别
 
+1. 继承不同
+
+   **sleep是Thread类的静态方法**，sleep的作用是让线程休眠制定的时间，在时间到达时恢复，也就是说sleep将在接到时间到达事件事恢复线程执行
+
+   **wait()是Object的方法**，也就是说可以对任意一个对象调用wait方法，调用wait()方法后会将调用者的线程挂起，直到其他线程调用同一个对象的notify()方法才会重新激活调用者
+
+2. 同步锁释放不同
+
+   **sleep()不释放同步锁,wait()释放同步锁.**
+
+   Thread.sleep不会导致锁行为的改变，如果当前线程是拥有锁的，那么Thread.sleep不会让线程释放锁。
+
+   而当调用wait()方法的时候，线程会放弃对象锁，进入等待此对象的等待锁定池，只有针对此对象调用notify()方法后本线程才进入对象锁定池准备
+
+3. 使用方式不同
+
+   sleep()方法可以在任何地方使用；wait()方法则只能在同步方法或同步块中使用
 
 [Java：Object类详解](http://blog.csdn.net/jack_owen/article/details/39936483)
-
-# 权限修饰符
-
-## 定义
-
-* public：可以被所有其他类所访问
-
-  具有最大的访问权限，可以访问任何一个在classpath下的类、接口、异常等。它往往用于对外的情况，也就是对象或类对外的一种接口的形式
-
-* private：只能被自己访问和修改
-
-  访问权限仅限于类的内部，是一种封装的体现，例如，大多数成员变量都是修饰符为private的，它们不希望被其他任何外部的类访问
-
-* protected：自身、子类及同一个包中类可以访问
-
-  主要的作用就是用来保护子类的。它的含义在于子类可以用它修饰的成员，其他的不可以，它相当于传递给子类的一种继承的东西
-
-* default：同一包中的类可以访问，声明时没有加修饰符，认为是friendly
-
-  有时候也称为friendly，它是针对本包访问而设计的，任何处于本包下的类、接口、异常等，都可以相互访问，即使是父类没有用protected修饰的成员也可以
-
-|           | 类内部  | 本包    | 子类    | 外部包   |
-| --------- | ---- | ----- | ----- | ----- |
-| public    | True | True  | True  | True  |
-| protected | True | True  | True  | False |
-| default   | True | True  | False | False |
-| private   | True | False | False | False |
-
-> 注意：java的访问控制是停留在编译层的，也就是它不会在.class文件中留下任何的痕迹，只在编译的时候进行访问控制的检查。其实，通过反射的手段，是可以访问任何包下任何类中的成员，例如，访问类的私有成员也是可能的。
-
-## 通过反射调用访问private变量和方法
-
-例如
-
-```java
-public class Exam{  
-  private String field1="私有属性";  
-  public String field2="公有属性";  
-  public void fun1(){  
-    System.out.println("fun1:这是一个public访问权限方法");  
-  }  
-
-  private void fun2(){  
-    System.out.println("fun2:这是一个private访问权限方法");  
-  }  
-
-  private void fun3(String arg){  
-    System.out.println("fun3:这是一个private访问权限且带参数的方法，参数为："+arg);  
-  }  
-}  
-```
-
-在将Exam.java编译为class文件后，通过反射调用访问private变量和方法
-
-```java
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-public class Test02 {
-  public static void main(String args[]){
-    Exam e = new Exam();
-    try {
-      Field field1 = e.getClass().getDeclaredField("field1");
-      Field field2 = e.getClass().getDeclaredField("field2");
-      field1.setAccessible(true);
-      System.out.println("field1: "+field1.get(e));
-      field1.set(e,"重新设置一个field1值");
-      System.out.println("field1: "+field1.get(e));
-      System.out.println("field2: "+field2.get(e));
-      field2.set(e,"重新设置一个field2值");
-      System.out.println("field2: "+field2.get(e));
-    } catch (NoSuchFieldException e1) {
-      e1.printStackTrace();
-    }catch (IllegalArgumentException e1) {
-      e1.printStackTrace();
-    } catch (IllegalAccessException e1) {
-      e1.printStackTrace();
-    }
-
-    try {
-
-      Method method1 = e.getClass().getDeclaredMethod("fun1");
-      method1.invoke(e);
-
-      Method method2 = e.getClass().getDeclaredMethod("fun2");
-      method2.setAccessible(true);
-      method2.invoke(e);
-
-      Method method3 = e.getClass().getDeclaredMethod("fun3",String.class);
-      method3.setAccessible(true);
-      method3.invoke(e,"fun3的参数");
-    } catch (NoSuchMethodException e1) {
-      // TODO Auto-generated catch block
-      e1.printStackTrace();
-    } catch (SecurityException e1) {
-      // TODO Auto-generated catch block
-      e1.printStackTrace();
-    }catch (IllegalAccessException e1) {
-      // TODO Auto-generated catch block
-      e1.printStackTrace();
-    } catch (IllegalArgumentException e1) {
-      // TODO Auto-generated catch block
-      e1.printStackTrace();
-    } catch (InvocationTargetException e1) {
-      // TODO Auto-generated catch block
-      e1.printStackTrace();
-    }
-  }
-}
-```
-
-运行结果为
-
-![](http://img.blog.csdn.net/20141001175741868?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvY29kZWZ1bmphdmE=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
-
-[java利用反射访问类的私有(private)属性及方法](http://blog.csdn.net/codefunjava/article/details/39718843)
-
-## 如何防止被反射调用
-
-通过调用堆栈判断
-
-```java
-class Dummy {
-  private void safeMethod() {
-    StackTraceElement[] st = new Exception().getStackTrace();
-    // If a method was invoked by reflection, the stack trace would be similar
-    // to something like this:
-    /*
-        java.lang.Exception
-            at package1.b.Dummy.safeMethod(SomeClass.java:38)
-            at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-            at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-            at sun.reflect.16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.invoke(16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.java:43)
-        ->    at java.lang.reflect.Method.invoke(Method.java:601)
-            at package1.b.Test.main(SomeClass.java:65)
-        */
-    //5th line marked by "->" is interesting one so I will try to use that info
-
-    if (st.length > 5 &&
-        st[4].getClassName().equals("java.lang.reflect.Method"))
-      throw new RuntimeException("safeMethod() is accessible only by Dummy object");
-
-    // Now normal code of method
-    System.out.println("code of safe method");
-  }
-
-  // I will check if it is possible to normally use that method inside this class
-  public void trySafeMethod(){
-    safeMethod();
-  }
-
-  Dummy() {
-    safeMethod();
-  }
-}
-
-class Dummy1 extends Dummy {}
-
-class Test {
-  public static void main(String[] args) throws Exception {
-    Dummy1 d1 = new Dummy1(); // safeMethod can be invoked inside a superclass constructor
-    d1.trySafeMethod(); // safeMethod can be invoked inside other Dummy class methods
-    System.out.println("-------------------");
-
-    // Let's check if it is possible to invoke it via reflection
-    Method m2 = Dummy.class.getDeclaredMethod("safeMethod");
-    // m.invoke(d);//exception java.lang.IllegalAccessException
-    m2.setAccessible(true);
-    m2.invoke(d1);
-  }
-}
-```
-
-```shell
-code of safe method
-code of safe method
--------------------
-Exception in thread "main" java.lang.reflect.InvocationTargetException
-    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-    at sun.reflect.16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.invoke(16qcsLhcYm4NdG4fVkW2mwfDB8kwpPsYCq.java:43)
-    at java.lang.reflect.Method.invoke(Method.java:601)
-    at package1.b.Test.main(MyClass2.java:87)
-Caused by: java.lang.RuntimeException: method safeMethod() is accessible only by Dummy object
-    at package1.b.Dummy.safeMethod(MyClass2.java:54)
-    ... 5 more
-```
-
-[How do I access private methods and private data members via reflection?](https://stackoverflow.com/questions/11483647/how-do-i-access-private-methods-and-private-data-members-via-reflection)
 
 # Socket通信
 
@@ -1269,3 +1257,188 @@ synchronized关键字可以作为函数的修饰符，也可作为函数内的�
 6. LinkedList 还实现了 Queue 接口,该接口比List提供了更多的方法,包括 offer(),peek(),poll()等.
 
 [比较ArrayList、LinkedList、Vector](http://blog.csdn.net/renfufei/article/details/17077425)
+
+# 进程和线程
+
+## 进程
+
+### 定义
+
+在多任务系中，每一个独立运行的程序就是一个进程，也可以理解为当前正在运行的每一个程序都是一个进程。
+
+### 组成 
+
+1. **至少一个可执行程序**，包括代码和初始数据，一般在进程创建时说明。注意可执行程序可以被多进程共享。 
+
+2. **一个独立的进程空间** ，在进程创建时由操作系统分配。 
+
+3. **系统资源**，指在进程创建时及执行过程中，由操作系统分配给进程的系统资源，包括I/O设备、文件等。 
+
+4. **一个执行栈区** ，包含运行现场信息，如子程序调用时所压的栈帧、系统调用时所压的栈帧等
+
+   > 用户栈：进程创建时在用户进程空间定义，用来在用户态运行时保存用户程序现场
+   >
+   > 核心栈：在操作系统核心空间分配，用来保存中断/异常点现场及在进程运行核态程序后的转子现场
+
+### PCB
+
+操作系统为了管理和控制一个进程必须建立一个表格，描述该进程的存在及状态。这个表格被称为进程控制块（Process Control Block，PCB），存放进程标识、空间、运行状态、资源使用等信息。
+
+### 状态转换
+
+![image](https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1490762862437&di=37cd64a8730b3b4ad91abc9313f0f9a2&imgtype=0&src=http%3A%2F%2Fimg0.ph.126.net%2F0EAGc-zpq2O6075rs15QSg%3D%3D%2F6598002152516532030.jpg)
+
+## 线程
+
+为了减少程序再并发执行时所付出的时空开销，使OS具有更好的并发性。**线程是“进程”中某个单一顺序的控制流，也被称为轻量进程**
+
+### 与进程的对比
+
+1. **调度**。进程是资源拥有的基本单位，线程是调度和分派的基本单位。
+2. **并发性**。进程之间可以并发执行，在一个进程中的多个线程之间也可以并发执行。
+3. **拥有资源**。 进程可以拥有资源，是系统中拥有资源的一个基本单位。而线程自己不拥有系统资源，但它可以访问其隶属进程的资源。
+4. **系统开销** 系统创建进程需要为该进程重新分配系统资源，但创建线程的代价很小。因此多线程的实现多任务并发比多进程实现并发的效率高
+
+## 多线程
+
+### 概念
+
+1. 并发与并行：
+
+   并发是通过CPU时间分片，快速在进程切换而模拟出多进程
+
+   并行是多个进程并行执行
+
+
+2. 阻塞：系统会一直等待这个函数执行完毕直到它产生一个返回值
+
+### 使用
+
+1. 实现Runnable接口
+
+```java
+class MyRunnable implements Runnable {
+    public void run() {
+    //这里是新线程需要执行的任务
+  }
+}
+
+Runnable r = new MyRunnable();
+Thread t = new Thread(r);
+```
+
+2. 继承Thread类
+
+```java
+class MyThread extends Thread {
+    public void run() {
+        //这里是线程要执行的任务
+    }
+}
+```
+
+> 由于Java中不允许多继承，我们自定义的类继承了Thread后便不能再继承其他类，这在有些场景下会很不方便；实现Runnable接口的那个方法虽然稍微繁琐些，但是它的优点在于自定义的类可以继承其他的类
+
+
+
+结束线程
+
+采用设置一个条件变量的方式，run方法中的while循环会不断的检测flag的值，在想要结束线程的地方将flag的值设置为false就可以
+
+> 不使用stop的原因：因为它在终止一个线程时会强制中断线程的执行，不管run方法是否执行完了，并且还会释放这个线程所持有的所有的锁对象。这一现象会被其它因为请求锁而阻塞的线程看到，使他们继续向下执行。这就会造成数据的不一致
+
+### 线程池
+
+基本思想还是一种对象池的思想，开辟一块内存空间，里面存放了众多(未死亡)的线程，池中线程执行调度由池管理器来处理。当有线程任务时，从池中取一个，执行完成后线程对象归池，这样可以避免反复创建线程对象所带来的性能开销，节省了系统的资源。
+
+1. 避免线程的创建和销毁带来的性能开销。
+2. 避免大量的线程间因互相抢占系统资源导致的阻塞现象。
+3. 能够对线程进行简单的管理并提供定时执行、间隔执行等功能。
+
+# 接口和抽象类
+
+## 接口
+
+1. 接口中的成员变量默认都是static和final类型的。成员变量在定义的时候必须直接初始化他。 
+2. 接口中的方法默认都是abstract类型的。 
+3. 接口中的成员变量和成员方法的访问权限都是public类型 
+4. 接口可继承接口，并可多继承接口，但类只能单根继承。 
+5. 一个类可以实现多个接口，多个接口名之间用逗号间隔。
+
+## 抽象类
+
+### 概念
+
+抽象方法是一种特殊的方法：它只有声明，而没有具体的实现。
+
+```java
+abstract void fun();
+```
+
+抽象方法必须用abstract关键字进行修饰。如果一个类含有抽象方法，则称这个类为抽象类，抽象类 必须在类前用abstract关键字修饰。因为抽象类中含有无具体实现的方法，所以**不能用抽象类创建对象**
+
+```java
+[public] abstract class ClassName {
+    abstract void fun();
+}
+```
+
+### 和普通类的区别
+
+1. 抽象方法必须为public或者protected。 
+2. 抽象类不能创建对象 
+3. 如果一个类继承于一个抽象类，则子类必须实现父类的抽象方法。如果子类没有实现父类的抽象方法，则必须将子类也定义为abstract类
+
+## 对比
+
+| 参数          | 抽象类                                      | 接口                                     |
+| ----------- | ---------------------------------------- | -------------------------------------- |
+| 默认的方法实现     | 可以有默认的方法实现                               | 完全抽象的，不存在方法的实现                         |
+| 实现          | 子类使用extends关键字来继承抽象类。如果子类不是抽象类的话，它需要提供抽象类中所有声明的方法的实现 | 子类使用implements来实现接口。它需要提供接口中所有声明的方法的实现 |
+| 构造器         | 抽象类可以有构造器                                | 接口不能有构造器                               |
+| 与正常JAVA类的区别 | 除了不能实例化抽象类以外，没有区别                        | 接口是完全不同的类型                             |
+| 访问修饰符       | 抽象方法可以有public、protacted和default这些修饰符     | 接口方法默认修饰符是public，不可使用其他修饰符             |
+| main方法      | 抽象方法可以有main方法并且可以运行                      | 接口没有main方法，不能运行                        |
+| 多继承         | 抽象类可以继承一个类和实现多个接口                        | 接口只可以继承一个或者多个接口                        |
+| 添加新方法       | 如果你往抽象类中添加新的方法，你可以给它提供默认的实现。因此你不需要改变你现在的代码。 | 如果你往接口中添加方法，那么你必须改变实现该接口的类。            |
+
+# Classloader
+
+## 基本概念
+
+与C/C++编写的程序不同，JAVA程序并不是一个可执行文件，而是由许多独立的类文件组成，每一个文件对应一个JAVA类。此外，这些类文件并非全部装入内存，而是根据程序需要逐渐载入。ClassLoader是JVM实现的一部分，ClassLoader包括bootstrap classloader（启动类加载器），ExtClassLoader（扩展类加载器）和AppClassLoader(系统类加载器)
+
+**bootstrap classloader** ：在JVM运行的时候加载JAVA核心的API，以满足JAVA程序最基本的需求，其中就包括后两种ClassLoader。
+
+**ExtClassLoader**：加载JAVA的扩展API，也就是/lib/ext中的类
+
+**AppClassLoader**：用来加载在用户机器上CLASSPATH设置目录中的Class的，通常在没有指定ClassLoader的情况下，程序员自定义的类就由该ClassLoader进行加载。
+
+除了Java默认提供的三个ClassLoader之外，用户还可以根据需要定义自已的ClassLoader，而这些自定义的ClassLoader都必须继承自java.lang.ClassLoader类，也包括Java提供的另外二个ClassLoader（Extension ClassLoader和App ClassLoader）在内，但是Bootstrap ClassLoader不继承自ClassLoader，因为它不是一个普通的Java类，底层由C++编写，已嵌入到了JVM内核当中，当JVM启动后，Bootstrap ClassLoader也随着启动，负责加载完核心类库后，并构造Extension ClassLoader和App ClassLoader类加载器
+
+## 加载过程
+
+当运行一个程序的时候，JVM启动，运行bootstrap classloader，加载JAVA核心API，同时加载另两个ClassLoader。然后调用ExtClassLoader加载扩展API，最后AppClassLoader加载CLASSPATH目录下定义的Class.这是最基本的加载流程
+
+## 加载原理
+
+### 双亲委托模式
+
+ClassLoader使用的是双亲委托模型来搜索类的，每个ClassLoader实例都有一个父类加载器的引用（不是继承的关系，是一个包含的关系），虚拟机内置的类加载器（Bootstrap ClassLoader）本身没有父类加载器，但可以用作其它ClassLoader实例的的父类加载器。当一个ClassLoader实例需要加载某个类时，它会试图亲自搜索某个类之前，先把这个任务委托给它的父类加载器，这个过程是由上至下依次检查的，首先由最顶层的类加载器Bootstrap ClassLoader试图加载，如果没加载到，则把任务转交给Extension ClassLoader试图加载，如果也没加载到，则转交给App ClassLoader 进行加载，如果它也没有加载得到的话，则返回给委托的发起者，由它到指定的文件系统或网络等URL中加载该类。如果它们都没有加载到这个类时，则抛出ClassNotFoundException异常。否则将这个找到的类生成一个类的定义，并将它加载到内存当中，最后返回这个类在内存中的Class实例对象
+
+### 使用双亲委托的原因
+
+因为这样可以避免重复加载，当父亲已经加载了该类的时候，就没有必要子ClassLoader再加载一次。考虑到安全因素，我们试想一下，如果不使用这种委托模式，那我们就可以随时使用自定义的String来动态替代java核心api中定义的类型，这样会存在非常大的安全隐患，而双亲委托的方式，就可以避免这种情况，因为String已经在启动时就被引导类加载器（Bootstrcp ClassLoader）加载，所以用户自定义的ClassLoader永远也无法加载一个自己写的String，除非你改变JDK中ClassLoader搜索类的默认算法
+
+## class相同的条件
+
+JVM在判定两个class是否相同时，不仅要判断两个类名是否相同，而且要判断是否由同一个类加载器实例加载的。只有两者同时满足的情况下，JVM才认为这两个class是相同的。就算两个class是同一份class字节码，如果被两个不同的ClassLoader实例所加载，JVM也会认为它们是两个不同class。
+
+比如网络上的一个Java类org.classloader.simple.NetClassLoaderSimple，javac编译之后生成字节码文件NetClassLoaderSimple.class，ClassLoaderA和ClassLoaderB这两个类加载器并读取了NetClassLoaderSimple.class文件，并分别定义出了java.lang.Class实例来表示这个类，对于JVM来说，它们是两个不同的实例对象，但它们确实是同一份字节码文件，如果试图将这个Class实例生成具体的对象进行转换时，就会抛运行时异常java.lang.ClassCaseException，提示这是两个不同的类型
+
+
+
+
+
+
+

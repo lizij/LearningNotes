@@ -947,15 +947,144 @@ public void run() throws Exception {
 
 # 性能优化
 
-常见的优化：App启动、布局、响应、内存、电池使用、网络
+Android程序不可能无限制地使用内存和CPU资源，过多地使用内存会导致程序内存溢出，即OOM。而过多地使用CPU资源，一般是指做大量的耗时任务，会导致手机变得卡顿甚至出现程序无法响应的情况，即ANR.
 
-* 使用Systrace，Hierarchy Viewer，DDMS等性能分析工具进行分析
-* 遵从16ms原则，避免过度绘制、频繁GC和阻塞网络请求等耗时操作造成卡顿或ANR
-* 使用LeakCanary，MAT等工具避免内存泄露
-* 通过优化网络请求，谨慎使用WakeLock，减少定位使用等方式减少电量使用
-* 通过减少/压缩数据传输量，缓存响应，弱网不自动加载图片等方式优化网络请求
+一些有效的性能优化方法：布局优化、绘制优化、内存泄漏优化、响应速度优化、ListView优化、Bitmap优化、线程优化
 
-[Android App优化, 要怎么做?](https://www.jianshu.com/p/f7006ab64da7)
+## 布局优化
+
+尽量减少布局文件的层级
+
+* 删除布局中无用的控件和层级，其次有选择地使用性能较低的ViewGroup，比如RelativeLayout。尽量使用性能较高的ViewGroup如LinearLayout
+
+* 采用\<include\>和\<merge\>标签和ViewStub。\<include\>标签主要用于布局重用，\<include\>标签和\<merge\>标签配合使用，降低减少布局的层级。而ViewStub则提供了按需加载功能，提高了程序的初始化效率
+
+  > include标签只支持android:layout开头的属性，除了android:id
+  >
+  > 如果include指定了android:layout_*，那么必须同时指定android:layout_width和android_layout_height
+
+## 绘制优化
+
+绘制优化是指View的onDraw方法要避免执行大量的操作。主要体现在两个方面： 
+
+1. onDraw中不要创建新的局部对象。 
+2. onDraw中不要做耗时的任务，不要执行超过千次的循环
+
+## 内存泄露优化
+
+1. 静态变量导致内存泄露
+
+   sContext或sView持有了当前Activity，导致Activity无法被释放
+
+   ```java
+   public class MainActivity extends Activity {
+     private static Context sContext;
+     private static View sView;
+
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+       super.onCreate(savedInstanceState);
+       setContentView(R.layout.activity_main);
+       sContext = this; 
+       // 或sView = new View(this);
+     }
+   }
+   ```
+
+2. 单例模式导致内存泄露
+
+   如下是一个单例模式的TestManager，可以接收外部注册并将外部监听器存储起来
+
+   ```java
+   public class TestManager {
+
+     private List<OnDataArrivedListener> mOnDataArrivedListeners = new ArrayList<OnDataArrivedListener>();
+
+     private static class SingletonHolder {
+       public static final TestManager INSTANCE = new TestManager();
+     }
+
+     private TestManager() {
+     }
+
+     public static TestManager getInstance() {
+       return SingletonHolder.INSTANCE;
+     }
+
+     public synchronized void registerListener(OnDataArrivedListener listener) {
+       if (!mOnDataArrivedListeners.contains(listener)) {
+         mOnDataArrivedListeners.add(listener);
+       }
+     }
+
+     public synchronized void unregisterListener(OnDataArrivedListener listener) {
+       mOnDataArrivedListeners.remove(listener);
+     }
+
+     public interface OnDataArrivedListener {
+       public void onDataArrived(Object data);
+     }
+   }
+   ```
+
+   如果Activity实现OnDataArrivedListener并向TestManager注册监听，并缺少解注册过程，则会引起内存泄露。因为Activity被单例TestManager持有，而单例模式生命周期与Application一致，因此Activity无法被释放
+
+   ```java
+   public class MainActivity extends Activity implements OnDataArrivedListener {
+     protected void onCreate(Bundle savedInstanceState) {
+       super.onCreate(savedInstanceState);
+       setContentView(R.layout.activity_main);
+       TestManager.getInstance().registerListener(this);
+     }
+   }
+   ```
+
+3. 属性动画导致内存泄露
+
+   属性动画中有一类无限循环的动画，如果在Activity中播放此类动画且没有在onDestroy中停止，则View会被动画持有，而View持有Activity，则Activity无法被释放
+
+   ```java
+   ObjectAnimator animator = ObjectAnimator.ofFloat(mButton, "rotation",
+                                                    0, 360).setDuration(2000);
+   animator.setRepeatCount(ValueAnimator.INFINITE);
+   animator.start();
+   ```
+
+## 响应速度优化
+
+ANR：应用无响应，生成/data/anr/traces.txt
+
+* Activity 5秒内无法响应屏幕触摸事件或键盘输入事件
+* BroadcastReceiver 10秒内未执行完操作
+
+## ListView和Bitmap优化
+
+ListView/GridView优化：
+
+* 采用ViewHolder且避免在getView中执行耗时操作
+* 根据列表滑动状态控制任务执行频率，例如快速滑动时不适合开启大量异步任务
+* 开启硬件加速
+
+Bitmap优化：
+
+* 使用BitmapFactory.Options根据需要对图片进行采样，控制inSampleSize
+* 使用内存缓存和磁盘缓存
+
+## 线程优化
+
+采用线程池，避免程序中存在大量的Thread。
+
+线程池可以重用内部线程，从而避免了线程的创建和销毁所带来的性能开销，同时线程池还能有效地控制线程池的最大并发数，避免大量的线程因为相互抢占系统资源从而导致阻塞现象的发生
+
+## 其他
+
+* 避免创建过多地对象
+* 不要过多使用枚举，枚举占用的内存空间要比整形大
+* 常量请使用static final来修饰
+* 使用一些Android特有的数据结构
+* 适当使用软引用和弱引用
+* 采用内存缓存和磁盘缓存
+* 尽量采用静态内部类，这样可以避免潜在的由于内部类而导致的内存泄漏
 
 # dp和px的关系
 
@@ -2560,3 +2689,7 @@ private Handler mMainHandler = new Handler(Looper.getMainLooper()) {
 > 如果采用普通线程去加载图片，随着列表滑动可能产生大量线程，不利于整体效率提升
 >
 > AsyncTask在3.0以上不支持并发，同样不适合
+>
+> Handler直接采用主线程Looper，使得在非主线程中可以构造ImageLoader
+>
+> 通过检查url是否改变，如果改变则不设置图片，解决列表错位问题
