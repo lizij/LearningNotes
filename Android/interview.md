@@ -338,32 +338,6 @@ Activity的生命周期都是依靠主线程的Looper.loop，当收到不同Mess
 
 [Android中为什么主线程不会因为Looper.loop()里的死循环卡死](https://www.zhihu.com/question/34652589)
 
-# ViewStub
-
-1. ViewStub是一个轻量级的View，用于延迟加载布局和视图，避免资源的浪费，减少渲染时间
-2. 不可见时不占布局位置，所占资源非常少。当可见时或调用ViewStub.inflate时它所指向的布局才会初始化
-3. ViewStub只能被inflate一次
-4. ViewStub只能用来inflate一个布局，不能inflate一个具体的View
-
-# ANR
-
-## 调试
-
-1. DDMS输出的LOG可以判断ANR发生在哪个类，但无法确定在类中哪个位置
-2. 在/data/anr/traces.txt文件中保存了ANR发生时的代码调用栈，可以跟踪到发生ANR的所有代码段
-3. adb pull 来pull traces文件到电脑上
-
-## 避免
-
-任何在主线程中运行的，需要消耗大量时间的操作都会引发ANR
-
-任何运行在主线程中的方法，都要尽可能的只做少量的工作。特别是活动生命周期中的重要方法如onCreate()和 onResume()等更应如此
-
-耗时操作：
-
-* 访问网络和数据库
-* 开销很大的计算，比如改变位图的大小，需要在一个单独的子线程中完成
-
 # Activity
 
 ## 启动模式
@@ -830,70 +804,6 @@ Handler 、 Looper 、Message 这三者都与Android异步消息处理线程相�
 
 最简单的方式就是公共变量
 
-# ListView优化
-
-1. convertView的复用
-
-   在Adapter类的getView方法中通过判断convertView是否为null，是的话就需要在创建一个视图出来，然后给视图设置数据，最后将这个视图返回给底层，呈现给用户；如果不为null的话，其他新的view可以通过复用的方式使用已经消失的条目view，重新设置上数据然后展现出来
-
-2. 使用内部类ViewHolder
-
-   可以创建一个内部类ViewHolder，里面的成员变量和view中所包含的组件个数、类型相同，在convertview为null的时候，把findviewbyId找到的控件赋给ViewHolder中对应的变量，就相当于先把它们装进一个容器，下次要用的时候，直接从容器中获取
-
-3. 分段分页加载
-
-   分批加载大量数据，缓解一次性加载大量数据而导致OOM崩溃的情况
-
-4. 减少变量的使用，减少逻辑判断和加载图片等耗时操作
-
-   减少GC的执行，减少耗时操作造成的卡顿
-
-```java
-@Override
-public View getView(int position, View convertView, ViewGroup parent) {
-  ViewHolder holder;
-  View itemView = null;
-  if (convertView == null) {
-    itemView = View.inflate(context, R.layout.item_news_data, null);
-    holder = new ViewHolder(itemView);
-    //用setTag的方法把ViewHolder与convertView "绑定"在一起
-    itemView.setTag(holder);
-  } else {
-    //当不为null时，我们让itemView=converView，用getTag方法取出这个itemView对应的holder对象，就可以获取这个itemView对象中的组件
-    itemView = convertView;
-    holder = (ViewHolder) itemView.getTag();
-  }
-
-  NewsBean newsBean = newsListDatas.get(position);
-  holder.tvNewsTitle.setText(newsBean.title);
-  holder.tvNewsDate.setText(newsBean.pubdate);
-  mBitmapUtils.display(holder.ivNewsIcon, newsBean.listimage);
-
-  return itemView;
-}
-
-}
-
-public class ViewHolder {
-  @ViewInject(R.id.iv_item_news_icon)
-  private ImageView ivNewsIcon;// 新闻图片
-  @ViewInject(R.id.tv_item_news_title)
-  private TextView tvNewsTitle;// 新闻标题
-  @ViewInject(R.id.tv_item_news_pubdate)
-  private TextView tvNewsDate;// 新闻发布时间
-  @ViewInject(R.id.tv_comment_count)
-  private TextView tvCommentIcon;// 新闻评论
-
-  public ViewHolder(View itemView) {
-    ViewUtils.inject(this, itemView);
-  }
-}
-```
-
-[ListView的四种优化方式](http://blog.csdn.net/xk632172748/article/details/51942479)
-
-[Android性能优化之提高ListView性能的技巧](http://blog.csdn.net/xk632172748/article/details/51942479)
-
 # okhttp
 
 ## 功能
@@ -953,15 +863,22 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 
 ## 布局优化
 
-尽量减少布局文件的层级
+### 减少布局文件层级
 
 * 删除布局中无用的控件和层级，其次有选择地使用性能较低的ViewGroup，比如RelativeLayout。尽量使用性能较高的ViewGroup如LinearLayout
 
 * 采用\<include\>和\<merge\>标签和ViewStub。\<include\>标签主要用于布局重用，\<include\>标签和\<merge\>标签配合使用，降低减少布局的层级。而ViewStub则提供了按需加载功能，提高了程序的初始化效率
 
-  > include标签只支持android:layout开头的属性，除了android:id
-  >
-  > 如果include指定了android:layout_*，那么必须同时指定android:layout_width和android_layout_height
+> include标签只支持android:layout开头的属性，除了android:id
+>
+> 如果include指定了android:layout_*，那么必须同时指定android:layout_width和android_layout_height
+
+### ViewStub
+
+* ViewStub是一个轻量级的View，用于延迟加载布局和视图，避免资源的浪费，减少渲染时间
+* 不可见时不占布局位置，所占资源非常少。当可见时或调用ViewStub.inflate时它所指向的布局才会初始化
+* ViewStub只能被inflate一次
+* ViewStub只能用来inflate一个布局，不能inflate一个具体的View
 
 ## 绘制优化
 
@@ -1050,22 +967,98 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
    animator.start();
    ```
 
-## 响应速度优化
+## 响应速度优化——避免ANR
 
-ANR：应用无响应，生成/data/anr/traces.txt
+### 概念
+
+应用无响应，生成/data/anr/traces.txt
 
 * Activity 5秒内无法响应屏幕触摸事件或键盘输入事件
 * BroadcastReceiver 10秒内未执行完操作
 
+### 调试
+
+1. DDMS输出的LOG可以判断ANR发生在哪个类，但无法确定在类中哪个位置
+2. 在/data/anr/traces.txt文件中保存了ANR发生时的代码调用栈，可以跟踪到发生ANR的所有代码段
+
+### 避免
+
+任何在主线程中运行的，需要消耗大量时间的操作都会引发ANR
+
+任何运行在主线程中的方法，都要尽可能的只做少量的工作。特别是活动生命周期中的重要方法如onCreate()和 onResume()等更应如此
+
+耗时操作：
+
+* 访问网络和数据库
+* 开销很大的计算，比如改变位图的大小，需要在一个单独的子线程中完成
+
 ## ListView和Bitmap优化
 
-ListView/GridView优化：
+### ListView/GridView优化
 
-* 采用ViewHolder且避免在getView中执行耗时操作
-* 根据列表滑动状态控制任务执行频率，例如快速滑动时不适合开启大量异步任务
-* 开启硬件加速
+1. convertView的复用
 
-Bitmap优化：
+   在Adapter类的getView方法中通过判断convertView是否为null，是的话就需要在创建一个视图出来，然后给视图设置数据，最后将这个视图返回给底层，呈现给用户；如果不为null的话，其他新的view可以通过复用的方式使用已经消失的条目view，重新设置上数据然后展现出来
+
+2. 使用内部类ViewHolder
+
+   可以创建一个内部类ViewHolder，里面的成员变量和view中所包含的组件个数、类型相同，在convertview为null的时候，把findviewbyId找到的控件赋给ViewHolder中对应的变量，就相当于先把它们装进一个容器，下次要用的时候，直接从容器中获取
+
+3. 分段分页加载
+
+   分批加载大量数据，缓解一次性加载大量数据而导致OOM崩溃的情况
+
+4. 减少变量的使用，减少逻辑判断和加载图片等耗时操作，减少GC的执行，减少耗时操作造成的卡顿
+
+5. 根据列表滑动状态控制任务执行频率，例如快速滑动时不适合开启大量异步任务
+
+6. 开启硬件加速
+
+```java
+@Override
+public View getView(int position, View convertView, ViewGroup parent) {
+  ViewHolder holder;
+  View itemView = null;
+  if (convertView == null) {
+    itemView = View.inflate(context, R.layout.item_news_data, null);
+    holder = new ViewHolder(itemView);
+    //用setTag的方法把ViewHolder与convertView "绑定"在一起
+    itemView.setTag(holder);
+  } else {
+    //当不为null时，我们让itemView=converView，用getTag方法取出这个itemView对应的holder对象，就可以获取这个itemView对象中的组件
+    itemView = convertView;
+    holder = (ViewHolder) itemView.getTag();
+  }
+
+  NewsBean newsBean = newsListDatas.get(position);
+  holder.tvNewsTitle.setText(newsBean.title);
+  holder.tvNewsDate.setText(newsBean.pubdate);
+  mBitmapUtils.display(holder.ivNewsIcon, newsBean.listimage);
+
+  return itemView;
+}
+
+public class ViewHolder {
+  @ViewInject(R.id.iv_item_news_icon)
+  private ImageView ivNewsIcon;// 新闻图片
+  @ViewInject(R.id.tv_item_news_title)
+  private TextView tvNewsTitle;// 新闻标题
+  @ViewInject(R.id.tv_item_news_pubdate)
+  private TextView tvNewsDate;// 新闻发布时间
+  @ViewInject(R.id.tv_comment_count)
+  private TextView tvCommentIcon;// 新闻评论
+
+  public ViewHolder(View itemView) {
+    ViewUtils.inject(this, itemView);
+  }
+}
+```
+
+[ListView的四种优化方式](http://blog.csdn.net/xk632172748/article/details/51942479)
+
+[Android性能优化之提高ListView性能的技巧](http://blog.csdn.net/xk632172748/article/details/51942479)
+
+### Bitmap优化：
 
 * 使用BitmapFactory.Options根据需要对图片进行采样，控制inSampleSize
 * 使用内存缓存和磁盘缓存
@@ -1193,7 +1186,7 @@ public void requestLayout() {
 }
 ```
 
-上面的方法中调用了scheduleTraversals()方法来调度一次完成的绘制流程，该方法会向主线程发送一个“遍历”消息，最终会导致ViewRootImpl的performTraversals()方法被调用，开始View绘制的三个阶段
+上面的方法中调用了scheduleTraversals()方法来调度一次完成的绘制流程，该方法会向主线程发送一个“遍历”消息，最终会导致ViewRootImpl的performTraversals()方法被调用，开始View绘制的以下三个阶段
 
 ### 三个阶段
 
@@ -1270,7 +1263,9 @@ public void draw(Canvas canvas) {
 
 ### 实现自动换行的ViewGroup
 
-效果图：![](http://www.jcodecraeer.com/uploads/allimg/130305/22540UU5-0.png)
+效果图：
+
+![](http://www.jcodecraeer.com/uploads/allimg/130305/22540UU5-0.png)
 
 自定义一个viewgroup,然后在onlayout文件里面自动检测view的右边缘的横坐标值，和你的view的parent view的况度判断是否换行显示view就可以了
 
@@ -1327,9 +1322,9 @@ public class MyViewGroup extends ViewGroup {
 ```
 
 1. onMeasure() 在这个函数中，ViewGroup会接受childView的请求的大小，然后通过childView的 measure(newWidthMeasureSpec, heightMeasureSpec)函数存储到childView中，以便childView的getMeasuredWidth() andgetMeasuredHeight() 的值可以被后续工作得到。
-2. onLayout() 在这个函数中，ViewGroup会拿到childView的getMeasuredWidth() andgetMeasuredHeight()，用来布局所有的childView。
+2. onLayout() 在这个函数中，ViewGroup会拿到childView的getMeasuredWidth()和getMeasuredHeight()，用来布局所有的childView。
 3. View.MeasureSpec 与 LayoutParams 这两个类，是ViewGroup与childView协商大小用的。其中，View.MeasureSpec是ViewGroup用来部署 childView用的， LayoutParams是childView告诉ViewGroup 我需要多大的地方。
-4. 在View 的onMeasure的最后要调用setMeasuredDimension()这个方法存储View的大小，这个方法决定了当前View的大小。
+4. 在View的onMeasure的最后要调用setMeasuredDimension()这个方法存储View的大小，这个方法决定了当前View的大小。
 
 [教你搞定Android自定义View](https://www.jianshu.com/p/84cee705b0d3)
 
