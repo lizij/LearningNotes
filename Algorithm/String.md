@@ -478,6 +478,12 @@ boolean isRotation(String a, String b) {
 
 > Define rotation as the rotation in last practice. Return the rotation result of k place without extra space
 
+If this string is like `A->B->` (the length of `B->` is k), the rotation result is `B->A->`
+
+1. Reverse `A->` then we get `<-AB->`
+2. Reverse `B->` then we get `<-A<-B`
+3. Reverse the whole string, we get `B->A->`
+
 ```
 origin:   [0, 1, ..., n - 1]
 rotate k: [n - k, n - k + 1, ..., n - 1, 0, 1, ..., n - k - 1]
@@ -498,10 +504,13 @@ merge&reverse:	[n - k, n - k + 1, ..., n - 1, 0, 1, ..., n - k - 1]
 
 ```java
 void rotate(char[] chs, int k) {
-  if (chs == null || k <= 0 || k > chs.length) return;
-  reverse(chs, 0, k - 1);
-  reverse(chs, k, chs.length - 1);
-  reverse(chs, 0, chs.length - 1);
+  if (chs == null) return;
+  int n = chs.length;
+  k = k % n;
+  k = k < 0 ? k + n ? k;
+  reverse(chs, 0, n - k - 1);
+  reverse(chs, n - k, n - 1);
+  reverse(chs, 0, n - 1);
 }
 
 void reverse(char[] chs, int start, int end) {

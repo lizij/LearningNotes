@@ -6,7 +6,7 @@
 
 minheap and maxheap is already discussed in QuickSort part.
 
-See QuickSort in [Sorting.md](Sorting.md)
+See HeapSort in [Sorting.md](Sorting.md)
 
 More about [Heap](https://en.wikipedia.org/wiki/Heap_(data_structure)) and [PriorityQueue](https://en.wikipedia.org/wiki/Priority_queue)
 
@@ -28,7 +28,7 @@ void preOrder(Node head) {
   stack.add(head);
   while (!stack.isEmpty()) {
     head = stack.pop();
-    //do something, print head.value
+    // print head.value
     if (head.right != null) stack.push(head.right); // push head.right, 2nd to pop
     if (head.left != null) stack.push(head.left); // push head.left, 1st to pop
   }
@@ -55,7 +55,7 @@ void inOrder(Node head) {
     } else {
       // no left node
       head = stack.pop();
-      // do something, print head.value
+      // print head.value
       // move to head.right
       head = head.right;
     }
@@ -91,7 +91,7 @@ void postOrder(Node head) {
   }
   while (!s2.isEmpty()) {
     head = s2.pop();
-    // do something, print head.value
+    // print head.value
   }
 }
 
@@ -107,7 +107,7 @@ void postOrder(Node head) {
     } else if (current.right != null && head != current.right) {
       stack.push(current.right);
     } else {
-      // do something
+      // print current.value
       head = current;
     }
   }
@@ -512,7 +512,8 @@ class MedianHolder{
   }
 
   void addNumber(int num) {
-    if (maxHeap.isEmpty) {
+    /*
+    if (maxHeap.isEmpty()) {
       // maxHeap is empty -> no num added before
       maxHeap.add(num);
       return;
@@ -534,6 +535,13 @@ class MedianHolder{
       else {
         minHeap.add(num);
       }
+    }
+    */
+    
+    if (maxHeap.isEmpty() || maxHeap.peek() >= num || !minHeap.isEmpty() && minHeap.peek() > num) {
+      maxHeap.add(num);
+    } else {
+      minHeap.add(num);
     }
     modifyTwoHeapSize();
   }
@@ -642,14 +650,17 @@ int findMaximizedCapital(int k, int W, int[] Profits, int[] Capital) {
 
 > Fold a paper n times, print all folds's direction
 
-For example, fold 3 times, `d` for down, `u` for up
+For example, fold 4 times, `d` for down, `u` for up, it will generate a tree
+
+Every time of folding will generate a pair of `d` and `u` in both sides of a fold
+
+`d` -> `ddu`, `u` -> `dud`
 
 ```
-1.    d
-2.  d   u
-3. d u d u
-   ddudduu
-
+1.                     d
+2.         d           d           u
+3.   d     d     u     d     d     u     u
+4. d d u d d u d u u d d u d d u d u u d u u
 ```
 
 ```java

@@ -336,8 +336,9 @@ class GetMinStack {
   }
 
   void push(int num) {
-    if (min.isEmpty()) min.push(num);
-    else if (num <= getmin()) min.push(num);
+    if (min.isEmpty() || num <= getmin()) {
+      min.push(num);
+    }
     data.push(num);
   }
 
@@ -1325,7 +1326,7 @@ int getWater(int[] arr) {
 
 brute force $$O(n^3)$$&$$O(1)$$: for every i, compute every subarray's sum from i.
 
-better brute force $$O(n^2)$$&$$O(n)$$: utilize sum[i...j] = sum[0...j] - sum[0...i]
+better brute force $$O(n^2)$$&$$O(n)$$: utilize `sum[i...j]` = `sum[0...j] - sum[0...i]`
 
 best $$O(n)$$&$$O(1)$$:  if `arr[i]` is positive, `sum[...i...]` will be larger, otherwise it will be smaller. So we remember `sum[0...i]` and record the max of `sum[0...i]` as `maxSum`. If `sum[0...i]` increases, record it if it's larger than the old max. If `sum[0...i]` decreases to be negative, reset it to 0 which means we abandon `arr[i]` and compute from `i + 1`. In a word, we only want the diff between the most increasing part's top and bottom. curSum guarantees that we won't miss the possible start, `maxSum` guarantees that we won't miss the possible end. In this way, if `sum[i...j]` is the result, k <= i and m >= j, `sum[k...i]` and `sum[j...m]` should be negative. Otherwise, `sum[k...j]` or `sum[i...m]` will be larger.
 
@@ -1500,7 +1501,7 @@ int lcs(int[] a, int alen, int[] b, int blen, int[][] mem){
 }
 ```
 
-Similiar problem:Longest Common Subsequence, [Longest Uncommon Subsequence I](https://leetcode.com/problems/longest-uncommon-subsequence-i/description/)
+Similiar problem:Longest Common Subsequence
 
 ### More than Half Number
 

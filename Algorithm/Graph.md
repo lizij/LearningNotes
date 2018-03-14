@@ -106,7 +106,7 @@ eg.
 
 ### Comparation
 
-|          | Adjacency List                           | Adjacency Matrix                         |
+|          | Adjacency Matrix                         | Adjacency List                           |
 | -------- | ---------------------------------------- | ---------------------------------------- |
 | Merits   | Easy to judge if there is an edge between 2 nodes; Easy to add or remove edges | Space-saving, suitable for sparse graph  |
 | Demerits | Unsuitable for sparse  graph             | Discommodious to compute incoming degree or outgoing degree of a vertex; Have to traverse twice to remove an edge |
@@ -124,7 +124,7 @@ void bfs(Node node) {
   set.add(node);
   while (!queue.isEmpty()) {
     Node cur = queue.poll();
-    // do something with cur
+    // print cur
 
     for (Node next: cur.nexts) {
       if (!set.contains(next)) {
@@ -147,7 +147,7 @@ void dfs(Node node) {
   set.add(node);
   while (!stack.isEmpty()) {
     Node cur = stack.pop();
-    // do something with cur
+    // print cur
 
     for (Node next: cur.nexts) {
       if (!set.contains(next)) {
