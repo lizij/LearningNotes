@@ -88,7 +88,7 @@ Accept-Language    zh-CN,zh;q=0.8
 
    Web服务器解析请求，定位请求资源。服务器将资源复本写到TCP套接字，由客户端读取。一个响应由状态行、响应头部、空行和响应数据4部分组成。
 
-4. 释放连接TCP连接
+4. 释放TCP连接
 
    若connection 模式为close，则服务器主动关闭TCP连接，客户端被动关闭连接，释放TCP连接;若connection 模式为keepalive，则该连接会保持一段时间，在该时间内可以继续接收请求;
 
@@ -98,7 +98,7 @@ Accept-Language    zh-CN,zh;q=0.8
 
 ## GET和POST的区别
 
-1. GET提交的数据会放在URL之后，以?分割URL和传输数据，参数之间以&相连，如EditPosts.aspx?name=test1&id=123456. POST方法是把提交的数据放在HTTP包的Body中.
+1. GET提交的数据会放在URL之后，以?分割URL和传输数据，参数之间以&相连，如`EditPosts.aspx?name=test1&id=123456`. POST方法是把提交的数据放在HTTP包的Body中.
 2. GET提交的数据大小有限制（因为浏览器对URL的长度有限制），而POST方法提交的数据没有限制.
 3. GET方式需要使用Request.QueryString来取得变量的值，而POST方式通过Request.Form来获取变量的值。
 4. GET方式提交数据，会带来安全问题，比如一个登录页面，通过GET方式提交数据时，用户名和密码将出现在URL上，如果页面可以被缓存或者其他人可以访问这台机器，就可以从历史记录获得该用户的账号和密码.
@@ -117,11 +117,13 @@ Accept-Language    zh-CN,zh;q=0.8
 
 ### 三次握手过程
 
-1. 建立连接时,客户端发送syn包(syn=j)到服务器,并进入SYN_SEND状态,等待服务器确认
+序号为seq，确认号为ack
+
+1. 建立连接时,客户端发送SYN包（seq=J）到服务器,并进入SYN_SEND状态,等待服务器确认
 
 
-2. 服务器收到syn包,必须确认客户的SYN（ack=j+1）,同时自己也发送一个SYN包（syn=k）,即SYN+ACK包,此时服务器进入SYN_RECV状态
-3. 客户端收到服务器的SYN＋ACK包,向服务器发送确认包ACK(ack=k+1),此包发送完毕,客户端和服务器进入ESTABLISHED状态,完成三次握手
+2. 服务器收到SYN包,必须确认客户的SYN+ACK（seq=K，ack=J+1）,此时服务器进入SYN_RECV状态
+3. 客户端收到服务器的SYN＋ACK包,向服务器发送确认包ACK（ack=K+1）,此包发送完毕,客户端和服务器进入ESTABLISHED状态,完成三次握手
 
 ![img](http://blog.chinaunix.net/attachment/201304/8/22312037_1365405910EROI.png)
 
@@ -139,10 +141,10 @@ Accept-Language    zh-CN,zh;q=0.8
 
 ![image](http://upload-images.jianshu.io/upload_images/2964446-2b9562b3a8b72fb2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-1. 第一次挥手：Client发送一个FIN，用来关闭Client到Server的数据传送，Client进入FIN_WAIT_1状态。
-2. 第二次挥手：Server收到FIN后，发送一个ACK给Client，确认序号为收到序号+1（与SYN相同，一个FIN占用一个序号），Server进入CLOSE_WAIT状态。
-3. 第三次挥手：Server发送一个FIN，用来关闭Server到Client的数据传送，Server进入LAST_ACK状态。
-4. 第四次挥手：Client收到FIN后，Client进入TIME_WAIT状态，接着发送一个ACK给Server，确认序号为收到序号+1，Server进入CLOSED状态，完成四次挥手。在TIME_WAIT状态中，如果TCP client端最后一次发送的ACK丢失了，它将重新发送
+1. 第一次挥手：Client发送一个FIN（seq=M），用来关闭Client到Server的数据传送，Client进入FIN_WAIT_1状态。
+2. 第二次挥手：Server收到FIN后，发送一个ACK（ack=M+1）给Client，Server进入CLOSE_WAIT状态。
+3. 第三次挥手：Server发送一个FIN+ACK（seq=K，ack=M+1），用来关闭Server到Client的数据传送，Server进入LAST_ACK状态。
+4. 第四次挥手：Client收到FIN后，Client进入TIME_WAIT状态，接着发送一个ACK（seq=M+1，ack=K+1）给Server，Server进入CLOSED状态，完成四次挥手。在TIME_WAIT状态中，如果TCP client端最后一次发送的ACK丢失了，它将重新发送
 
 > TCP是全双工的，每一个方向都必须单独进行开关，所以需要四次握手。而建立连接时发起者A的两个方向是默认打开的，B可以省去一个通知A打开的请求，所以只需要三次握手
 >
@@ -162,7 +164,7 @@ Accept-Language    zh-CN,zh;q=0.8
    如果Client直接CLOSED了，那么由于IP协议的不可靠性或者是其它网络原因，导致Server没有收到Client最后回复的ACK。那么Server就会在超时之后继续发送FIN，此时由于Client已经CLOSED了，就找不到与重发的FIN对应的连接，最后Server就会收到RST而不是ACK，Server就会以为是连接错误把问题报告给高层。这样的情况虽然不会造成数据丢失，但是却导致TCP协议不符合可靠连接的要求。所以，Client不是直接进入CLOSED，而是要保持TIME_WAIT，当再次收到FIN的时候，能够保证对方收到ACK，最后正确的关闭连接。
 
 2. 保证这次连接的重复数据段从网络中消失
-  如果Client直接CLOSED，然后又再向Server发起一个新连接，我们不能保证这个新连接与刚关闭的连接的端口号是不同de的。也就是说有可能新连接和老连接的端口号是相同的。一般来说不会发生什么问题，但是还是有特殊情况出现：假设新连接和已经关闭的老连接端口号是一样的，如果前一次连接的某些数据仍然滞留在网络中，这些延迟数据在建立新连接之后才到达Server，由于新连接和老连接的端口号是一样的，又因为TCP协议判断不同连接的依据是socket pair，于是，TCP协议就认为那个延迟的数据是属于新连接的，这样就和真正的新连接的数据包发生混淆了。所以TCP连接还要在TIME_WAIT状态等待2倍MSL，这样可以保证本次连接的所有数据都从网络中消失
+  如果Client直接CLOSED，然后又再向Server发起一个新连接，我们不能保证这个新连接与刚关闭的连接的端口号是不同的。也就是说有可能新连接和老连接的端口号是相同的。一般来说不会发生什么问题，但是还是有特殊情况出现：假设新连接和已经关闭的老连接端口号是一样的，如果前一次连接的某些数据仍然滞留在网络中，这些延迟数据在建立新连接之后才到达Server，由于新连接和老连接的端口号是一样的，又因为TCP协议判断不同连接的依据是socket pair，于是，TCP协议就认为那个延迟的数据是属于新连接的，这样就和真正的新连接的数据包发生混淆了。所以TCP连接还要在TIME_WAIT状态等待2倍MSL，这样可以保证本次连接的所有数据都从网络中消失
 
 ### 滑动窗口
 
