@@ -36,6 +36,32 @@
 
 此外，我们可以将两个不同App中的Activity设置为相同的taskAffinity，这样虽然在不同的应用中，但是Activity会被分配到同一个Task中去
 
+#### taskAffinity
+
+#### 指定方式
+
+1. 在Manifest中指定`android:taskAffinity` 属性
+2. 在Intent中使用`addFlags（Intent.FLAG_ACTIVITY_xxx）`
+
+第一种方式优先级低，无法指定`FLAG_ACTIVITY_CLEAR_TOP`等
+
+第二种方式优先级高，无法指定singleInstance模式
+
+> 可以使用`adb shell dumpsys activity` 查看任务栈
+
+常见FLAG
+
+* FLAG_ACTIVITY_NEW_TASK：同singleTask
+* FLAG_ACTIVITY_CLEAR_TOP：将Activity上面的其他Activity实例都出栈，一般配合NEW_TASK使用
+* FLAG_ACTIVITY_SINGLE_TOP：同singleTop
+* FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS：Activity不会出现在历史Activity中，同`android:excludeFromRecents="true"`
+
+#### 作用
+
+taskAffinity和singleTask配对使用时，它是具有该模式的Activity的目前任务栈的名字，待启动的Activity会运行在名字和taskAffinity相同的任务栈中。
+
+当taskAffinity和allowTaskReparenting结合使用时。当应用A启动了应用B的Activity C后，如果这个Activity的allowTaskReparenting为true，当（单独）启动应用B时，C会从A的任务栈转移到B的任务栈
+
 ### singleInstance
 
 除了具备singleTask模式的所有特性外，与它的区别就是，这种模式下的Activity会单独占用一个Task栈，具有全局唯一性，即整个系统中就这么一个实例，由于栈内复用的特性，后续的请求均不会创建新的Activity实例，除非这个特殊的任务栈被销毁了。以singleInstance模式启动的Activity在整个系统中是单例的，如果在启动这样的Activiyt时，已经存在了一个实例，那么会把它所在的任务调度到前台，重用这个实例
@@ -81,9 +107,11 @@
 
 ### 保存和恢复数据
 
-可以通过onRestoreInstanceState和onCreate方法判读Activity是否被重建了，如果被重建了，那么我们就可以取出之前保存的数据并进行恢复，onRestoreInstanceState的调用时机在onStart之后。需要注意的是：在正常情况下Activity的创建和销毁不会调用onSaveInstanceState和onRestoreInstanceState方法
+可以通过onRestoreInstanceState和onCreate方法判读Activity是否被重建了，如果被重建了，那么我们就可以取出之前保存的数据并进行恢复，onRestoreInstanceState的调用时机在onStart之后。
 
-例如
+> 在正常情况下Activity的创建和销毁不会调用onSaveInstanceState和onRestoreInstanceState方法
+
+使用
 
 ```java
 @Override
@@ -100,9 +128,14 @@ public void onRestoreInstanceState(Bundle savedInstanceState) {
 }
 ```
 
+使用onRestoreInstanceState和onCreate恢复数据的区别：
+
+1. onRestoreInstanceState的savedInstanceState一定是有值的，不需要额外判断
+2. onCreate的savedInstanceState正常启动时为null，需要额外判断
+
 ### 防止Activity重建
 
-在AndroidManifest.xml中对Activity的configChange属性进行配置。例如我们不希望屏幕旋转时重建，则需要设置为` android:configChanges="orientation"`
+在AndroidManifest.xml中对Activity的configChange属性进行配置。例如我们不希望屏幕旋转时重建，则需要设置为` android:configChanges="orientation"` ， 如果有多个值，可以用“|”连接
 
 常用的配置选项还有
 
@@ -138,7 +171,7 @@ Android Instrumentation是Android系统里面的一套控制方法或者”钩�
 
 但是Instrumentation并不是这样的。可以将Instrumentation理解为一种没有图形界面的，具有启动能力的，用于监控其他类(用Target Package声明)的工具类。
 
-### IntentFilter
+## IntentFilter匹配规则
 
 为了匹配过滤列表，需要同时匹配过滤列表中的action,category,data信息，否则匹配失败。另外，一个Activity中可以有多个intent-filter，一个Intent只要能匹配任何一组intent-filter即可成功启动对应的Activity
 
@@ -916,11 +949,104 @@ RequestManager用来跟踪众多当前页面的Request的是RequestTracker类，
 
 ## 进程间通信方法（IPC）
 
+### 必要性
+
+多进程带来的问题：
+
+1. 静态成员和单例模式失效
+2. 线程同步机制失效
+3. SharePreference可靠性下降
+4. Application可能多次创建
+
+### 序列化
+
+#### 原因
+
+当两个进程在进行远程通信时，彼此可以发送各种类型的数据。无论是何种类型的数据，都会以二进制序列的形式在网络上传送。
+
+发送方，序列化：对象->字节序列
+
+接收方，反序列化：字节序列->对象
+
+序列化的目的就是为了跨进程传递格式化数据
+
+#### Serializable
+
+```java
+public class User implements Serializable {
+  private static final long serialVersionUID = 519067123721295773L;
+}
+```
+
+serialVersionUID用于辅助序列化和反序列化，序列化后数据只有serialVersionUID和当前类serialVersionUID一致才可以序列化
+
+相比不指定（自动生成）serialVersionUID，手动指定serialVersionUID可以避免由于类的改变，导致系统重新计算hash值并赋给serialVersionUID，导致反序列化失败
+
+#### Parcelable
+
+```java
+public class User implements Parcelable {
+  public int userId;
+  public String userName;
+  public boolean isMale;
+
+  public Book book;
+
+  public User() {
+  }
+
+  public User(int userId, String userName, boolean isMale) {
+    this.userId = userId;
+    this.userName = userName;
+    this.isMale = isMale;
+  }
+
+  public int describeContents() {
+    return 0;
+  }
+
+  public void writeToParcel(Parcel out, int flags) {
+    out.writeInt(userId);
+    out.writeString(userName);
+    out.writeInt(isMale ? 1 : 0);
+    out.writeParcelable(book, 0);
+  }
+
+  public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {
+    public User createFromParcel(Parcel in) {
+      return new User(in);
+    }
+
+    public User[] newArray(int size) {
+      return new User[size];
+    }
+  };
+
+  private User(Parcel in) {
+    userId = in.readInt();
+    userName = in.readString();
+    isMale = in.readInt() == 1;
+    book = in
+      .readParcelable(Thread.currentThread().getContextClassLoader());
+  }
+}
+```
+
+
+
+#### Serializable和Parcelable的区别
+
+1. Serializable是JAVA中的序列化接口，虽然使用起来简单但是开销很大，序列化和反序列化过程都要大量的I/O操作。
+2. Parcelable是Android中的序列化方式，更适合使用在Android平台上。它的缺点就是使用起来稍微麻烦一点，但是效率高。
+3. Parcelable主要用在内存序列化上，Serializable主要用于将对象序列化到存储设备中或者通过网络传输
+
 ### 文件共享
 
 两个进程通过读/写同一个文件来交换数据，比如A进程把数据写入文件，B进程通过读取这个文件来获取数据。
 
 文件共享方式适合在对数据同步要求不高的进程之间进行通信，并且要妥善处理并发读/写的问题
+
+> SharePreference在高并发读写时很不可靠，会丢失数据
 
 ### Bundle
 
@@ -947,10 +1073,12 @@ AIDL通过定义服务端暴露的接口，以提供给客户端来调用，AIDL
 * String和CharSequence
 * List：只支持ArrayList，且里面的每个元素都必须被AIDL支持
 * Map：只支持HashMap，且里面的每个元素都必须被AIDL支持
-* 实现了Parcelable的对象
+* 实现了Parcelable的对象（需要新建一个同名的AIDL文件，并声明为Parcelable类型）
 * 其他AIDL接口
 
 > 除了基本数据类型，其他类型的参数上必须标上方向：in，out或inout
+>
+> 自定义的Parcelable对象或AIDL对象一定要显式地import进来，不管和当前AIDL文件在不在同一个包内
 
 定义AIDL，新建一个`.aidl`文件
 
@@ -997,6 +1125,8 @@ public class MyService extends Service {
          android:process=":remote" />
 ```
 
+> “:”表示在当前进程名前附加包名，是一种简写
+
 定义Activity，用于发送消息和接收回复
 
 ```java
@@ -1039,6 +1169,8 @@ public class MainActivity extends AppCompatActivity {
 }
 ```
 
+> 可以onBind或onTransact方法中进行权限验证，例如检查包名等
+
 [Android的进阶学习(四)--AIDL的使用与理解](https://www.jianshu.com/p/4e38cdc016c9)
 
 ### Messenger
@@ -1046,6 +1178,8 @@ public class MainActivity extends AppCompatActivity {
 Messager实现IPC通信，底层是使用了AIDL方式。和AIDL方式不同的是，Messager方式是利用Handler形式处理，因此，它是线程安全的，这也表示它不支持并发处理。相反，AIDL方式是非线程安全的，支持并发处理。服务端（被动方）提供一个Service来处理客户端（主动方）连接，维护一个Handler来创建Messenger，在onBind时返回Messenger的binder。双方用Messenger来发送数据，用Handler来处理数据。Messenger处理数据依靠Handler，所以是串行的，也就是说，Handler接到多个message时，就要排队依次处理
 
 > Message对象本身是无法被传递到进程B的，send(message)方法会使用一个Parcel对象对Message对象编集，再将Parcel对象传递到进程B中，然后解编集，得到一个和进程A中Message对象内容一样的对象），再把Message对象加入到进程B的消息队列里，Handler会去处理它
+>
+> Message对象的object字段不支持自定义的Parcelable对象
 
 服务端
 
@@ -1152,6 +1286,201 @@ Android内置的许多数据都是使用ContentProvider形式，供开发者调�
 Android不允许在主线程中请求网络，而且请求网络必须要注意声明相应的permission。然后，在服务器中定义ServerSocket来监听端口，客户端使用Socket来请求端口，连通后就可以进行通信
 
 [Android：这是一份很详细的Socket使用攻略](http://blog.csdn.net/carson_ho/article/details/53366856)
+
+### Binder连接池
+
+#### 适用场景
+
+大量业务都需要AIDL，AIDL需要在少数几个Service中集中管理
+
+#### 原理
+
+每个业务模块创建自己的AIDL接口并实现接口，业务之间不能有耦合，所有实现细节单独分开，向Service提供自己的唯一标识和其对应的Binder对象
+
+服务端至少一个Service，提供queryBinder接口，根据业务特征返回相应的Binder对象，避免重复创建Service
+
+#### 实现
+
+创建2个AIDL接口
+
+```java
+// ISecurityCenter.aidl
+package com.ryg.chapter_2.binderpool;
+
+interface ISecurityCenter {
+    String encrypt(String content);
+    String decrypt(String password);
+}
+
+// ICompute.aidl
+package com.ryg.chapter_2.binderpool;
+
+interface ICompute {
+    int add(int a, int b);
+}
+```
+
+实现接口
+
+```java
+public class SecurityCenterImpl extends ISecurityCenter.Stub {}
+public class ComputeImpl extends ICompute.Stub {}
+```
+
+创建BinderPool接口
+
+```java
+// IBinderPool.aidl
+package com.ryg.chapter_2.binderpool;
+
+interface IBinderPool {
+    IBinder queryBinder(int binderCode);
+}
+```
+
+实现BinderPoolImpl接口，queryBinder根据不同模块的标识即binderCode返回不同的Binder对象
+
+```java
+@Override
+public IBinder queryBinder(int binderCode) throws RemoteException {
+  IBinder binder = null;
+  switch (binderCode) {
+    case BINDER_SECURITY_CENTER: {
+      binder = new SecurityCenterImpl();
+      break;
+    }
+    case BINDER_COMPUTE: {
+      binder = new ComputeImpl();
+      break;
+    }
+    default:
+      break;
+  }
+
+  return binder;
+}
+```
+
+在远程BinderPoolService的onBind中返回BinderPool的实例
+
+```java
+private Binder mBinderPool = new BinderPool.BinderPoolImpl();
+
+@Override
+public IBinder onBind(Intent intent) {
+  return mBinderPool;
+}
+```
+
+实现BinderPool
+
+```java
+public class BinderPool {
+  private static final String TAG = "BinderPool";
+  public static final int BINDER_NONE = -1;
+  public static final int BINDER_COMPUTE = 0;
+  public static final int BINDER_SECURITY_CENTER = 1;
+
+  private Context mContext;
+  private IBinderPool mBinderPool;
+  private static volatile BinderPool sInstance;
+  private CountDownLatch mConnectBinderPoolCountDownLatch;
+
+  private BinderPool(Context context) {
+    mContext = context.getApplicationContext();
+    connectBinderPoolService();
+  }
+  
+  // 使用单例模式实现
+  public static BinderPool getInsance(Context context) {
+    if (sInstance == null) {
+      synchronized (BinderPool.class) {
+        if (sInstance == null) {
+          sInstance = new BinderPool(context);
+        }
+      }
+    }
+    return sInstance;
+  }
+
+  private synchronized void connectBinderPoolService() {
+    // CountDownLatch类位于java.util.concurrent包下
+    // 利用它可以实现类似计数器的功能。比如有一个任务A，它要等待其他4个任务执行完毕之后才能执行，
+    // 此时就可以利用CountDownLatch来实现这种功能了
+    mConnectBinderPoolCountDownLatch = new CountDownLatch(1);
+    Intent service = new Intent(mContext, BinderPoolService.class);
+    mContext.bindService(service, mBinderPoolConnection,
+                         Context.BIND_AUTO_CREATE);
+    try {
+      // 调用await()方法的线程会被挂起，它会等待直到count值为0才继续执行
+      mConnectBinderPoolCountDownLatch.await();
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+     * query binder by binderCode from binder pool
+     * 
+     * @param binderCode
+     *            the unique token of binder
+     * @return binder who's token is binderCode<br>
+     *         return null when not found or BinderPoolService died.
+     */
+  public IBinder queryBinder(int binderCode) {
+    IBinder binder = null;
+    try {
+      if (mBinderPool != null) {
+        binder = mBinderPool.queryBinder(binderCode);
+      }
+    } catch (RemoteException e) {
+      e.printStackTrace();
+    }
+    return binder;
+  }
+
+  private ServiceConnection mBinderPoolConnection = new ServiceConnection() {
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+      // ignored.
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+      mBinderPool = IBinderPool.Stub.asInterface(service);
+      try {
+        mBinderPool.asBinder().linkToDeath(mBinderPoolDeathRecipient, 0);
+      } catch (RemoteException e) {
+        e.printStackTrace();
+      }
+      // 将count值减1
+      // 相当于通知connectBinderPoolService从await处继续执行
+      // 通过CountDownLatch将bindService这一异步操作转换为同步操作
+      // 应避免在主线程中执行
+      mConnectBinderPoolCountDownLatch.countDown();
+    }
+  };
+
+  private IBinder.DeathRecipient mBinderPoolDeathRecipient = new IBinder.DeathRecipient() {
+    @Override
+    public void binderDied() {
+      // 当binder意外死亡时重新连接
+      Log.w(TAG, "binder died.");
+      mBinderPool.asBinder().unlinkToDeath(mBinderPoolDeathRecipient, 0);
+      mBinderPool = null;
+      connectBinderPoolService();
+    }
+  };
+
+  public static class BinderPoolImpl extends IBinderPool.Stub {
+    //...
+  }
+
+}
+```
+
+
 
 # JSON
 
@@ -2186,24 +2515,6 @@ public boolean onInterceptTouchEvent(MotionEvent ev) {
 [View滑动冲突处理方法（外部拦截法、内部拦截法）](http://blog.csdn.net/z_l_p/article/details/53488085)
 
 [Android事件冲突场景分析及一般解决思路](https://www.jianshu.com/p/c62fb2f25057)
-
-# 序列化
-
-## 原因
-
-当两个进程在进行远程通信时，彼此可以发送各种类型的数据。无论是何种类型的数据，都会以二进制序列的形式在网络上传送。发送方需要把这个对象转换为字节序列，才能在网络上传送；接收方则需要把字节序列再恢复为对象。
-
-把对象转换为字节序列的过程称为对象的序列化。
-
-把字节序列恢复为对象的过程称为对象的反序列化。
-
-说的再直接点，序列化的目的就是为了跨进程传递格式化数据
-
-## Serializable和Parcelable的区别
-
-1. Serializable是JAVA中的序列化接口，虽然使用起来简单但是开销很大，序列化和反序列化过程都要大量的I/O操作。
-2. Parcelable是Android中的序列化方式，更适合使用在Android平台上。它的缺点就是使用起来稍微麻烦一点，但是效率高。
-3. Parcelable主要用在内存序列化上，Serializable主要用于将对象序列化到存储设备中或者通过网络传输
 
 # 线程
 
