@@ -7,7 +7,10 @@
 ## 启动模式
 
 ```xml
-<activity android:name=".xxActivity" android:launchMode="standard/singleTop/singleTask/singleInstance" android:taskAffinity="com.example.xxx.yyy"/>
+<activity 
+          android:name=".xxActivity" 
+          android:launchMode="standard/singleTop/singleTask/singleInstance"
+          android:taskAffinity="com.example.xxx.yyy"/>
 ```
 
 ### standard
@@ -128,7 +131,7 @@ Android Instrumentation是Android系统里面的一套控制方法或者”钩�
 <application android:icon="@drawable/icon" android:label="@string/app_name">
   <activity android:name=".TestApp" android:label="@string/app_name">
   </activity>
-</application>12345
+</application>
 ```
 
 这样，在启动程序的时候就会先启动一个Application，然后在此Application运行过程中根据情况加载相应的Activity，而Activity是需要一个界面的。
@@ -341,8 +344,7 @@ public class ImageResizer {
   public ImageResizer() {
   }
 
-  public Bitmap decodeSampledBitmapFromResource(Resources res,
-                                                int resId, int reqWidth, int reqHeight) {
+  public Bitmap decodeSampledBitmapFromResource(Resources res, int resId, int reqWidth, int reqHeight) {
     // First decode with inJustDecodeBounds=true to check dimensions
     final BitmapFactory.Options options = new BitmapFactory.Options();
     options.inJustDecodeBounds = true;
@@ -572,14 +574,6 @@ Server进程向Service Manager进程注册服务（可访问的方法接口）�
 一个进程的Binder线程数默认最大是16，超过的请求会被阻塞等待空闲的Binder线程。理解这一点的话，你做进程间通信时处理并发问题就会有一个底，比如使用ContentProvider时（又一个使用Binder机制的组件），你就很清楚它的CRUD（创建、检索、更新和删除）方法只能同时有16个线程在跑
 
 [Android面试一天一题（Day 35：神秘的Binder机制）](https://www.jianshu.com/p/c7bcb4c96b38)
-
-# dp和px的关系
-
-px = dp * (dpi / 160)，在每英寸160点的屏幕上，1dp = 1px
-
-dp也就是dip:device independent pixels(设备独立像素)，是一种与密度无关的像素单位
-
-px是像素，屏幕上的点
 
 # 动画
 
@@ -1058,30 +1052,30 @@ Messager实现IPC通信，底层是使用了AIDL方式。和AIDL方式不同的�
 ```java
 public class RemoteService extends Service {
   private static final String TAG = "RemoteService"
-  private final Messenger mMessenger = new Messenger(new Handler() {  
-    @Override  
-    public void handleMessage(Message msg) {  
-      switch (msg.what) {
-        case Constants.MSG_FROM_CLIENT:
-          Log.i(TAG, "receive msg from client:" + msg.getData().getString("msg"));
-          
-          // 回复消息
-          Messager client = msg.replyTo;
-          Message replyMessage = Message.obtain(null, Constants.MSG_FROM_SERVICE);
-          Bundle data = new Bundle();
-    data.putString("reply", "reply message");
-    replyMessage.setData(data);
-          try {
-            client.send(replyMessage);
-          } catch (RemoteException e) {
-            e.printStackTrace();
-          }
-          break;
-        default:
-          super.handleMessage(msg);
-      }
-    }  
-  });  
+    private final Messenger mMessenger = new Messenger(new Handler() {  
+      @Override  
+      public void handleMessage(Message msg) {  
+        switch (msg.what) {
+          case Constants.MSG_FROM_CLIENT:
+            Log.i(TAG, "receive msg from client:" + msg.getData().getString("msg"));
+
+            // 回复消息
+            Messager client = msg.replyTo;
+            Message replyMessage = Message.obtain(null, Constants.MSG_FROM_SERVICE);
+            Bundle data = new Bundle();
+            data.putString("reply", "reply message");
+            replyMessage.setData(data);
+            try {
+              client.send(replyMessage);
+            } catch (RemoteException e) {
+              e.printStackTrace();
+            }
+            break;
+          default:
+            super.handleMessage(msg);
+        }
+      }  
+    });  
 
   @Override  
   public IBinder onBind(Intent intent) {  
@@ -1108,12 +1102,12 @@ private Messenger mGetReplyMessenger = new Messenger(new Handler() {
 });  
 
 private Messenger mService;  
-  
+
 private ServiceConnection mConnection = new ServiceConnection() {  
   @Override  
   public void onServiceConnected(ComponentName name, IBinder service) {  
     mService = new Messenger(service);
-    
+
     // 发送消息
     Message msg = Message.obtain(null, Constants.MSG_FROM_CLIENT);
     Bundle data = new Bundle();
@@ -1199,9 +1193,7 @@ NDK(Native Development Kit)是Android所提供的一个工具集合，通过NDL�
 在Java代码中中声明一个native方法
 
 ```java
-public class TestHelloActivity extends Activity{
-  public native String sayHello();
-}
+public native String sayHello();
 ```
 
 使用javah命令生成带有native方法的头文件
@@ -1291,7 +1283,8 @@ extern "C" {
  * Signature: ()V
  */
   JNIEXPORT void JNICALL Java_com_example_MediaRecorder_native_1init
-    (JNIEnv *, jclass);//1
+    (JNIEnv *, jclass);
+  // 方法名多了一个“_l”，这是因为native_init方法有一个“_”，它会在转换为JNI方法时变成“_1”，类似于转义。 
 
   /*
  * Class:     com_example_MediaRecorder
@@ -1307,8 +1300,10 @@ extern "C" {
 #endif
 ```
 
-native_init方法被声明为注释1处的方法，格式为`Java_包名_类名_方法名`，注释1处的方法名多了一个“\_l”，这是因为native_init方法有一个“_”，它会在转换为JNI方法时变成“\_l”。 
-其中JNIEnv * 是一个指向全部JNI方法的指针，该指针只在创建它的线程有效，不能跨线程传递。 
+native_init方法被声明为注释1处的方法，格式为`Java_包名_类名_方法名`
+
+JNIEnv * 是一个指向全部JNI方法的指针，该指针只在创建它的线程有效，不能跨线程传递。 
+
 jclass是JNI的数据类型，对应Java的java.lang.Class实例。jobject同样也是JNI的数据类型，对应于Java的Object。
 
 当我们在Java中调用native_init方法时，就会从JNI中寻找Java_com_example_MediaRecorder_native_1init方法，如果没有就会报错，如果找到就会为native_init和Java_com_example_MediaRecorder_native_1init建立关联，其实是保存JNI的方法指针，这样再次调用native_init方法时就会直接使用这个方法指针就可以了。 
@@ -1326,24 +1321,26 @@ JNI中有一种结构用来记录Java的Native方法和JNI方法的关联关系�
 
 ```c
 typedef struct{  
-  const char* name;  //Java中native函数的名字，不用携带包的路径，例如“native_init”  
-  const char* signature; //Java函数的签名信息，用字符串表示，是参数类型和返回类型的组合，用以应对Java里的函数重载  
-  void* fnPtr; //JNI层对应函数的函数指针，注意他是void*类型  
+  const char* name;  // Java中native函数的名字，不用携带包的路径，例如“native_init”  
+  const char* signature; // Java函数的签名信息，用字符串表示，是参数类型和返回类型的组合，用以应对Java里的函数重载  
+  void* fnPtr; // JNI层对应函数的函数指针，注意他是void*类型  
 } JNINativeMethod  
 ```
 
-首先定义一个JNINativeMethod数据，里面填写好了Java函数名和对应的输入输出和对应JNI的函数名，例如
+以MediaRecorder进行分析，首先定义一个JNINativeMethod数据，里面填写好了Java函数名和对应的输入输出和对应JNI的函数名，例如
 
 ```java
 static const JNINativeMethod gMethods[] = {
-  {"start",            "()V",      (void *)android_media_MediaRecorder_start},//1
-  {"stop",             "()V",      (void *)android_media_MediaRecorder_stop}
+  // start是Java层的Native方法，它对应的JNI层的方法为android_media_MediaRecorder_start。
+  // "()V"是start方法的签名信息
+  {"start", "()V", (void *)android_media_MediaRecorder_start},
+  {"stop",  "()V", (void *)android_media_MediaRecorder_stop}
 };
 ```
 
-其中注释1处start是Java层的Native方法，它对应的JNI层的方法为android_media_MediaRecorder_start。"()V"是start方法的签名信息
+只定义JNINativeMethod 类型的数组是没有用的，还需要注册它，注册的方法为`register_android_media_MediaRecorder`
 
-然后进行注册，尝试进行调用跟踪
+JNI_OnLoad方法会在System.loadLibrary方法后调用，尝试进行调用跟踪
 
 ```c
 // frameworks/base/media/jni/android_media_MediaRecorder.cpp
@@ -1356,17 +1353,17 @@ jint JNI_OnLoad(JavaVM* vm, void* /* reserved */)
     goto *bail;
   }
   assert(env != NULL);
-  ...
-    if (register_android_media_MediaPlayer(env) < 0) {
-      ALOGE("ERROR: MediaPlayer native registration failed\n");
-      goto *bail;
-    }
+  //...
+  if (register_android_media_MediaPlayer(env) < 0) {
+    ALOGE("ERROR: MediaPlayer native registration failed\n");
+    goto *bail;
+  }
   if (register_android_media_MediaRecorder(env) < 0) {
     ALOGE("ERROR: MediaRecorder native registration failed\n");
     goto *bail;
   }
-  ...
-    result = JNI_VERSION_1_4;
+  //...
+  result = JNI_VERSION_1_4;
   bail:
   return result;
 }
@@ -1381,6 +1378,8 @@ int register_android_media_MediaRecorder(JNIEnv *env)
 }
 ```
 
+`register_android_media_MediaRecorder`方法中return了AndroidRuntime的`registerNativeMethods`方法
+
 ```c
 // frameworks/base/core/jni/AndroidRuntime.cpp
 /*static*/ int AndroidRuntime::registerNativeMethods(
@@ -1393,6 +1392,8 @@ int register_android_media_MediaRecorder(JNIEnv *env)
 }
 ```
 
+`registerNativeMethods方法中`又return了`jniRegisterNativeMethods`方法，最终调用的JNIEnv的`RegisterNatives`方法
+
 ```c
 // external/conscrypt/src/openjdk/native/JNIHelp.cpp
 extern "C" int jniRegisterNativeMethods(
@@ -1401,14 +1402,14 @@ extern "C" int jniRegisterNativeMethods(
   const JNINativeMethod* gMethods, 
   int numMethods)
 {
-  ...
-    if (env->RegisterNatives(c.get(), gMethods, numMethods) < 0) {//1
-      char* msg;
-      (void)asprintf(&msg, 
-                     "RegisterNatives failed for '%s'; aborting...", 
-                     className);
-      env->FatalError(msg);
-    }
+  //...
+  if (env->RegisterNatives(c.get(), gMethods, numMethods) < 0) {//1
+    char* msg;
+    (void)asprintf(&msg, 
+                   "RegisterNatives failed for '%s'; aborting...", 
+                   className);
+    env->FatalError(msg);
+  }
   return 0;
 }
 ```
@@ -2063,7 +2064,7 @@ public class MyViewGroup extends ViewGroup {
 
 事件分发流程图分为3层，从上往下依次是Activity、ViewGroup、View
 
-![image](http://images2015.cnblogs.com/blog/641601/201509/641601-20150911224348356-1715684255.jpg)
+![img](https://upload-images.jianshu.io/upload_images/966283-b9cb65aceea9219b.png)
 
 * 事件从左上角开始，由Activity的dispatchTouchEvent做分发
 * 箭头的上面字代表方法返回值，（return true、return false、return super.xxxxx(),super 的意思是调用父类实现）
@@ -2074,22 +2075,18 @@ public class MyViewGroup extends ViewGroup {
 ### 关键点
 
 1. 默认实现流程：整个事件流向应该是从Activity---->ViewGroup--->View 从上往下调用dispatchTouchEvent方法，一直到叶子节点（View）的时候，再由View--->ViewGroup--->Activity从下往上调用onTouchEvent方法
-2. 事件消费：dispatchTouchEvent 和 onTouchEvent 一旦return true,事件就停止传递了（到达终点）（没有谁能再收到这个事件）。看下图中只要return true事件就没再继续传下去了，对于return true我们经常说事件被消费了，消费了的意思就是事件走到这里就是终点，不会往下传，没有谁能再收到这个事件了。dispatchTouchEvent 和 onTouchEvent return false的时候事件都回传给父控件的onTouchEvent处理
 
-> 对于dispatchTouchEvent 返回 false 的含义应该是：事件停止往子View传递和分发同时开始往父控件回溯（父控件的onTouchEvent开始从下往上回传直到某个onTouchEvent return true），事件分发机制就像递归，return false 的意义就是递归停止然后开始回溯。
+   ViewGroup 和View的这些方法的默认实现就是会让整个事件安装U型完整走完，所以 return super.xxxxxx() 就会让事件依照U型的方向的完整走完整个事件流动路径）
 
-3. dispatchTouchEvent、onTouchEvent、onInterceptTouchEvent：ViewGroup 和View的这些方法的默认实现就是会让整个事件按U型完整走完，所以 return super.xxxxxx() 就会让事件依照U型的方向，完整走完整个事件流动路径），中间不做任何改动，不回溯、不终止，每个环节都走到
+2. 对于 dispatchTouchEvent，onTouchEvent，return true是终结事件传递。return false 是回溯到父View的onTouchEvent方法。
 
-4. onInterceptTouchEvent 的作用：每个ViewGroup每次在做分发的时候，问一问拦截器要不要拦截（也就是问问自己这个事件要不要自己来处理）如果要自己处理那就在onInterceptTouchEvent方法中 return true就会交给自己的onTouchEvent的处理，如果不拦截就是继续往子控件往下传。默认是不会去拦截的，因为子View也需要这个事件，所以onInterceptTouchEvent拦截器return super.onInterceptTouchEvent()相当于return false，是不会拦截的，事件会继续往子View的dispatchTouchEvent传递
+3. ViewGroup 把事件分发给自己的onTouchEvent，需要拦截器onInterceptTouchEvent方法return true 把事件拦截下来。
 
-   ViewGroup怎样通过dispatchTouchEvent方法能把事件分发到自己的onTouchEvent处理呢？return true和false 都不行，那么只能通过Interceptor把事件拦截下来给自己的onTouchEvent，所以ViewGroup dispatchTouchEvent方法的super默认实现就是去调用onInterceptTouchEvent，记住这一点
+   ViewGroup 的拦截器onInterceptTouchEvent 默认是不拦截的，所以return super.onInterceptTouchEvent()=return false；
 
+   View 没有拦截器，为了让View可以把事件分发给自己的onTouchEvent，View的dispatchTouchEvent默认实现（super）就是把事件分发给自己的onTouchEvent。
 
-5. onTouchEvent消费事件的情况：在哪个View的onTouchEvent 返回true，那么ACTION_MOVE和ACTION_UP的事件从上往下传到这个View后就不再往下传递了，而直接传给自己的onTouchEvent 并结束本次事件传递过程
-
-6. ACTION_MOVE、ACTION_UP总结：ACTION_DOWN事件在哪个控件消费了（return true）， 那么当ACTION_MOVE和ACTION_UP就会从上往下（通过dispatchTouchEvent）做事件分发往下传时，就只会传到这个控件，不会继续往下传。
-
-   如果ACTION_DOWN事件是在dispatchTouchEvent消费，那么事件到此为止停止传递，如果ACTION_DOWN事件是在onTouchEvent消费的，那么会把ACTION_MOVE或ACTION_UP事件传给该控件的onTouchEvent处理并结束传递
+4. ACTION_DOWN事件在哪个控件消费了（return true）， 那么ACTION_MOVE和ACTION_UP就会从上往下（通过dispatchTouchEvent）做事件分发往下传，就只会传到这个控件，不会继续往下传，如果ACTION_DOWN事件是在dispatchTouchEvent消费，那么事件到此为止停止传递，如果ACTION_DOWN事件是在onTouchEvent消费的，那么会把ACTION_MOVE或ACTION_UP事件传给该控件的onTouchEvent处理并结束传递
 
 ### 总结
 
@@ -2686,3 +2683,13 @@ public class ViewHolder {
 * 适当使用软引用和弱引用
 * 采用内存缓存和磁盘缓存
 * 尽量采用静态内部类，这样可以避免潜在的由于内部类而导致的内存泄漏
+
+# 像素单位
+
+px：像素点，如1920x1080
+
+dpi：像素密度，即像素/英寸
+
+dp：设备独立像素，dpi / 160
+
+px = dp * (dpi / 160)，在每英寸160像素点的屏幕上，1dp = 1px
