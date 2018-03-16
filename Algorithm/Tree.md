@@ -17,7 +17,7 @@ Pre-order(head, left, right)
 ```java
 void preOrder(Node head) {
   if (head == null) return;
-  // do something
+  // print head.value
   preOrder(head.left);
   preOrder(head.right);
 }
@@ -41,7 +41,7 @@ In-order(left, head, right)
 void inOrder(Node head) {
   if (head == null) return;
   inOrder(head.left);
-  // do something
+  // print head.value
   inOrder(head.right);
 }
 
@@ -70,7 +70,7 @@ void postOrder(Node head) {
   if (head == null) return;
   postOrder(head.left);
   postOrder(head.right);
-  // do something
+  // print head.value
 }
 
 void postOrder(Node head) {
@@ -79,7 +79,7 @@ void postOrder(Node head) {
   Stack<Node> s2 = new Stack<>();
   s1.push(head);
   while (!s1.isEmpty()) {
-    // use s1 to generate the pre-like-order, use s2 to reverser the pre-like-order to post-order
+    // use s1 to generate "head-right-left", push in s2 to generate "left-right-head"
     head = s1.pop();
     s2.push(head);
     if (head.left != null) {
@@ -630,16 +630,23 @@ int findMaximizedCapital(int k, int W, int[] Profits, int[] Capital) {
 
   PriorityQueue<Node> minCostQ = new PriorityQueue<>((o1, o2) -> o1.c - o2.c);
   PriorityQueue<Node> maxProfitQ = new PriorityQueue<>((o1, o2) -> o2.p - o1.p);
+  
   for (int i = 0; i < nodes.length; i++) {
     minCostQ.add(nodes[i]);
   }
+  
   for (int i = 0; i < k; i++) {
+    // unlock affordable jobs
     while (!minCostQ.isEmpty() && minCostQ.peek().c <= W) {
       maxProfitQ.add(minCostQ.poll());
     }
+    
+    // no affordable jobs
     if (maxProfitQ.isEmpty()) {
       return W;
     }
+    
+    // do the most profitable job
     W += maxProfitQ.poll().p;
   }
   return W;

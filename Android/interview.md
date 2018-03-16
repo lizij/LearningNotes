@@ -1875,6 +1875,62 @@ public void run() throws Exception {
 
 [OkHttp使用完全教程](https://www.jianshu.com/p/ca8a982a116b)
 
+# PendingIntent
+
+处于pending状态的意图，即待定，即将发生的意思
+
+Intent是立即发生
+
+## 用途
+
+### 主要方法
+
+| 用途         | 主要方法                                     |
+| ---------- | ---------------------------------------- |
+| 启动Activity | getActivity(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.startActivity(Intent) |
+| 启动Service  | getService(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.startService(Intent) |
+| 发送广播       | getBroadcast(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.sendBroadcast(Intent) |
+
+### 匹配规则
+
+1. 内部Intent相同，即
+   1. ComponentName相同
+   2. intent-filter相同
+2. requestCode相同
+
+### 参数解析
+
+Context：上下文
+
+requestCode：Pending发送方请求码，默认为0
+
+Intent：要调用的Intent
+
+flags：
+
+1. FLAG_ONE_SHOT：当前PendingIntent只能使用一次，自动cancel
+2. FLAG_NO_CREATE：当前PendingIntent无法主动创建，使用很少
+3. FLAG_CANCEL_CURRENT：当前PendingIntent如果已存在，则cancel所有之前的，并创建一个新的PendingIntent
+4. FLAG_UPDATE_CURRENT：当前PendingIntent如果已存在，则更新其中Intent的Extras
+
+# RemoteViews
+
+在其他进程中显示并更新View界面
+
+由于没有提供findViewById方法，无法访问内部的View元素，必须通过一些列set方法来完成
+
+主要用于通知栏和小部件
+
+## 原理
+
+1. NotificationManagerService和AppWidgetService运行在SystemServer进程中
+2. RemoteViews会通过Binder传输到SystemServer进程中
+3. 系统根据RemoteViews的信息得到应用资源，用LayoutInflater加载布局文件
+4. 通过一系列set方法执行界面更新
+5. 将View操作封装成Action对象（Parcelable），传输到远程进程并依次执行
+
+![技术分享图片](http://image.bubuko.com/info/201801/20180111124332052387.png)
+
 # Service
 
 ## startService和bindService
@@ -2209,9 +2265,9 @@ public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback,
 
 # View工作原理
 
-## View的绘制过程
+## DecorView和ViewRoot
 
-### 窗口结构
+### DecorView
 
 ![image](http://upload-images.jianshu.io/upload_images/2397836-f1f6a200704884a2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&_=6219915)
 
@@ -2237,33 +2293,104 @@ public void requestLayout() {
 
 上面的方法中调用了scheduleTraversals()方法来调度一次完成的绘制流程，该方法会向主线程发送一个“遍历”消息，最终会导致ViewRootImpl的performTraversals()方法被调用，开始View绘制的以下三个阶段
 
-### 三个阶段
+## MeasureSpec和LayoutParams
+
+### 概念
+
+MeasureSpec代表一个32位的int值，用于决定View的宽高
+
+* 高2位代表SpecMode：测量模式
+* 低30位代表SpecSize：某种测量模式下的规格大小
+
+SpecMode有3类：
+
+* UNSPECIFIED：父容器不对View有任何限制，一般用于系统内部，表示一种测量状态
+* EXACTLY：父容器已经检测出View所需的精确大小，即SpecSize指定的值，对应于LayoutParams中的match_parent和具体数值两种模式
+* AT_MOST：父容器指定了一个可用大小即SpecSize，View大小不能大于这个值，对应于LayoutParams的wrap_content
+
+### MeasureSpec和LayoutParams的关系
+
+* 对于顶级View，MeasureSpec由窗口尺寸和自身的LayoutParams共同决定
+* 对于普通View，MeasureSpec由父容器的MeasureSpec和自身的LayoutParams共同决定
+
+### 普通View的MeasureSpec创建规则
+
+| childLayoutParams\parentSpecMode | EXACTLY               | AT_MOST               | UNSPECIFILED         |
+| -------------------------------- | --------------------- | --------------------- | -------------------- |
+| dp/px                            | EXACTLY<br>childSize  | EXACTLY<br>childSize  | EXACTLY<br>childSize |
+| match_parent                     | EXACTLY<br>parentSize | AT_MOST<br>parentSize | UNSPECIFILED<br>0    |
+| wrap_content                     | AT_MOST<br>parentSize | AT_MOST<br>parentSize | UNSPECIFILED<br>0    |
+
+## View的绘制过程
 
 View的工作流程主要是指measure、layout、drow这三大流程，即测量、布局和绘制，其中measure确定View的测量宽/高，layout确定View的最终宽/高和四个顶点的位置，而draw则将View绘制到屏幕上
 
 ![image](http://upload-images.jianshu.io/upload_images/2397836-19c08de6439514a7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&_=6219915)
 
-#### measure
+### measure
 
 计算出控件树中的各个控件要显示其内容的话，需要多大尺寸
 
-measure过程要分情况来看，如果只是一个原始的View，那么通过measure方法就完成了其测量过程。如果是一个ViewGroup，除了完成自己的测量过程外，还会遍历去调用所有子元素的measure方法，各个子元素再递归去执行这个流程。
+#### View的measure过程
 
-#### layout
+直接继承View的自定义控件需要重写onMeasure方法并设置wrap_content时的自身大小，否则在不居中使用wrap_content相当于match_parent
+
+> 如果View在不居中使用wrap_content，那么它的SpecMode是AT_MOST模式，在这种模式下，它的宽高等于specSize，即此时就相当于parentSize，也就是父容器当前剩余的大小
+
+解决方法是给View指定一个默认的内部宽高（mWidth和mHeight），并在wrap_content时设置此宽高。对于非wrap_content的情形，沿用系统的测量值。
+
+```java
+@Override
+protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+  super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+  int widthSpecMode = MeasureSpec.getMode(widthMeasureSpec);
+  int widthSpecSize = MeasureSpec.getSize(widthMeasureSpec);
+  int heightSpecMode = MeasureSpec.getMode(heightMeasureSpec);
+  int heightSpecSize = MeasureSpec.getSize(heightMeasureSpec);
+  if (widthSpecMode == MeasureSpec.AT_MOST
+      && heightSpecMode == MeasureSpec.AT_MOST) {
+    setMeasuredDimension(mWidth, mHeight);
+  } else if (widthSpecMode == MeasureSpec.AT_MOST) {
+    setMeasuredDimension(mWidth, heightSpecSize);
+  } else if (heightSpecMode == MeasureSpec.AT_MOST) {
+    setMeasuredDimension(widthSpecSize, mHeight);
+  }
+}
+```
+
+#### ViewGroup的measure过程
+
+除了完成自己的测量过程外，还会遍历去调用所有子元素的measure方法，各个子元素再递归去执行这个流程
+
+#### Activity实时获取View的宽高
+
+在onCreate，onStart，onResume中均无法正确获取某个View的宽高，因为View的measure过程和Activity的生命周期方法不是同步执行的，因此无法保证Activity执行了onCreate，onStart，onResume时某个View已经测量完毕，如果还没有测量完毕，获取的宽高就是0
+
+解决方法
+
+* Activity/View#onWindowFocusChanged：此时View已经初始化完毕，宽高已经准备好，一定能获取到
+* View.post(runnable)：通过post可以将一个runnable投递到消息队列的尾部，然后等待Looper调用此runnable时，View也已经初始化好了
+* ViewTreeObserver：比如使用ViewTreeObserver的onGlobalLayoutListener回调方法，当View树状态改变或View树内部View可见性改变时，onGlobalLayout将被回调，此时可以获取View的宽高
+* view.measure()：手动对View进行measure，根据View的LayoutParams分情况处理
+  * match_parent：直接放弃，此种方法需要知道父容器parentSize，而此时无法知道
+  * 具体数值或wrap_content：可行
+
+### layout
 
 layout的作用是ViewGroup用来确定子元素的位置，当ViewGroup的位置被确定为后，它在onLayout中会遍历所有的子元素并调用其layout方法
 
 layout方法的大致流程如下：首先通过setFrame方法来设定View的四个顶点的位置，即初始化mLeft、mTop、mRight和mBottom四个参数，这四个参数描述了View相对其父View的位置。在setFrame()方法中会判断View的位置是否发生了改变，若发生了改变，则需要对子View进行重新布局，对子View的局部是通过onLayout()方法实现了
 
-#### draw
+### draw
 
 将View绘制到屏幕上面
+
+绘制过程的传递是通过dispatchDraw实现的，dispatchDraw会遍历调用所有子元素的draw方法
 
 ```java
 public void draw(Canvas canvas) {
   // ...
   // 绘制背景，只有dirtyOpaque为false时才进行绘制，下同
-  int saveCount;
   if (!dirtyOpaque) {
     drawBackground(canvas);
   }
@@ -2277,103 +2404,181 @@ public void draw(Canvas canvas) {
   dispatchDraw(canvas);
 
   // ...
-  // 绘制滚动条等
+  // 绘制滚动条等装饰
   onDrawForeground(canvas);
 
 }
 ```
 
+默认情况下ViewGroup不启用setWillNotDraw，不绘制任何内容，系统可以进行相应的优化。如果需要绘制，需要显式关闭WILL_NOT_DRAW标记位
+
 ## 自定义View
 
 ### 通常情况
 
-1. 如果想控制View在屏幕上的渲染效果，就在重写onDraw()方法，在里面进行相应的处理。
-2. 如果想要控制用户同View之间的交互操作，则在onTouchEvent()方法中对手势进行控制处理。
-3. 如果想要控制View中内容在屏幕上显示的尺寸大小，就重写onMeasure()方法中进行处理。
-4. 在 XML文件中设置自定义View的XML属性。
-5. 如果想避免失去View的相关状态参数的话，就在onSaveInstanceState() 和 onRestoreInstanceState()方法中保存有关View的状态信息。
+1. 继承View重写onDraw：如果想控制View在屏幕上的渲染效果，就在重写onDraw()方法，在里面进行相应的处理，如处理wrap_content和padding；
+2. 继承ViewGroup实现自定义布局：重点处理onMeasure和onLayout过程
+3. 继承特定View：扩展已有View的功能，例如TextView，一般不需要处理wrap_content和padding
+4. 继承特定ViewGroup：扩展已有ViewGroup功能
 
-### 自定义控件
+**关键点：**
 
-组合控件：将一些小的控件组合起来形成一个新的控件，这些小的控件多是系统自带的控件。比如很多应用中普遍使用的标题栏控件，其实用的就是组合控件
+1. 让View支持wrap_content和padding
+2. 尽量不要在View中使用Handler
+3. View中如果有线程或动画，需要在onDetachFromWindow中及时停止，否则可能导致内存泄漏
+4. 处理好滑动冲突
 
-自绘控件：自绘控件的内容都是自己绘制出来的，在View的onDraw方法中完成绘制
+**其他方面：**
 
-继承控件：继承已有的控件，创建新控件，保留继承的父控件的特性，并且还可以引入新特性
+1. 如果想要控制用户同View之间的交互操作，则在onTouchEvent()方法中对手势进行控制处理。
+2. 如果想要控制View中内容在屏幕上显示的尺寸大小，就重写onMeasure()方法中进行处理。
+3. 在 XML文件中设置自定义View的XML属性。
+4. 如果想避免失去View的相关状态参数的话，就在onSaveInstanceState() 和 onRestoreInstanceState()方法中保存有关View的状态信息。
 
-## 自定义ViewGroup
+### 自定义属性
 
-### 操作过程
+1. 在values目录下创建自定义属性的XML，如attrs.xml
 
-1. 首先得知道各个子View的大小，只有先知道子View的大小，我们才知道当前的ViewGroup该设置为多大去容纳它们
-2. 根据子View的大小，以及我们的ViewGroup要实现的功能，决定出ViewGroup的大小
-3. ViewGroup和子View的大小算出来了之后，接下来就是去摆放了吧，具体怎么去摆放得根据你定制的需求，比如，你想让子View按照垂直顺序一个挨着一个放，或者是按照先后顺序一个叠一个去放，这是你自己决定的
-4. 决定了怎么摆放就是相当于把已有的空间"分割"成大大小小的空间，每个空间对应一个子View，我们接下来就是把子View对号入座了，把它们放进它们该放的地方去
+   例如指定格式为`color`的属性`circle_color`
 
-### 实现自动换行的ViewGroup
+   ```xml
+   <?xml version="1.0" encoding="utf-8"?>
+   <resources>
+     <declare-styleable name="CircleView">
+     	<attr name="circle_color" format="color"/>
+     </declare-styleable>
+   </resources>
+   ```
+
+2. 在View的构造方法中解析自定义属性的值并做相应处理
+
+   首先接在自定义属性集合CircleView，接着解析其中的`circle_color` 属性，id为`R.styleable.CircleView_circle_color` ，选取红色作为默认值
+
+   ```java
+   public CircleView(Context context, AttributeSet attrs, int defStyleAttr) {
+     super(context, attrs, defStyleAttr);
+     TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CircleView);
+     mColor = a.getColor(R.styleable.CircleView_circle_color, Color.RED);
+     a.recycle();
+     init();
+   }
+   ```
+
+3. 在布局文件中只用自定义属性
+
+   ```xml
+   app:circle_color="@color/light_green"
+   ```
+
+> 为了使用自定义属性，必须在布局文件中添加schemas声明：`xmlns:app=http://schemas.android.com/apk/res-auto` 。在这个声明中，app是自定义属性的前缀，可以换成其他名字，但必须和CircleView中的自定义属性前缀保持一致
+
+## 实例：实现自动换行的ViewGroup
 
 效果图：
 
 ![](http://www.jcodecraeer.com/uploads/allimg/130305/22540UU5-0.png)
 
-自定义一个viewgroup,然后在onlayout文件里面自动检测view的右边缘的横坐标值，和你的view的parent view的况度判断是否换行显示view就可以了
+自定义一个viewgroup，在onlayout里面自动检测view的右边缘的横坐标值，判断是否换行显示view就可以了
 
 ```java
-public class MyViewGroup extends ViewGroup { 
-  private final static String TAG = "MyViewGroup"; 
-  private final static int VIEW_MARGIN = 2; 
-  public MyViewGroup(Context context) { 
-    super(context); 
-  } 
+public class AutoLinefeedLayout extends ViewGroup {  
 
-  @Override 
-  protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) { 
-    Log.d(TAG, "widthMeasureSpec = " + widthMeasureSpec + " heightMeasureSpec" + heightMeasureSpec); 
-    for (int index = 0; index < getChildCount(); index++) { 
-      final View child = getChildAt(index); 
-      // measure 
-      child.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED); 
-    } 
-    super.onMeasure(widthMeasureSpec, heightMeasureSpec); 
-  } 
-  
-  @Override 
-  protected void onLayout(boolean arg0, int arg1, int arg2, int arg3, int arg4) { 
-    Log.d(TAG, "changed = " + arg0 + " left = " + arg1 + " top = " + arg2 + " right = " + arg3 + " botom = " + arg4); 
-    final int count = getChildCount(); 
+  public AutoLinefeedLayout(Context context, AttributeSet attrs, int defStyle) {  
+    super(context, attrs, defStyle);  
+  }  
 
-    int row = 0;// which row lay you view relative to parent 
-    int lengthX = arg1; // right position of child relative to parent 
-    int lengthY = arg2; // bottom position of child relative to parent 
+  public AutoLinefeedLayout(Context context, AttributeSet attrs) {  
+    this(context, attrs, 0);  
+  }  
 
-    for (int i = 0; i < count; i++) { 
-      final View child = this.getChildAt(i); 
+  public AutoLinefeedLayout(Context context) {  
+    this(context, null);  
+  }  
 
-      int width = child.getMeasuredWidth(); 
-      int height = child.getMeasuredHeight(); 
+  @Override  
+  protected void onLayout(boolean changed, int l, int t, int r, int b) {  
+    layoutHorizontal();  
+  }  
 
-      lengthX += width + VIEW_MARGIN; 
-      lengthY = row * (height + VIEW_MARGIN) + VIEW_MARGIN + height 
-        + arg2; 
+  private void layoutHorizontal() {  
+    final int count = getChildCount();  
+    final int lineWidth = getMeasuredWidth() - getPaddingLeft()  
+      - getPaddingRight();  
+    int paddingTop = getPaddingTop();  
+    int childTop = 0;  
+    int childLeft = getPaddingLeft();  
 
-      // if it can't drawing on a same line , skip to next line 
-      if (lengthX > arg3) { 
-        lengthX = width + VIEW_MARGIN + arg1; 
-        row++; 
-        lengthY = row * (height + VIEW_MARGIN) + VIEW_MARGIN + height 
-          + arg2; 
-      } 
+    int availableLineWidth = lineWidth;  
+    int maxLineHight = 0;  
 
-      child.layout(lengthX - width, lengthY - height, lengthX, lengthY); 
-    } 
-  } 
-}
+    for (int i = 0; i < count; i++) {  
+      final View child = getChildAt(i);  
+      if (child == null) {  
+        continue;  
+      } else if (child.getVisibility() != GONE) {  
+        final int childWidth = child.getMeasuredWidth();  
+        final int childHeight = child.getMeasuredHeight();  
+
+        if (availableLineWidth < childWidth) {  
+          availableLineWidth = lineWidth;  
+          paddingTop = paddingTop + maxLineHight;  
+          childLeft = getPaddingLeft();  
+          maxLineHight = 0;  
+        }  
+        childTop = paddingTop;  
+        setChildFrame(child, childLeft, childTop, childWidth,  
+                      childHeight);  
+        childLeft += childWidth;  
+        availableLineWidth = availableLineWidth - childWidth;  
+        maxLineHight = Math.max(maxLineHight, childHeight);  
+      }  
+    }  
+  }  
+
+  private void setChildFrame(View child, int left, int top, int width,  
+                             int height) {  
+    child.layout(left, top, left + width, top + height);  
+  }  
+
+  @Override  
+  protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {  
+    final int heightMode = MeasureSpec.getMode(heightMeasureSpec);  
+    int count = getChildCount();  
+    for (int i = 0; i < count; i++) {  
+      measureChild(getChildAt(i), widthMeasureSpec, heightMeasureSpec);  
+    }  
+    if (heightMode == MeasureSpec.AT_MOST||heightMode == MeasureSpec.UNSPECIFIED) {  
+      final int width = MeasureSpec.getSize(widthMeasureSpec);  
+      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(  
+        getDesiredHeight(width), MeasureSpec.EXACTLY));  
+    } else {  
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);  
+    }  
+  }  
+
+  private int getDesiredHeight(int width) {  
+    final int lineWidth = width - getPaddingLeft() - getPaddingRight();  
+    int availableLineWidth = lineWidth;  
+    int totalHeight = getPaddingTop() + getPaddingBottom();  
+    int lineHeight = 0;  
+    for (int i = 0; i < getChildCount(); i++) {  
+      View child = getChildAt(i);  
+      final int childWidth = child.getMeasuredWidth();  
+      final int childHeight = child.getMeasuredHeight();  
+      if (availableLineWidth < childWidth) {  
+        availableLineWidth = lineWidth;  
+        totalHeight = totalHeight + lineHeight;  
+        lineHeight = 0;  
+      }  
+      availableLineWidth = availableLineWidth - childWidth;  
+      lineHeight = Math.max(childHeight, lineHeight);  
+    }  
+    totalHeight = totalHeight + lineHeight;  
+    return totalHeight;  
+  }  
+
+}  
 ```
-
-1. onMeasure() 在这个函数中，ViewGroup会接受childView的请求的大小，然后通过childView的 measure(newWidthMeasureSpec, heightMeasureSpec)函数存储到childView中，以便childView的getMeasuredWidth() andgetMeasuredHeight() 的值可以被后续工作得到。
-2. onLayout() 在这个函数中，ViewGroup会拿到childView的getMeasuredWidth()和getMeasuredHeight()，用来布局所有的childView。
-3. View.MeasureSpec 与 LayoutParams 这两个类，是ViewGroup与childView协商大小用的。其中，View.MeasureSpec是ViewGroup用来部署 childView用的， LayoutParams是childView告诉ViewGroup 我需要多大的地方。
-4. 在View的onMeasure的最后要调用setMeasuredDimension()这个方法存储View的大小，这个方法决定了当前View的大小。
 
 [教你搞定Android自定义View](https://www.jianshu.com/p/84cee705b0d3)
 
@@ -2385,9 +2590,119 @@ public class MyViewGroup extends ViewGroup {
 
 [android之自定义ViewGroup实现自动换行布局](http://www.jcodecraeer.com/a/anzhuokaifa/androidkaifa/2013/0305/969.html)
 
-# View事件
+[Android最简洁的自动换行布局组件](http://blog.csdn.net/u011192530/article/details/53019212)
 
-## 事件分发
+# View事件体系
+
+## 基础概念
+
+### 坐标
+
+* left，top：View左上角的坐标
+
+* right，bottom：View右下角坐标
+
+* translationX，translationY是View左上角相对于父容器的偏移量，默认值为0，提供了get/set方法
+
+* x，y是View左上角的坐标
+
+  x = left + translationX，y = top + translationY
+
+### 事件类型
+
+* ACTION_DOWN：刚接触屏幕
+* ACTION_UP：从屏幕上松开的一瞬间
+* ACTION_MOVE：在屏幕上滑动
+
+典型事件序列：DOWN->MOVE->...->MOVE->UP
+
+### TouchSlop
+
+系统可以识别的最小滑动距离：`ViewConfiguration.get(getContext()).getScaledTouchSlop()`
+
+## View的滑动
+
+* scrollTo/scrollBy：操作简单，适合滑动View内容
+* 动画：操作简单，适合没有交互的View和实现复杂的动画效果
+* 改变布局参数：操作复杂，适合有交互的View
+
+### 使用scrollTo/scrollBy
+
+```java
+public void scrollTo(int x, int y);
+public void scrollBy(int x, int y);
+```
+
+scrollBy实际上也是调用了scrollTo，以下只讨论scrollTo
+
+scrollTo只能改变View内容的位置而不能改变View在布局中的位置
+
+左->右：x为负值
+
+上->下：y为负值
+
+### 使用动画
+
+通过动画让一个View平移，主要是操作View的tranlationX和translationY属性
+
+例如，让一个View在100ms内从原始位置向右平移100像素
+
+```java
+ObjectAnimator.ofFloat(targetView, "translationX", 0, 100).setDuration(100).start();
+```
+
+View动画是对View的影像做操作，不能真正改变VIew的位置参数，设置fillAfter属性为true可以保存动画后状态。使用属性动画不存在这个问题
+
+### 改变布局参数
+
+即改变LayoutParams，例如将一个Button向右平移100像素
+
+```java
+MarginLayoutParams params = (MarginLayoutParams) mButton.getLayoutParams();
+params.width += 100;
+params.leftMargin += 100;
+mButton.requestLayout();
+// 或mButton.setLayoutParams(params);
+```
+
+### 弹性滑动
+
+将以此大的滑动分成若干次小的滑动并在一段时间内完成
+
+* 使用Scroller：配合View的computeScroll，不断让View重绘，而每一次重绘距离滑动起始时间会有一个时间间隔，Scroller通过这个时间间隔获得View当前的滑动位置，知道了位置就可以通过scrollTo方法完成View的滑动
+* 使用动画：在动画的每一帧到来时获取动画完成的比例，根据比例计算出当前View要滑动的距离
+* 使用延时策略：通过发送一系列延时消息从而达到渐进式效果，可以使用Handler或View的postDelayed，也可以使用线程的sleep
+
+## 事件分发机制
+
+### 核心方法
+
+* dispatchTouchEvent(MotionEvent ev)：用来进行事件分发
+  * 如果事件能传递给当前View则一定会被调用
+  * 返回结果受当前View的onTouchEvent和下级View的dispatchTouchEvent影响，表示是否消耗当前事件
+* onInterceptTouchEvent(MotionEvent ev)：判断是否拦截某个事件
+  * 在dispatchTouchEvent中调用
+  * 如果当前View拦截了某个事件，在同一事件序列中不会被再次调用
+  * 返回结果表示是否拦截事件
+* onTouchEvent(MotionEvent ev)：处理点击事件
+  * 在dispatchTouchEvent中调用
+  * 返回结果表示是否消耗当前事件，如果不消耗，当前View无法再次接收到事件
+
+三者的关系（伪代码）
+
+```java
+public boolean dispatchTouchEvent(MotionEvent ev) {
+  boolean consume = false;
+  if (onInterceptTouchEvent(ev)) {
+    consume = onTouchEvent(ev);
+  } else {
+    consume = child.dispatchTouchEvent(ev);
+  }
+  return consume;
+}
+```
+
+
 
 ### 原理
 
@@ -2403,35 +2718,44 @@ public class MyViewGroup extends ViewGroup {
 
 ### 关键点
 
-1. 默认实现流程：整个事件流向应该是从Activity---->ViewGroup--->View 从上往下调用dispatchTouchEvent方法，一直到叶子节点（View）的时候，再由View--->ViewGroup--->Activity从下往上调用onTouchEvent方法
-
-   ViewGroup 和View的这些方法的默认实现就是会让整个事件安装U型完整走完，所以 return super.xxxxxx() 就会让事件依照U型的方向的完整走完整个事件流动路径）
-
-2. 对于 dispatchTouchEvent，onTouchEvent，return true是终结事件传递。return false 是回溯到父View的onTouchEvent方法。
-
-3. ViewGroup 把事件分发给自己的onTouchEvent，需要拦截器onInterceptTouchEvent方法return true 把事件拦截下来。
-
-   ViewGroup 的拦截器onInterceptTouchEvent 默认是不拦截的，所以return super.onInterceptTouchEvent()=return false；
-
-   View 没有拦截器，为了让View可以把事件分发给自己的onTouchEvent，View的dispatchTouchEvent默认实现（super）就是把事件分发给自己的onTouchEvent。
-
-4. ACTION_DOWN事件在哪个控件消费了（return true）， 那么ACTION_MOVE和ACTION_UP就会从上往下（通过dispatchTouchEvent）做事件分发往下传，就只会传到这个控件，不会继续往下传，如果ACTION_DOWN事件是在dispatchTouchEvent消费，那么事件到此为止停止传递，如果ACTION_DOWN事件是在onTouchEvent消费的，那么会把ACTION_MOVE或ACTION_UP事件传给该控件的onTouchEvent处理并结束传递
-
-### 总结
-
-1. 触摸事件的处理涉及三个方法：dispatchTouchEvent()、onInterceptEvent()、onTouchEvent()
-2. 从Activity的dispatch开始传递，如果没有拦截，则一直传递到子view。
-3. 如果子View没有消费事件，事件会向上传递，这时父ViewGroup才可以消费事件。
-4. 如果子View没有消费DOWN事件（没有返回 true），后续事件都不会再传递进来，直到下一次DOWN。
-5. OnTouchListener的处理优先级高于onTouchEvent()
+* 默认实现流程
+  * 整个事件流向应该是从Activity---->ViewGroup--->View 从上往下调用dispatchTouchEvent方法，一直到叶子节点（View）的时候，再由View--->ViewGroup--->Activity从下往上调用onTouchEvent方法
+  * ViewGroup 和View的这些方法的默认实现就是会让整个事件安装U型完整走完，所以 return super.xxxxxx() 就会让事件依照U型的方向的完整走完整个事件流动路径）
+* dispatchTouchEvent，onTouchEvent的返回值
+  * true：终结事件传递
+  * false：回溯到父View的onTouchEvent方法
+* 拦截器onInterceptTouchEvent
+   * ViewGroup 把事件分发给自己的onTouchEvent，需要拦截器onInterceptTouchEvent方法return true 把事件拦截下来。
+   * ViewGroup 的拦截器onInterceptTouchEvent 默认不拦截，即return false；
+   * View 没有拦截器，为了让View可以把事件分发给自己的onTouchEvent，View的dispatchTouchEvent默认实现（super）就是把事件分发给自己的onTouchEvent。
+* 正常情况下，一个事件序列只能被一个View拦截且消耗
+  * ACTION_DOWN事件
+    * 在dispatchTouchEvent消费：事件到此为止停止传递
+    * 在onTouchEvent消费：把ACTION_MOVE或ACTION_UP事件传给该View的onTouchEvent处理并结束传递
+    * 没有被消耗：同一事件序列的其他事件都不会再交给该View
+  * View的onTouchEvent默认都会消耗事件，除非clickable和longClickable同时为false，enable属性不影响
+  * View可以通过requestDisallowInterceptTouchEvent干预父元素的事件分发，但是ACTION_DOWN除外
+* onTouchListener的优先级比onTouchEvent要高，其中会调用onTouch方法，并屏蔽onTouchEvent
 
 [图解 Android 事件分发机制](https://www.jianshu.com/p/e99b5e8bd67b)
 
 ## 滑动冲突处理
 
-* 确定冲突的有关控件
-* 找准冲突发生的点
-* 确定是用内部还是外部的方式
+### 常见场景
+
+1. 外部滑动方向和内部滑动方向不一致
+
+   例如：可以通过左右滑动切换页面，而每个页面内部又是ListView
+
+   根据滑动特征解决，即根据水平滑动还是竖直滑动判断该由谁拦截事件
+
+2. 外部滑动方向和内部滑动方向一致
+
+   例如：内外两层都是上下滑动
+
+   根据业务特点判断
+
+3. 上述两种情况的嵌套，同样根据业务特点判断
 
 ### 外部拦截
 
@@ -2441,20 +2765,27 @@ public class MyViewGroup extends ViewGroup {
 
 ```java
 public boolean onInterceptTouchEvent(MotionEvent ev) {
+  boolean isIntercept = false;
+  int x = (int) ev.getX();
   int y = (int) ev.getY();
+
   switch (ev.getAction()){
     case MotionEvent.ACTION_DOWN:
-      yDown = y;
+      // 必须返回false，否则事件无法传递给子容器
       isIntercept = false;
+
+      // 如果用户正在水平滑动，但在水平滑动停止之前进行了竖直滑动，
+      // 则会导致界面在水平方向无法滑动到终点，
+      // 因此需要父容器拦截，从而优化滑动体验
+      if (!mScroller.isFinished()) {
+        mScroller.abortAnimation();
+        isIntercept = true;
+      }
       break;
     case MotionEvent.ACTION_MOVE:
-      yMove = y;
-      if (yMove - yDown < 0){
-        //根据业务需求更改判断条件，判断是时候需要拦截
-        isIntercept = false;
-      }else if(yMove - yDown > 0 && getChildAt(0).getScrollY() == 0){
+      if (父容器需要当前事件) {
         isIntercept = true;
-      }else if(yMove - yDown > 0 && getChildAt(0).getScrollY() > 0){
+      } else {
         isIntercept = false;
       }
       break;
@@ -2462,6 +2793,8 @@ public boolean onInterceptTouchEvent(MotionEvent ev) {
       isIntercept = false;
       break;
   }
+  mLastXIntercept = x;
+  mLastYIntercept = y;
   return isIntercept;         //返回true表示拦截，返回false表示不拦截
 }
 ```
@@ -2476,26 +2809,25 @@ public boolean onInterceptTouchEvent(MotionEvent ev) {
 
 ```java
 public boolean dispatchTouchEvent(MotionEvent ev) {
+  int x = (int) ev.getX();
   int y = (int) ev.getY();
   switch (ev.getAction()) {
     case MotionEvent.ACTION_DOWN:
       getParent().requestDisallowInterceptTouchEvent(true);
-      yDown = y;
       break;
     case MotionEvent.ACTION_MOVE:
-      yMove = y;
-      Log.e("mes", yMove + "！！！");
-      int scrollY = getScrollY();
-      if (scrollY == 0&&yMove-yDown>0) {
-        //根据业务需求判断是否需要通知父viewgroup来拦截处理该事件
-        //允许父View进行事件拦截
-        Log.e("mes",yMove-yDown+"拦截");
+      int deltaX = x - mLastX;
+      int deltaY = y - mLastY;
+      
+      if (父容器需要此类事件) {
         getParent().requestDisallowInterceptTouchEvent(false);
       }
       break;
     case MotionEvent.ACTION_UP:
       break;
   }
+  mLastX = x;
+  mLastY = y;
   return super.dispatchTouchEvent(ev);
 }
 ```
@@ -2504,7 +2836,11 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
 
 ```java
 public boolean onInterceptTouchEvent(MotionEvent ev) {
-  if (ev.getAction()==MotionEvent.ACTION_DOWN){
+  if (ev.getAction() == MotionEvent.ACTION_DOWN){
+    if (!mScroller.isFinished()) {
+      mScroller.abortAnimation();
+      isIntercept = true;
+    }
     return false;
   } else {
     return true;

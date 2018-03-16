@@ -1,0 +1,8 @@
+.idea/
+out/
+android-art-res/
+*_files/
+*.docx
+*.pdf
+*.html
+*.iml

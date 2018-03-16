@@ -228,11 +228,9 @@ void swim(int[] arr, int index) {
 void sink(int[] arr, int index, int size) {
   int left = 2 * index + 1;
   while(left < size) {
-    // get the bigger one between arr[left] and arr[left + 1]
+    // get the bigger one's between arr[left] and arr[left + 1]
     int largest = left + 1 < size && arr[left + 1] > arr[left] ? left + 1 : left;
-    // get the bigger one between arr[biggest] and arr[index]
-    largest = arr[largest] > arr[index] ? largest : index;
-    if (largest == index) break; // don't need to adjust, arr[index] is bigger than or equal to its children
+    if (arr[largest] <= arr[index]) break; // don't need to adjust, arr[index] is bigger than or equal to its children
     swap(arr, index, largest);
     index = largest;
     left = index * 2 + 1;
@@ -408,7 +406,7 @@ Traditional way: traverse all arr[i] and find all smaller numbers before i. $$O(
 
 MergeSort-like way:
 
-In the process of merge(), for every number in the left part, find how many numbers larger than it. Then sum them all.
+In the process of `merge()`, for every number in the left part, find how many numbers larger than it. Then sum them all.
 
 For example:
 
@@ -465,7 +463,11 @@ int merge(int[] arr, int lo, int mid, int hi) {
 >
 > for i and j, if i < j and arr[i] > arr[j], (i, j) is a reverse order pair
 
-Similar with small sum.
+Similar with small sum, the difference is in `merge()`  :
+
+```java
+res += arr[p1] < arr[p2] ? hi - p2 + 1 : 0;
+```
 
 ### Max gap 
 

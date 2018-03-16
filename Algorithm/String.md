@@ -1,4 +1,4 @@
-# Lesson 2
+# String
 
 [TOC]
 
@@ -189,8 +189,8 @@ int maxLcpsLength(String str) {
   for (int i = 0; i < charArr.length; i++) {
     r[i] = i < R ? Math.min(r[2 * C - i], R - i) : 1;//give the least possbile r
     while(i + r[i] < charArr.length && i - r[i] > -1 && charArr[i + r[i]] == charArr[i - r[i]]) {
-      //try to extend in valid indexes
-      //if i <= R && rj != R, this will fail at once
+      // try to extend in valid indexes
+      // if i <= R && rj != R, this will fail at once
       r[i]++;
     }
 

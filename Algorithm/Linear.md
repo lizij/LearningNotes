@@ -22,15 +22,15 @@ First in first out.
 
 ### Consistent hashing
 
-If the output of hash() is evenly distributed, (hash() % m) is also evenly distributed.
+If the output of `hash()` is evenly distributed, `hash() % m` is also evenly distributed.
 
-However, if m becomes n (n > m), the previous output of "% m" is not valid. We need to compute all again.
+However, if m becomes n (n > m), the previous output of `% m` is not valid anymore. We need to compute all again.
 
-For example, we use hash() to distribute some data evenly in 3 computers. If we need to add 1 computer, to make sure the data distributed evenly we need to compute all again. It will cause a heavy computing burden on computers. Consistent hashing is a good way to solve this problem:
+For example, we use `hash()` to distribute some data evenly in 3 computers. If we need to add 1 computer, to make sure the data distributed evenly we need to compute all again. It will cause a heavy computing burden on computers. Consistent hashing is a good way to solve this problem:
 
 1. Divide the computer nodes into many virtual nodes.
 
-2. Use the same hash() to map virtual nodes and data in a same hashing circle
+2. Use the same `hash()` to map virtual nodes and data in a same hashing circle
 
   ![](http://img.blog.csdn.net/20140411001433375?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvY3l3b3Nw/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
 
@@ -187,7 +187,7 @@ System.out.println(Arrays.toString(arr));
 
 ### Integer.equals vs "=="
 
-use Integer.equals() instead 
+use Integer.equals() instead of "=="
 
 ```java
 new Integer(1234567) == new Integer(1234567) //false
@@ -324,7 +324,7 @@ class ArrayQueue {
 > 1. pop(), push() and getMin() should be in $$O(1)$$
 > 2. Stack<> that prebuilt in Java is available 
 
-Use an extra min stack to remember all new mins in order. When in pop(), if the pop data is equals to the min stack's peek, pop it too. 
+Use an extra min stack to remember all new mins in order. When in pop(), if the pop data is equal to the min stack's peek, pop it too. 
 
 ```java
 class GetMinStack {
@@ -1249,7 +1249,7 @@ int getLessIndex(int[] arr) {
 >
 > ![](http://www.leetcode.com/static/images/problemset/rainwatertrap.png)
 
-For each pos i, the max water blocks in i is min([0 - (i-1)]'s max height, [(i+1) - (n-1)]'s max height) - i's height.
+For each pos i, the max water blocks in i is min( max(arr[0...(i-1)]) , max(arr[(i+1)...(n-1)]) ) - arr[i]
 
 brute force solution $$O(n^2)$$&$$O(1)$$
 
