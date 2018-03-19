@@ -608,19 +608,550 @@ Server进程向Service Manager进程注册服务（可访问的方法接口）�
 
 [Android面试一天一题（Day 35：神秘的Binder机制）](https://www.jianshu.com/p/c7bcb4c96b38)
 
+# Drawable
+
+一种可以再Canvas上进行绘制的抽象概念
+
+* 使用简单，比自定义View成本低
+* 非图片Drawable占用空间小，有利于减小apk大小
+
+## 分类
+
+### BitmapDrawable
+
+表示图片
+
+```xml
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+        android:src="@drawable/image1"
+        android:tileMode="repeat"
+        />
+```
+
+NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
+
+### ShapeDrawable
+
+通过颜色构造图形，纯色或渐变
+
+```xml
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+       android:shape="rectangle" >
+
+  <solid android:color="#ff0000" />
+
+  <corners
+           android:bottomLeftRadius="0dp"
+           android:bottomRightRadius="15dp"
+           android:topLeftRadius="10dp"
+           android:topRightRadius="15dp" />
+
+</shape>
+```
+
+### LayerDrawable
+
+层次化的Drawable集合，通过将不同Drawable放在不同层达到叠加效果
+
+下面的item会覆盖上面的item
+
+```xml
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+  <item>
+    <shape android:shape="rectangle" >
+      <solid android:color="#0ac39e" />
+    </shape>
+  </item>
+
+  <item android:bottom="6dp">
+    <shape android:shape="rectangle" >
+      <solid android:color="#ffffff" />
+    </shape>
+  </item>
+
+  <item
+        android:bottom="1dp"
+        android:left="1dp"
+        android:right="1dp">
+    <shape android:shape="rectangle" >
+      <solid android:color="#ffffff" />
+    </shape>
+  </item>
+
+</layer-list>
+```
+
+### StateListDrawable
+
+根据View状态，从Drawable集合中顺序查找，选择匹配的显示
+
+默认的item应放在最后，且不附带状态
+
+```xml
+<selector xmlns:android="http://schemas.android.com/apk/res/android">   
+  <!-- 触摸时并且当前窗口处于交互状态 -->    
+  <item android:state_pressed="true" android:state_window_focused="true" android:drawable= "@drawable/pic1" />  
+  <!--  触摸时并且没有获得焦点状态 -->    
+  <item android:state_pressed="true" android:state_focused="false" android:drawable="@drawable/pic2" />    
+  <!--选中时的图片背景-->    
+  <item android:state_selected="true" android:drawable="@drawable/pic3" />     
+  <!--获得焦点时的图片背景-->    
+  <item android:state_focused="true" android:drawable="@drawable/pic4" />    
+  <!-- 窗口没有处于交互时的背景图片 -->    
+  <item android:drawable="@drawable/pic5" />   
+</selector>  
+```
+
+### LevelListDrawable
+
+表示Drawable集合，每个Drawable都有一个level，根据不同level切换Drawable
+
+```xml
+<level-list xmlns:android="http://schemas.android.com/apk/res/android"> 
+  <item
+        android:drawable="@drawable/drawable_resource"
+        android:maxLevel="integer"
+        android:minLevel="integer"
+        />
+</level-list>
+```
+
+### TransitionDrawable
+
+实现两个Drawable之间的淡入淡出
+
+```xml
+<transition xmlns:android="http://schemas.android.com/apk/res/android" >
+
+  <item android:drawable="@drawable/shape_drawable_gradient_linear"/>
+  <item android:drawable="@drawable/shape_drawable_gradient_radius"/>
+
+</transition>
+```
+
+### InsetDrawable
+
+将其他Drawable内嵌到自己中，并在四周留出一定间距
+
+```xml
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+       android:insetBottom="15dp"
+       android:insetLeft="15dp"
+       android:insetRight="15dp"
+       android:insetTop="15dp" >
+
+  <shape android:shape="rectangle" >
+    <solid android:color="#ff0000" />
+  </shape>
+</inset>
+```
+
+### ScaleDrawable
+
+根据自己的等级将指定Drawable缩放一定比例
+
+```xml
+<scale xmlns:android="http://schemas.android.com/apk/res/android"
+       android:drawable="@drawable/image1"
+       android:scaleHeight="70%"
+       android:scaleWidth="70%"
+       android:scaleGravity="center" />
+```
+
+### ClipDrawable
+
+根据自己的等级裁剪另一个Drawable
+
+```xml
+<clip xmlns:android="http://schemas.android.com/apk/res/android"
+      android:clipOrientation="vertical"
+      android:drawable="@drawable/image1"
+      android:gravity="bottom" />
+```
+
+## 自定义Drawable
+
+通过重写Drawable的draw方法自定义
+
+```java
+public class CustomDrawable extends Drawable {
+  private Paint mPaint;
+
+  public CustomDrawable(int color) {
+    mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    mPaint.setColor(color);
+  }
+
+  @Override
+  public void draw(Canvas canvas) {
+    final Rect r = getBounds();
+    float cx = r.exactCenterX();
+    float cy = r.exactCenterY();
+    canvas.drawCircle(cx, cy, Math.min(cx, cy), mPaint);
+  }
+
+  @Override
+  public void setAlpha(int alpha) {
+    mPaint.setAlpha(alpha);
+    invalidateSelf();
+
+  }
+
+  @Override
+  public void setColorFilter(ColorFilter cf) {
+    mPaint.setColorFilter(cf);
+    invalidateSelf();
+  }
+
+  @Override
+  public int getOpacity() {
+    // not sure, so be safe
+    return PixelFormat.TRANSLUCENT;
+  }
+
+}
+```
+
 # 动画
 
-## View Animation（视图动画）
+## View动画
 
-视图动画，也就是所谓补间动画，Tween动画。指通过指定View的初始状态、变化时间、方式，通过一系列的算法去进行图形变换，从而形成动画效果，主要有Alpha、Scale、Translate、Rotate四种效果。注意：**只是在视图层实现了动画效果，并没有真正改变View的属性。view的实际位置还是移动前的位置**
+通过对场景的对象不断做图像变换（平移，缩放，旋转，透明度）从而产生动画效果
 
-## Drawable Animation（Drawable动画）
+**只是在视图层实现了动画效果，并没有真正改变View的属性。view的实际位置还是移动前的位置**
 
-也就是所谓的帧动画，Frame动画。指通过指定每一帧的图片和播放时间，有序的进行播放而形成动画效果。可以理解成多张图片播放，图片不能过大。
+### 种类
 
-## Property Animation（属性动画）
+| 名称   | 标签           | 子类                 | 效果        |
+| ---- | ------------ | ------------------ | --------- |
+| 平移   | \<translate> | TranslateAnimation | 移动View    |
+| 缩放   | \<scale>     | ScaleAnimation     | 放大或缩小View |
+| 透明度  | \<alpha>     | AlphaAnimation     | 改变View透明度 |
+| 旋转   | \<rotate>    | RotateAnimation    | 旋转View    |
 
-属性动画，这个是在Android 3.0中才引进的，它可以直接更改我们对象的属性。在上面提到的Tween Animation中，只是更改View的绘画效果而View的真实属性是不改变的。假设你用Tween动画将一个Button从左边移到右边，无论你怎么点击移动后的Button，他都没有反应。而当你点击移动前Button的位置时才有反应，因为Button的位置属性木有改变。而Property Animation则可以直接改变View对象的属性值，这样可以让我们少做一些处理工作，提高效率与代码的可读性。
+### 使用
+
+#### 使用xml定义
+
+```xml
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+     android:duration="300"
+     android:interpolator="@android:anim/accelerate_interpolator"
+     android:shareInterpolator="true" >
+
+  <alpha
+         android:fromAlpha="0.0"
+         android:toAlpha="1.0" />
+
+  <translate
+             android:fromXDelta="500"
+             android:toXDelta="0" />
+
+</set>
+```
+
+```java
+Animation animation = AnimationUtils.loadAnimation(this, R.anim.anim_item);
+mButton.startAnimation(animation);
+```
+
+#### 使用代码定义
+
+```java
+AlphaAnimation alphaAnimation = new AlphaAnimation(0, 1);
+alphaAnimation.setDuration(300);
+mButton.startAnimation(alphaAnimation);
+```
+
+### 自定义View动画
+
+继承Animation类并重写initialize和applyTransformation方法
+
+initialize中进行初始化工作
+
+```java
+@Override
+public void initialize(int width, int height, int parentWidth, int parentHeight) {
+  super.initialize(width, height, parentWidth, parentHeight);
+}
+```
+
+applyTransformation中进行相应矩阵变换
+
+```java
+protected void applyTransformation(float interpolatedTime, Transformation t) {  
+  super.applyTransformation(interpolatedTime, t);  
+}  
+```
+
+应用
+
+```java
+Rotate3dAnimation rotate3dAnimation = new Rotate3dAnimation(0, 360, iv_content.getWidth()/2, 0, 0, true, Rotate3dAnimation.DIRECTION.Y);  
+rotate3dAnimation.setDuration(3000);  
+iv_content.setAnimation(rotate3dAnimation);  
+rotate3dAnimation.start();  
+```
+
+### 其他场景
+
+#### LayoutAnimation
+
+为ViewGroup指定一个动画，当它的子元素出现时都会有这种动画效果，常用于ListView
+
+使用xml指定
+
+```xml
+<layoutAnimation
+                 xmlns:android="http://schemas.android.com/apk/res/android"
+                 android:delay="0.5"
+                 android:animationOrder="reverse"
+                 android:animation="@anim/anim_item"/>
+```
+
+```xml
+<ListView
+          android:id="@+id/list"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:layoutAnimation="@anim/anim_layout" />
+```
+
+或使用代码指定
+
+```java
+Animation animation = AnimationUtils.loadAnimation(this, R.anim.anim_item);
+LayoutAnimationController controller = new LayoutAnimationController(animation);
+controller.setDelay(0.5f);
+controller.setOrder(LayoutAnimationController.ORDER_NORMAL);
+listView.setLayoutAnimation(controller);
+```
+
+#### 修改Activity切换效果
+
+在startActivity或finish后调用，同样适用于Fragment
+
+```java
+Intent intent = new Intent(this, TestActivity.class);
+startActivity(intent);
+overridePendingTransition(R.anim.enter_anim, R.anim.exit_anim);
+```
+
+## 帧动画
+
+通过顺序播放一系列图像产生动画效果，容易引起OOM，应尽量避免使用过多大尺寸图片
+
+通过XML定义一个AnimationDrawable
+
+```xml
+<!--res/drawable/frame_animation.xml-->
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android"
+                android:oneshot="false" >
+
+  <item
+        android:drawable="@drawable/light01"
+        android:duration="50"/>
+  <item
+        android:drawable="@drawable/light02"
+        android:duration="50"/>
+  <item
+        android:drawable="@drawable/light03"
+        android:duration="50"/>
+
+</animation-list>
+```
+
+将上述Drawable作为View的背景并通过Drawable来播放
+
+```java
+mButton.setBackgroundResource(R.drawable.frame_animation)
+Animation drawable = (AnimationDrawable) mButton.getBackground();  
+//开始动画
+drawable.start();  
+```
+
+## 属性动画
+
+动态改变对象属性达到动画效果
+
+默认时间300ms，10ms/帧，在一个时间间隔内完成对象从一个属性值到另一个属性值的改变
+
+在API 11之前的系统上可以使用nineoldandroids实现属性动画
+
+### 原理
+
+对object的属性abc做动画，需要满足以下条件
+
+1. object必须提供setAbc方法，如果动画时没有传递初始值，还要提供getAbc方法，因为系统要去取abc属性的初始值，否则crash
+2. object的setAbc对属性abc所做的改变必须能够通过某种方法反映出来，比如会带来UI改变，程序不一定crash但会无效果
+
+属性动画要求object提供set和get方法，根据提供的初始值和最终值，以动画的效果多次调用set方法
+
+### 使用
+
+#### 使用代码定义
+
+常用的动画类：ValueAnimator，ObjectAnimator，AnimatorSet
+
+改变myObject的tranlationY属性，让其沿Y轴向上平移一段距离
+
+```java
+ObjectAnimator.ofFloat(myObject, "translationY", -myObject.getHeight()).start();
+```
+
+改变背景色
+
+```java
+ValueAnimator colorAnim = ObjectAnimator.ofInt(this, "backgroundColor", 0xFFFF8080, 0xFF8080FF);
+colorAnim.setDuration(3000);
+colorAnim.setEvaluator(new ArgbEvaluator());
+colorAnim.setRepeatCount(ValueAnimator.INFINITE);
+colorAnim.setRepeatMode(ValueAnimator.REVERSE);
+colorAnim.start();
+```
+
+动画集合
+
+```java
+AnimatorSet set = new Animator();
+set.playTogether(
+  ObjectAnimator.ofFloat(myView, "rotationX", 0, 360),
+  ObjectAnimator.ofFloat(myView, "translationX", 0, 90)
+);
+set.setDuration(5 * 1000).start();
+```
+
+#### 使用XML定义
+
+定义在res/animator/下
+
+```xml
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+     android:ordering="sequentially" >
+  <!-- 
+  表示Set集合内的动画按顺序进行
+  ordering的属性值:sequentially & together
+  sequentially:表示set中的动画，按照先后顺序逐步进行（a 完成之后进行 b ）
+  together:表示set中的动画，在同一时间同时进行,为默认值-->
+
+  <set android:ordering="together" >
+    <!--下面的动画同时进行-->
+    <objectAnimator
+                    android:duration="2000"
+                    android:propertyName="translationX"
+                    android:valueFrom="0"
+                    android:valueTo="300"
+                    android:valueType="floatType" >
+    </objectAnimator>
+
+    <objectAnimator
+                    android:duration="3000"
+                    android:propertyName="rotation"
+                    android:valueFrom="0"
+                    android:valueTo="360"
+                    android:valueType="floatType" >
+    </objectAnimator>
+  </set>
+
+  <set android:ordering="sequentially" >
+    <!--下面的动画按序进行-->
+    <objectAnimator
+                    android:duration="1500"
+                    android:propertyName="alpha"
+                    android:valueFrom="1"
+                    android:valueTo="0"
+                    android:valueType="floatType" >
+    </objectAnimator>
+    <objectAnimator
+                    android:duration="1500"
+                    android:propertyName="alpha"
+                    android:valueFrom="0"
+                    android:valueTo="1"
+                    android:valueType="floatType" >
+    </objectAnimator>
+  </set>
+
+</set>
+```
+
+### 监听器
+
+AnimatorListener可以监听动画的开始，结束，取消以及重复播放
+
+AnimatorUpdateListener可以监听整个动画过程，每播放一帧就会被调用一次、
+
+### 对任意属性做动画
+
+1. 给对象加上set和get方法
+
+   通常没有权限修改SDK，不可行
+
+2. 用一个类包装对象，提供set和get方法
+
+   ```java
+   private static class ViewWrapper {
+     private View mTarget;
+     public ViewWrapper(View target) {
+       mTarget = target;
+     }
+     
+     public int getWidth() {
+       return mTarget.getLayoutParams().width;
+     }
+     
+     public void setWidth(int width) {
+       mTarget.getLayoutParams().width = width;
+       mTarget.requestLayout();
+     }
+   }
+   ```
+
+   ​
+
+3. 采用ValueAnimator，监听动画过程，实现属性改变
+
+   ```java
+   private void performAnimate(final View target, final int start, final int end) {
+     ValueAnimator valueAnimator = ValueAnimator.ofInt(1, 100);
+     valueAnimator.addUpdateListener(new AnimatorUpdateListener() {
+
+       // 持有一个IntEvaluator对象，方便下面估值的时候使用
+       private IntEvaluator mEvaluator = new IntEvaluator();
+
+       @Override
+       public void onAnimationUpdate(ValueAnimator animator) {
+         // 获得当前动画的进度值，整型，1-100之间
+         int currentValue = (Integer) animator.getAnimatedValue();
+         Log.d(TAG, "current value: " + currentValue);
+
+         // 获得当前进度占整个动画过程的比例，浮点型，0-1之间
+         float fraction = animator.getAnimatedFraction();
+         // 直接调用整型估值器通过比例计算出宽度，然后再设给Button
+         target.getLayoutParams().width = mEvaluator.evaluate(fraction, start, end);
+         target.requestLayout();
+       }
+     });
+
+     valueAnimator.setDuration(5000).start();
+   }
+
+   @Override
+   public void onClick(View v) {
+     if (v == button) {
+       performAnimate(button, button.getWidth(), 500);
+     }
+   }
+   ```
+
+## 常见问题
+
+1. OOM：主要出现在帧动画中，图片数量较多且尺寸较大时一出现
+2. 内存泄漏：如果使用无限循环的动画需要在Activity退出时及时停止，否则将导致Activity无法释放出现内存泄露，View动画不存在此类问题
+3. 兼容性问题：动画在3.0以下系统上有兼容性问题
+4. View动画问题：View动画是对View的影像做动画，可能出现动画完成后View无法隐藏的现象，只要调用view.clearAnimation()消除View动画即可
+5. 不要使用px：尽量使用dp，保持在不同设备上的一致性
+6. 动画元素交互：3.0以后，属性动画单击事件触发位置在移动后位置，View动画仍在原位置
+7. 硬件加速：建议开启，提高流畅性
 
 # 断点续传
 

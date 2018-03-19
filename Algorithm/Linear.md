@@ -1,5 +1,3 @@
-
-
 # Linear Data Structure
 
 [TOC]
@@ -1540,3 +1538,39 @@ int moreThanHalfNum(int[] nums) {
 ```
 
 Similarly, we can count 2 numbers appears more than 1/3, 3 numbers appears more than 1/4, if we can remember them separately.
+
+### [Number of Subarrays with Bounded Maximum](https://leetcode.com/problems/number-of-subarrays-with-bounded-maximum/description/)
+
+> We are given an array `A` of positive integers, and two positive integers `L` and `R` (`L <= R`).
+>
+> Return the number of (contiguous, non-empty) subarrays such that the value of the maximum array element in that subarray is at least `L` and at most `R`.
+
+* If A[i] in [L, R], we count all number in [head, i]
+
+
+* If A[i] < L, we count all number in from head to the last number in [L, R]
+* If A[i] > R, reset head and count
+
+```java
+int numSubarrayBoundedMax(int[] A, int L, int R) {
+  if (A == null || A.length == 0 || L > R) {
+    return 0;
+  }
+
+  int res = 0, count = 0, head = 0;
+  for (int i = 0; i < A.length; i++) {
+    if (A[i] >= L && A[i] <= R) {
+      res += i - head + 1;
+      count = i - head + 1;
+    } else if (A[i] < L) {
+      res += count;
+    } else {
+      head = i + 1;
+      count = 0;
+    }
+  }
+
+  return res;
+}
+```
+
