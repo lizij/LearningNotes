@@ -394,3 +394,7 @@ See Maximum Length of Repeated Subarray in [Linear.md](Linear.md)
 ### Maximum Length of Repeated Subsequence
 
 See Maximum Length of Repeated Subsequence in [Linear.md](Linear.md)
+
+### Combination Sum
+
+See Combination Sum in [Linear.md](Linear.md)

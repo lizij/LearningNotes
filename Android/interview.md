@@ -150,7 +150,7 @@ public void onRestoreInstanceState(Bundle savedInstanceState) {
 
 启动Activity涉及到Instrumentation,ActivityThread,ActivityManagerService(AMS)
 
-启动Activity的请求会由Instrumentation来处理，然后它通过Binder向AMS发送请求，AMS内部维护着一个ActivityStack并负责栈内的Activity的状态同步，AMS通过ActivityThread的scheduleLaunchActivity方法去同步Activity的状态从而完成生命周期方法的调用
+启动Activity的请求会由Instrumentation来处理，然后它通过Binder向AMS发送请求，AMS内部维护着一个ActivityStack并负责栈内的Activity的状态同步，AMS通过ActivityThread的`scheduleLaunchActivity`方法去同步Activity的状态从而完成生命周期方法的调用
 
 ### Instrumentation
 
@@ -162,8 +162,10 @@ Android Instrumentation是Android系统里面的一套控制方法或者”钩�
 
 ```xml
 <application android:icon="@drawable/icon" android:label="@string/app_name">
-  <activity android:name=".TestApp" android:label="@string/app_name">
-  </activity>
+    <activity 
+              android:name=".TestApp" 
+              android:label="@string/app_name">
+    </activity>
 </application>
 ```
 
@@ -273,11 +275,13 @@ DNS劫持俗称抓包。通过对url的二次劫持，修改参数和返回值�
 
 [App安全（一） Android防止升级过程被劫持和换包](http://blog.csdn.net/sk719887916/article/details/52233112)
 
-# asset和resource的区别
+# asset和resource
 
 1. 两者目录下的文件在打包后会原封不动的保存在apk包中，不会被编译成二进制
 
-2. res/raw中的文件会被映射到R.Java文件中，访问的时候直接使用资源ID即R.id.filename；assets文件夹下的文件不会被映射到R.Java中，访问的时候需要AssetManager类
+2. res/raw中的文件会被映射到R.Java文件中，访问的时候直接使用资源ID即R.id.filename；
+
+   assets文件夹下的文件不会被映射到R.Java中，访问的时候需要AssetManager类
 
    ```java
    // 获得resource文件流
@@ -299,9 +303,9 @@ DNS劫持俗称抓包。通过对url的二次劫持，修改参数和返回值�
 
 ```xml
 <receiver android:name=".Receiver" >  
-  <intent-filter>  
-    <action android:name="android.intent.action.BOOT_COMPLETED" />  
-  </intent-filter>  
+    <intent-filter>  
+        <action android:name="android.intent.action.BOOT_COMPLETED" />  
+    </intent-filter>  
 </receiver>  
 ```
 
@@ -331,7 +335,7 @@ registerReceiver(broadcast, filter);
 
 inSampleSize的取值应该总是为2的指数，如果不为2的指数，系统会向下取整并选择一个最近的2的指数来代替。比如3，系统会使用2来代替
 
-获取采样率的过程： 
+**采样过程：** 
 
 1. 将BitmapFactory.Options的inJustDecodeBounds参数设为true并加载图像 
 2. 从BitmapFactory.Options中取出图片的原始宽高信息，他们对应于outWidth和outHeight参数 
@@ -372,26 +376,26 @@ inSampleSize的取值应该总是为2的指数，如果不为2的指数，系统
 
 ```java
 public class ImageResizer {
-  private static final String TAG = "ImageResizer";
+    private static final String TAG = "ImageResizer";
 
-  public ImageResizer() {
-  }
+    public ImageResizer() {
+    }
 
-  public Bitmap decodeSampledBitmapFromResource(Resources res, int resId, int reqWidth, int reqHeight) {
-    // First decode with inJustDecodeBounds=true to check dimensions
-    final BitmapFactory.Options options = new BitmapFactory.Options();
-    options.inJustDecodeBounds = true;
-    BitmapFactory.decodeResource(res, resId, options);
-    // Calculate inSampleSize
-    options.inSampleSize = calculateInSampleSize(options, reqWidth,
-                                                 reqHeight);
-    // Decode bitmap with inSampleSize set
-    options.inJustDecodeBounds = false;
-    return BitmapFactory.decodeResource(res, resId, options);
-  }
+    public Bitmap decodeSampledBitmapFromResource(Resources res, int resId, int reqWidth, int reqHeight) {
+        // First decode with inJustDecodeBounds=true to check dimensions
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeResource(res, resId, options);
+        // Calculate inSampleSize
+        options.inSampleSize = calculateInSampleSize(options, reqWidth,
+                                                     reqHeight);
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeResource(res, resId, options);
+    }
 
-  public Bitmap decodeSampledBitmapFromFileDescriptor(FileDescriptor fd, int reqWidth, int reqHeight) {
-  }
+    public Bitmap decodeSampledBitmapFromFileDescriptor(FileDescriptor fd, int reqWidth, int reqHeight) {
+    }
 }
 ```
 
@@ -402,90 +406,89 @@ private LruCache<String, Bitmap> mMemoryCache;
 private DiskLruCache mDiskLruCache;
 
 private ImageLoader(Context context) {
-  mContext = context.getApplicationContext();
-  int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-  int cacheSize = maxMemory / 8;
-  mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
-    @Override
-    protected int sizeOf(String key, Bitmap bitmap) {
-      return bitmap.getRowBytes() * bitmap.getHeight() / 1024;
+    mContext = context.getApplicationContext();
+    int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+    int cacheSize = maxMemory / 8;
+    mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
+        @Override
+        protected int sizeOf(String key, Bitmap bitmap) {
+            return bitmap.getRowBytes() * bitmap.getHeight() / 1024;
+        }
+    };
+    File diskCacheDir = getDiskCacheDir(mContext, "bitmap");
+    if (!diskCacheDir.exists()) {
+        diskCacheDir.mkdirs();
     }
-  };
-  File diskCacheDir = getDiskCacheDir(mContext, "bitmap");
-  if (!diskCacheDir.exists()) {
-    diskCacheDir.mkdirs();
-  }
-  if (getUsableSpace(diskCacheDir) > DISK_CACHE_SIZE) {
-    try {
-      mDiskLruCache = DiskLruCache.open(diskCacheDir, 1, 1,
-                                        DISK_CACHE_SIZE);
-      mIsDiskLruCacheCreated = true;
-    } catch (IOException e) {
-      e.printStackTrace();
+    if (getUsableSpace(diskCacheDir) > DISK_CACHE_SIZE) {
+        try {
+            mDiskLruCache = DiskLruCache.open(diskCacheDir, 1, 1,
+                                              DISK_CACHE_SIZE);
+            mIsDiskLruCacheCreated = true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-  }
 }
 
 private void addBitmapToMemoryCache(String key, Bitmap bitmap) {
-  if (getBitmapFromMemCache(key) == null) {
-    mMemoryCache.put(key, bitmap);
-  }
+    if (getBitmapFromMemCache(key) == null) {
+        mMemoryCache.put(key, bitmap);
+    }
 }
 
 private Bitmap getBitmapFromMemCache(String key) {
-  return mMemoryCache.get(key);
+    return mMemoryCache.get(key);
 }
 ```
 
 缓存添加和获取
 
 ```java
-private Bitmap loadBitmapFromHttp(String url, int reqWidth, int reqHeight)
-  throws IOException {
-  if (Looper.myLooper() == Looper.getMainLooper()) {
-    throw new RuntimeException("can not visit network from UI Thread.");
-  }
-  if (mDiskLruCache == null) {
-    return null;
-  }
-
-  String key = hashKeyFormUrl(url);
-  DiskLruCache.Editor editor = mDiskLruCache.edit(key);
-  if (editor != null) {
-    OutputStream outputStream = editor.newOutputStream(DISK_CACHE_INDEX);
-    if (downloadUrlToStream(url, outputStream)) {
-      editor.commit();
-    } else {
-      editor.abort();
+private Bitmap loadBitmapFromHttp(String url, int reqWidth, int reqHeight) throws IOException {
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        throw new RuntimeException("can not visit network from UI Thread.");
     }
-    mDiskLruCache.flush();
-  }
-  return loadBitmapFromDiskCache(url, reqWidth, reqHeight);
+    if (mDiskLruCache == null) {
+        return null;
+    }
+
+    String key = hashKeyFormUrl(url);
+    DiskLruCache.Editor editor = mDiskLruCache.edit(key);
+    if (editor != null) {
+        OutputStream outputStream = editor.newOutputStream(DISK_CACHE_INDEX);
+        if (downloadUrlToStream(url, outputStream)) {
+            editor.commit();
+        } else {
+            editor.abort();
+        }
+        mDiskLruCache.flush();
+    }
+    return loadBitmapFromDiskCache(url, reqWidth, reqHeight);
 }
 
 private Bitmap loadBitmapFromDiskCache(String url, int reqWidth,
                                        int reqHeight) throws IOException {
-  if (Looper.myLooper() == Looper.getMainLooper()) {
-    Log.w(TAG, "load bitmap from UI Thread, it's not recommended!");
-  }
-  if (mDiskLruCache == null) {
-    return null;
-  }
-
-  Bitmap bitmap = null;
-  String key = hashKeyFormUrl(url);
-  DiskLruCache.Snapshot snapShot = mDiskLruCache.get(key);
-  if (snapShot != null) {
-    FileInputStream fileInputStream = (FileInputStream)snapShot.getInputStream(DISK_CACHE_INDEX);
-    FileDescriptor fileDescriptor = fileInputStream.getFD();
-    bitmap = mImageResizer.decodeSampledBitmapFromFileDescriptor(fileDescriptor,
-                                                                 reqWidth, reqHeight);
-    if (bitmap != null) {
-      addBitmapToMemoryCache(key, bitmap);
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        Log.w(TAG, "load bitmap from UI Thread, it's not recommended!");
     }
-  }
+    if (mDiskLruCache == null) {
+        return null;
+    }
 
-  return bitmap;
+    Bitmap bitmap = null;
+    String key = hashKeyFormUrl(url);
+    DiskLruCache.Snapshot snapShot = mDiskLruCache.get(key);
+    if (snapShot != null) {
+        FileInputStream fileInputStream = (FileInputStream)snapShot.getInputStream(DISK_CACHE_INDEX);
+        FileDescriptor fileDescriptor = fileInputStream.getFD();
+        bitmap = mImageResizer.decodeSampledBitmapFromFileDescriptor(fileDescriptor,
+                                                                     reqWidth, reqHeight);
+        if (bitmap != null) {
+            addBitmapToMemoryCache(key, bitmap);
+        }
+    }
+
+    return bitmap;
 }
 ```
 
@@ -493,30 +496,30 @@ private Bitmap loadBitmapFromDiskCache(String url, int reqWidth,
 
 ```java
 public Bitmap loadBitmap(String uri, int reqWidth, int reqHeight) {
-  Bitmap bitmap = loadBitmapFromMemCache(uri);
-  if (bitmap != null) {
-    Log.d(TAG, "loadBitmapFromMemCache,url:" + uri);
-    return bitmap;
-  }
-
-  try {
-    bitmap = loadBitmapFromDiskCache(uri, reqWidth, reqHeight);
+    Bitmap bitmap = loadBitmapFromMemCache(uri);
     if (bitmap != null) {
-      Log.d(TAG, "loadBitmapFromDisk,url:" + uri);
-      return bitmap;
+        Log.d(TAG, "loadBitmapFromMemCache,url:" + uri);
+        return bitmap;
     }
-    bitmap = loadBitmapFromHttp(uri, reqWidth, reqHeight);
-    Log.d(TAG, "loadBitmapFromHttp,url:" + uri);
-  } catch (IOException e) {
-    e.printStackTrace();
-  }
 
-  if (bitmap == null && !mIsDiskLruCacheCreated) {
-    Log.w(TAG, "encounter error, DiskLruCache is not created.");
-    bitmap = downloadBitmapFromUrl(uri);
-  }
+    try {
+        bitmap = loadBitmapFromDiskCache(uri, reqWidth, reqHeight);
+        if (bitmap != null) {
+            Log.d(TAG, "loadBitmapFromDisk,url:" + uri);
+            return bitmap;
+        }
+        bitmap = loadBitmapFromHttp(uri, reqWidth, reqHeight);
+        Log.d(TAG, "loadBitmapFromHttp,url:" + uri);
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
 
-  return bitmap;
+    if (bitmap == null && !mIsDiskLruCacheCreated) {
+        Log.w(TAG, "encounter error, DiskLruCache is not created.");
+        bitmap = downloadBitmapFromUrl(uri);
+    }
+
+    return bitmap;
 }
 ```
 
@@ -524,56 +527,56 @@ public Bitmap loadBitmap(String uri, int reqWidth, int reqHeight) {
 
 ```java
 public void bindBitmap(final String uri, final ImageView imageView) {
-  bindBitmap(uri, imageView, 0, 0);
+    bindBitmap(uri, imageView, 0, 0);
 }
 
 public void bindBitmap(final String uri, final ImageView imageView,
                        final int reqWidth, final int reqHeight) {
-  imageView.setTag(TAG_KEY_URI, uri);
-  Bitmap bitmap = loadBitmapFromMemCache(uri);
-  if (bitmap != null) {
-    imageView.setImageBitmap(bitmap);
-    return;
-  }
-
-  Runnable loadBitmapTask = new Runnable() {
-
-    @Override
-    public void run() {
-      Bitmap bitmap = loadBitmap(uri, reqWidth, reqHeight);
-      if (bitmap != null) {
-        LoaderResult result = new LoaderResult(imageView, uri, bitmap);
-        mMainHandler.obtainMessage(MESSAGE_POST_RESULT, result).sendToTarget();
-      }
+    imageView.setTag(TAG_KEY_URI, uri);
+    Bitmap bitmap = loadBitmapFromMemCache(uri);
+    if (bitmap != null) {
+        imageView.setImageBitmap(bitmap);
+        return;
     }
-  };
-  THREAD_POOL_EXECUTOR.execute(loadBitmapTask);
+
+    Runnable loadBitmapTask = new Runnable() {
+
+        @Override
+        public void run() {
+            Bitmap bitmap = loadBitmap(uri, reqWidth, reqHeight);
+            if (bitmap != null) {
+                LoaderResult result = new LoaderResult(imageView, uri, bitmap);
+                mMainHandler.obtainMessage(MESSAGE_POST_RESULT, result).sendToTarget();
+            }
+        }
+    };
+    THREAD_POOL_EXECUTOR.execute(loadBitmapTask);
 }
 
 private static class LoaderResult {
-  public ImageView imageView;
-  public String uri;
-  public Bitmap bitmap;
+    public ImageView imageView;
+    public String uri;
+    public Bitmap bitmap;
 
-  public LoaderResult(ImageView imageView, String uri, Bitmap bitmap) {
-    this.imageView = imageView;
-    this.uri = uri;
-    this.bitmap = bitmap;
-  }
+    public LoaderResult(ImageView imageView, String uri, Bitmap bitmap) {
+        this.imageView = imageView;
+        this.uri = uri;
+        this.bitmap = bitmap;
+    }
 }
 
 private Handler mMainHandler = new Handler(Looper.getMainLooper()) {
-  @Override
-  public void handleMessage(Message msg) {
-    LoaderResult result = (LoaderResult) msg.obj;
-    ImageView imageView = result.imageView;
-    String uri = (String) imageView.getTag(TAG_KEY_URI);
-    if (uri.equals(result.uri)) {
-      imageView.setImageBitmap(result.bitmap);
-    } else {
-      Log.w(TAG, "set image bitmap,but url has changed, ignored!");
-    }
-  };
+    @Override
+    public void handleMessage(Message msg) {
+        LoaderResult result = (LoaderResult) msg.obj;
+        ImageView imageView = result.imageView;
+        String uri = (String) imageView.getTag(TAG_KEY_URI);
+        if (uri.equals(result.uri)) {
+            imageView.setImageBitmap(result.bitmap);
+        } else {
+            Log.w(TAG, "set image bitmap,but url has changed, ignored!");
+        }
+    };
 };
 ```
 
@@ -593,7 +596,7 @@ Binder基于Client-Server通信模式，其中Client、Server和Service Manager�
 
 * Client进程：使用服务的进程
 * Server进程：提供服务的进程
-* ServiceManager进程：ServiceManager的作用是将字符形式的Binder名字转化成Client中对该Binder的引用，使得Client能够通过Binder名字获得对Server中Binder实体的引用
+* ServiceManager进程：ServiceManager的作用是将**字符形式的Binder名字转化成Client中对该Binder的引用**，使得Client能够通过Binder名字获得对Server中Binder实体的引用
 * Binder驱动：驱动负责进程之间Binder通信的建立，Binder在进程之间的传递，Binder引用计数管理，数据包在进程之间的传递和交互等一系列底层支持。
 
 ![](https://upload-images.jianshu.io/upload_images/1685558-1754d79d2969841f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
@@ -610,7 +613,7 @@ Server进程向Service Manager进程注册服务（可访问的方法接口）�
 
 # Drawable
 
-一种可以再Canvas上进行绘制的抽象概念
+一种可以在Canvas上进行绘制的抽象概念
 
 * 使用简单，比自定义View成本低
 * 非图片Drawable占用空间小，有利于减小apk大小
@@ -638,13 +641,13 @@ NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
        android:shape="rectangle" >
 
-  <solid android:color="#ff0000" />
+    <solid android:color="#ff0000" />
 
-  <corners
-           android:bottomLeftRadius="0dp"
-           android:bottomRightRadius="15dp"
-           android:topLeftRadius="10dp"
-           android:topRightRadius="15dp" />
+    <corners
+             android:bottomLeftRadius="0dp"
+             android:bottomRightRadius="15dp"
+             android:topLeftRadius="10dp"
+             android:topRightRadius="15dp" />
 
 </shape>
 ```
@@ -657,26 +660,26 @@ NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
 
 ```xml
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
-  <item>
-    <shape android:shape="rectangle" >
-      <solid android:color="#0ac39e" />
-    </shape>
-  </item>
+    <item>
+        <shape android:shape="rectangle" >
+            <solid android:color="#0ac39e" />
+        </shape>
+    </item>
 
-  <item android:bottom="6dp">
-    <shape android:shape="rectangle" >
-      <solid android:color="#ffffff" />
-    </shape>
-  </item>
+    <item android:bottom="6dp">
+        <shape android:shape="rectangle" >
+            <solid android:color="#ffffff" />
+        </shape>
+    </item>
 
-  <item
-        android:bottom="1dp"
-        android:left="1dp"
-        android:right="1dp">
-    <shape android:shape="rectangle" >
-      <solid android:color="#ffffff" />
-    </shape>
-  </item>
+    <item
+          android:bottom="1dp"
+          android:left="1dp"
+          android:right="1dp">
+        <shape android:shape="rectangle" >
+            <solid android:color="#ffffff" />
+        </shape>
+    </item>
 
 </layer-list>
 ```
@@ -689,16 +692,16 @@ NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
 
 ```xml
 <selector xmlns:android="http://schemas.android.com/apk/res/android">   
-  <!-- 触摸时并且当前窗口处于交互状态 -->    
-  <item android:state_pressed="true" android:state_window_focused="true" android:drawable= "@drawable/pic1" />  
-  <!--  触摸时并且没有获得焦点状态 -->    
-  <item android:state_pressed="true" android:state_focused="false" android:drawable="@drawable/pic2" />    
-  <!--选中时的图片背景-->    
-  <item android:state_selected="true" android:drawable="@drawable/pic3" />     
-  <!--获得焦点时的图片背景-->    
-  <item android:state_focused="true" android:drawable="@drawable/pic4" />    
-  <!-- 窗口没有处于交互时的背景图片 -->    
-  <item android:drawable="@drawable/pic5" />   
+    <!-- 触摸时并且当前窗口处于交互状态 -->    
+    <item android:state_pressed="true" android:state_window_focused="true" android:drawable= "@drawable/pic1" />  
+    <!--  触摸时并且没有获得焦点状态 -->    
+    <item android:state_pressed="true" android:state_focused="false" android:drawable="@drawable/pic2" />    
+    <!--选中时的图片背景-->    
+    <item android:state_selected="true" android:drawable="@drawable/pic3" />     
+    <!--获得焦点时的图片背景-->    
+    <item android:state_focused="true" android:drawable="@drawable/pic4" />    
+    <!-- 窗口没有处于交互时的背景图片 -->    
+    <item android:drawable="@drawable/pic5" />   
 </selector>  
 ```
 
@@ -708,11 +711,11 @@ NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
 
 ```xml
 <level-list xmlns:android="http://schemas.android.com/apk/res/android"> 
-  <item
-        android:drawable="@drawable/drawable_resource"
-        android:maxLevel="integer"
-        android:minLevel="integer"
-        />
+    <item
+          android:drawable="@drawable/drawable_resource"
+          android:maxLevel="integer"
+          android:minLevel="integer"
+          />
 </level-list>
 ```
 
@@ -723,8 +726,8 @@ NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
 ```xml
 <transition xmlns:android="http://schemas.android.com/apk/res/android" >
 
-  <item android:drawable="@drawable/shape_drawable_gradient_linear"/>
-  <item android:drawable="@drawable/shape_drawable_gradient_radius"/>
+    <item android:drawable="@drawable/shape_drawable_gradient_linear"/>
+    <item android:drawable="@drawable/shape_drawable_gradient_radius"/>
 
 </transition>
 ```
@@ -740,9 +743,9 @@ NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
        android:insetRight="15dp"
        android:insetTop="15dp" >
 
-  <shape android:shape="rectangle" >
-    <solid android:color="#ff0000" />
-  </shape>
+    <shape android:shape="rectangle" >
+        <solid android:color="#ff0000" />
+    </shape>
 </inset>
 ```
 
@@ -775,39 +778,39 @@ NinePatchDrawable：自动根据宽高进行相应缩放并保证不失真
 
 ```java
 public class CustomDrawable extends Drawable {
-  private Paint mPaint;
+    private Paint mPaint;
 
-  public CustomDrawable(int color) {
-    mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    mPaint.setColor(color);
-  }
+    public CustomDrawable(int color) {
+        mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mPaint.setColor(color);
+    }
 
-  @Override
-  public void draw(Canvas canvas) {
-    final Rect r = getBounds();
-    float cx = r.exactCenterX();
-    float cy = r.exactCenterY();
-    canvas.drawCircle(cx, cy, Math.min(cx, cy), mPaint);
-  }
+    @Override
+    public void draw(Canvas canvas) {
+        final Rect r = getBounds();
+        float cx = r.exactCenterX();
+        float cy = r.exactCenterY();
+        canvas.drawCircle(cx, cy, Math.min(cx, cy), mPaint);
+    }
 
-  @Override
-  public void setAlpha(int alpha) {
-    mPaint.setAlpha(alpha);
-    invalidateSelf();
+    @Override
+    public void setAlpha(int alpha) {
+        mPaint.setAlpha(alpha);
+        invalidateSelf();
 
-  }
+    }
 
-  @Override
-  public void setColorFilter(ColorFilter cf) {
-    mPaint.setColorFilter(cf);
-    invalidateSelf();
-  }
+    @Override
+    public void setColorFilter(ColorFilter cf) {
+        mPaint.setColorFilter(cf);
+        invalidateSelf();
+    }
 
-  @Override
-  public int getOpacity() {
-    // not sure, so be safe
-    return PixelFormat.TRANSLUCENT;
-  }
+    @Override
+    public int getOpacity() {
+        // not sure, so be safe
+        return PixelFormat.TRANSLUCENT;
+    }
 
 }
 ```
@@ -839,13 +842,13 @@ public class CustomDrawable extends Drawable {
      android:interpolator="@android:anim/accelerate_interpolator"
      android:shareInterpolator="true" >
 
-  <alpha
-         android:fromAlpha="0.0"
-         android:toAlpha="1.0" />
+    <alpha
+           android:fromAlpha="0.0"
+           android:toAlpha="1.0" />
 
-  <translate
-             android:fromXDelta="500"
-             android:toXDelta="0" />
+    <translate
+               android:fromXDelta="500"
+               android:toXDelta="0" />
 
 </set>
 ```
@@ -872,7 +875,7 @@ initialize中进行初始化工作
 ```java
 @Override
 public void initialize(int width, int height, int parentWidth, int parentHeight) {
-  super.initialize(width, height, parentWidth, parentHeight);
+    super.initialize(width, height, parentWidth, parentHeight);
 }
 ```
 
@@ -880,7 +883,7 @@ applyTransformation中进行相应矩阵变换
 
 ```java
 protected void applyTransformation(float interpolatedTime, Transformation t) {  
-  super.applyTransformation(interpolatedTime, t);  
+    super.applyTransformation(interpolatedTime, t);  
 }  
 ```
 
@@ -948,15 +951,15 @@ overridePendingTransition(R.anim.enter_anim, R.anim.exit_anim);
 <animation-list xmlns:android="http://schemas.android.com/apk/res/android"
                 android:oneshot="false" >
 
-  <item
-        android:drawable="@drawable/light01"
-        android:duration="50"/>
-  <item
-        android:drawable="@drawable/light02"
-        android:duration="50"/>
-  <item
-        android:drawable="@drawable/light03"
-        android:duration="50"/>
+    <item
+          android:drawable="@drawable/light01"
+          android:duration="50"/>
+    <item
+          android:drawable="@drawable/light02"
+          android:duration="50"/>
+    <item
+          android:drawable="@drawable/light03"
+          android:duration="50"/>
 
 </animation-list>
 ```
@@ -1015,8 +1018,8 @@ colorAnim.start();
 ```java
 AnimatorSet set = new Animator();
 set.playTogether(
-  ObjectAnimator.ofFloat(myView, "rotationX", 0, 360),
-  ObjectAnimator.ofFloat(myView, "translationX", 0, 90)
+    ObjectAnimator.ofFloat(myView, "rotationX", 0, 360),
+    ObjectAnimator.ofFloat(myView, "translationX", 0, 90)
 );
 set.setDuration(5 * 1000).start();
 ```
@@ -1028,48 +1031,48 @@ set.setDuration(5 * 1000).start();
 ```xml
 <set xmlns:android="http://schemas.android.com/apk/res/android"
      android:ordering="sequentially" >
-  <!-- 
+    <!-- 
   表示Set集合内的动画按顺序进行
   ordering的属性值:sequentially & together
   sequentially:表示set中的动画，按照先后顺序逐步进行（a 完成之后进行 b ）
   together:表示set中的动画，在同一时间同时进行,为默认值-->
 
-  <set android:ordering="together" >
-    <!--下面的动画同时进行-->
-    <objectAnimator
-                    android:duration="2000"
-                    android:propertyName="translationX"
-                    android:valueFrom="0"
-                    android:valueTo="300"
-                    android:valueType="floatType" >
-    </objectAnimator>
+    <set android:ordering="together" >
+        <!--下面的动画同时进行-->
+        <objectAnimator
+                        android:duration="2000"
+                        android:propertyName="translationX"
+                        android:valueFrom="0"
+                        android:valueTo="300"
+                        android:valueType="floatType" >
+        </objectAnimator>
 
-    <objectAnimator
-                    android:duration="3000"
-                    android:propertyName="rotation"
-                    android:valueFrom="0"
-                    android:valueTo="360"
-                    android:valueType="floatType" >
-    </objectAnimator>
-  </set>
+        <objectAnimator
+                        android:duration="3000"
+                        android:propertyName="rotation"
+                        android:valueFrom="0"
+                        android:valueTo="360"
+                        android:valueType="floatType" >
+        </objectAnimator>
+    </set>
 
-  <set android:ordering="sequentially" >
-    <!--下面的动画按序进行-->
-    <objectAnimator
-                    android:duration="1500"
-                    android:propertyName="alpha"
-                    android:valueFrom="1"
-                    android:valueTo="0"
-                    android:valueType="floatType" >
-    </objectAnimator>
-    <objectAnimator
-                    android:duration="1500"
-                    android:propertyName="alpha"
-                    android:valueFrom="0"
-                    android:valueTo="1"
-                    android:valueType="floatType" >
-    </objectAnimator>
-  </set>
+    <set android:ordering="sequentially" >
+        <!--下面的动画按序进行-->
+        <objectAnimator
+                        android:duration="1500"
+                        android:propertyName="alpha"
+                        android:valueFrom="1"
+                        android:valueTo="0"
+                        android:valueType="floatType" >
+        </objectAnimator>
+        <objectAnimator
+                        android:duration="1500"
+                        android:propertyName="alpha"
+                        android:valueFrom="0"
+                        android:valueTo="1"
+                        android:valueType="floatType" >
+        </objectAnimator>
+    </set>
 
 </set>
 ```
@@ -1090,56 +1093,54 @@ AnimatorUpdateListener可以监听整个动画过程，每播放一帧就会被�
 
    ```java
    private static class ViewWrapper {
-     private View mTarget;
-     public ViewWrapper(View target) {
-       mTarget = target;
-     }
-     
-     public int getWidth() {
-       return mTarget.getLayoutParams().width;
-     }
-     
-     public void setWidth(int width) {
-       mTarget.getLayoutParams().width = width;
-       mTarget.requestLayout();
-     }
+       private View mTarget;
+       public ViewWrapper(View target) {
+           mTarget = target;
+       }
+
+       public int getWidth() {
+           return mTarget.getLayoutParams().width;
+       }
+
+       public void setWidth(int width) {
+           mTarget.getLayoutParams().width = width;
+           mTarget.requestLayout();
+       }
    }
    ```
-
-   ​
 
 3. 采用ValueAnimator，监听动画过程，实现属性改变
 
    ```java
    private void performAnimate(final View target, final int start, final int end) {
-     ValueAnimator valueAnimator = ValueAnimator.ofInt(1, 100);
-     valueAnimator.addUpdateListener(new AnimatorUpdateListener() {
+       ValueAnimator valueAnimator = ValueAnimator.ofInt(1, 100);
+       valueAnimator.addUpdateListener(new AnimatorUpdateListener() {
 
-       // 持有一个IntEvaluator对象，方便下面估值的时候使用
-       private IntEvaluator mEvaluator = new IntEvaluator();
+           // 持有一个IntEvaluator对象，方便下面估值的时候使用
+           private IntEvaluator mEvaluator = new IntEvaluator();
 
-       @Override
-       public void onAnimationUpdate(ValueAnimator animator) {
-         // 获得当前动画的进度值，整型，1-100之间
-         int currentValue = (Integer) animator.getAnimatedValue();
-         Log.d(TAG, "current value: " + currentValue);
+           @Override
+           public void onAnimationUpdate(ValueAnimator animator) {
+               // 获得当前动画的进度值，整型，1-100之间
+               int currentValue = (Integer) animator.getAnimatedValue();
+               Log.d(TAG, "current value: " + currentValue);
 
-         // 获得当前进度占整个动画过程的比例，浮点型，0-1之间
-         float fraction = animator.getAnimatedFraction();
-         // 直接调用整型估值器通过比例计算出宽度，然后再设给Button
-         target.getLayoutParams().width = mEvaluator.evaluate(fraction, start, end);
-         target.requestLayout();
-       }
-     });
+               // 获得当前进度占整个动画过程的比例，浮点型，0-1之间
+               float fraction = animator.getAnimatedFraction();
+               // 直接调用整型估值器通过比例计算出宽度，然后再设给Button
+               target.getLayoutParams().width = mEvaluator.evaluate(fraction, start, end);
+               target.requestLayout();
+           }
+       });
 
-     valueAnimator.setDuration(5000).start();
+       valueAnimator.setDuration(5000).start();
    }
 
    @Override
    public void onClick(View v) {
-     if (v == button) {
-       performAnimate(button, button.getWidth(), 500);
-     }
+       if (v == button) {
+           performAnimate(button, button.getWidth(), 500);
+       }
    }
    ```
 
@@ -1192,15 +1193,15 @@ Last-Modified=Mon, 30 Apr 2001 12:56:11 GMT
 ```
 GET /down.zip HTTP/1.0 
 User-Agent: NetFox 
-RANGE: bytes=2000070- 
+RANGE: bytes=2000070- //此处指定传输的起点和终点
 Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2 
 
 ```
 
 ```
-206 
+206 // 表示续传
 Content-Length=106786028 
-Content-Range=bytes 2000070-106786027/106786028 
+Content-Range=bytes 2000070-106786027/106786028 //表示从2000070开始传输 
 Date=Mon, 30 Apr 2001 12:55:20 GMT 
 ETag=W/"02ca57e173c11:95b" 
 Content-Type=application/octet-stream 
@@ -1232,7 +1233,7 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
 4. 判断响应条件
 
    ```java
-   if (urlConnection.getResponseCode() == HttpStatus.SC_PARTIAL_CONTENT) {
+   if (urlConnection.getResponseCode() == HttpStatus.SC_PARTIAL_CONTENT) {// 即206
    ```
 
 5. 写入文件并记录文件长度
@@ -1242,8 +1243,8 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
    byte[] buffer = new byte[512];  
    int len = -1;
    while ((len = inputStream.read(buffer))!= -1){   
-     randomFile.write(buffer,0,len);
-     // 记录文件长度信息
+       randomFile.write(buffer,0,len);
+       // 记录文件长度信息
    }
    ```
 
@@ -1255,7 +1256,8 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
 
 ## 加载方式
 
-* 依赖于Activity,不能单独存在，需要宿主
+依赖于Activity,不能单独存在，需要宿主
+
 * 静态加载，在xml文件中，当做一个标签使用，这种方式频率比较低
 
 ```xml
@@ -1280,11 +1282,11 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
 
 ```java
 void replaceFragment(Fragment fragment) {
-  FragmentManager fragmentManager = getSupportFragmentManager();
-  FragmentTransaction transaction = fragmentManager.beginTransaction();
-  transaction.replace(R.id.right_layout, fragment);
-  transaction.addToBackStack(null); // 实现返回栈
-  transaction.commit();
+    FragmentManager fragmentManager = getSupportFragmentManager();
+    FragmentTransaction transaction = fragmentManager.beginTransaction();
+    transaction.replace(R.id.right_layout, fragment);
+    transaction.addToBackStack(null); // 实现返回栈
+    transaction.commit();
 }
 ```
 
@@ -1314,7 +1316,7 @@ void replaceFragment(Fragment fragment) {
 
    * 内部维持的是双向链表结构
    * 该结构可记录我们每次的add和replace我们的Fragment;
-   * 当我们点击back按钮会自动帮我们实现退栈按钮
+   * 当点击back按钮会自动帮我们实现退栈按钮
 
 5. Fragment之间通信
 
@@ -1357,8 +1359,8 @@ Context可以是Activity,Fragment等。它默认的Bitmap的格式RGB_565，同�
 
 ```java
 Glide.with(context)  
-  .load("http://xxx.jpg")  
-  .into(ImageView); 
+    .load("http://xxx.jpg")  
+    .into(ImageView); 
 ```
 
 * with()方法可以接收Context、Activity，Fragment类型或当前应用程序的ApplicationContext
@@ -1384,10 +1386,10 @@ Glide支持图片磁盘缓存，默认是内部存储。Glide默认缓存的是�
 
 ```java
 Glide.with(this)
-  .load(url)
-  .placeholder(R.drawable.loading) // 加载过程中显示的图片
-  .error(R.drawable.error) // 加载失败显示的图片
-  .into(imageView);
+    .load(url)
+    .placeholder(R.drawable.loading) // 加载过程中显示的图片
+    .error(R.drawable.error) // 加载失败显示的图片
+    .into(imageView);
 ```
 
 ### 指定图片格式和大小
@@ -1487,7 +1489,7 @@ RequestManager用来跟踪众多当前页面的Request的是RequestTracker类，
 1. 静态成员和单例模式失效
 2. 线程同步机制失效
 3. SharePreference可靠性下降
-4. Application可能多次创建
+4. Application多次创建
 
 ### 序列化
 
@@ -1505,65 +1507,62 @@ RequestManager用来跟踪众多当前页面的Request的是RequestTracker类，
 
 ```java
 public class User implements Serializable {
-  private static final long serialVersionUID = 519067123721295773L;
+    private static final long serialVersionUID = 519067123721295773L;
 }
 ```
 
 serialVersionUID用于辅助序列化和反序列化，序列化后数据只有serialVersionUID和当前类serialVersionUID一致才可以序列化
 
-相比不指定（自动生成）serialVersionUID，手动指定serialVersionUID可以避免由于类的改变，导致系统重新计算hash值并赋给serialVersionUID，导致反序列化失败
+相比不指定（自动生成）serialVersionUID，手动指定serialVersionUID可以避免由于类的改变，导致系统重新计算hash值并赋给serialVersionUID并反序列化失败
 
 #### Parcelable
 
 ```java
 public class User implements Parcelable {
-  public int userId;
-  public String userName;
-  public boolean isMale;
+    public int userId;
+    public String userName;
+    public boolean isMale;
 
-  public Book book;
+    public Book book;
 
-  public User() {
-  }
-
-  public User(int userId, String userName, boolean isMale) {
-    this.userId = userId;
-    this.userName = userName;
-    this.isMale = isMale;
-  }
-
-  public int describeContents() {
-    return 0;
-  }
-
-  public void writeToParcel(Parcel out, int flags) {
-    out.writeInt(userId);
-    out.writeString(userName);
-    out.writeInt(isMale ? 1 : 0);
-    out.writeParcelable(book, 0);
-  }
-
-  public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {
-    public User createFromParcel(Parcel in) {
-      return new User(in);
+    public User() {
     }
 
-    public User[] newArray(int size) {
-      return new User[size];
+    public User(int userId, String userName, boolean isMale) {
+        this.userId = userId;
+        this.userName = userName;
+        this.isMale = isMale;
     }
-  };
 
-  private User(Parcel in) {
-    userId = in.readInt();
-    userName = in.readString();
-    isMale = in.readInt() == 1;
-    book = in
-      .readParcelable(Thread.currentThread().getContextClassLoader());
-  }
+    public int describeContents() {
+        return 0;
+    }
+
+    public void writeToParcel(Parcel out, int flags) {
+        out.writeInt(userId);
+        out.writeString(userName);
+        out.writeInt(isMale ? 1 : 0);
+        out.writeParcelable(book, 0);
+    }
+
+    public static final Parcelable.Creator<User> CREATOR = new Parcelable.Creator<User>() {
+        public User createFromParcel(Parcel in) {
+            return new User(in);
+        }
+
+        public User[] newArray(int size) {
+            return new User[size];
+        }
+    };
+
+    private User(Parcel in) {
+        userId = in.readInt();
+        userName = in.readString();
+        isMale = in.readInt() == 1;
+        book = in.readParcelable(Thread.currentThread().getContextClassLoader());
+    }
 }
 ```
-
-
 
 #### Serializable和Parcelable的区别
 
@@ -1616,7 +1615,7 @@ AIDL通过定义服务端暴露的接口，以提供给客户端来调用，AIDL
 ```java
 package com.example.aidl;
 interface IMyInterface {
-  String getInfo(in String s);
+    String getInfo(String s);
 }
 ```
 
@@ -1624,27 +1623,27 @@ interface IMyInterface {
 
 ```java
 public class MyService extends Service { 
-  public final static String TAG = "MyService";
-  
-  private IBinder binder = new IMyInterface.Stub() {
-    
-    @Override       
-    public String getInfo(String s) throws RemoteException { 
-      Log.i(TAG, s); 
-      return "我是 Service 返回的字符串"; 
+    public final static String TAG = "MyService";
+
+    private IBinder binder = new IMyInterface.Stub() {
+
+        @Override       
+        public String getInfo(String s) throws RemoteException { 
+            Log.i(TAG, s); 
+            return "我是 Service 返回的字符串"; 
+        }
+    };
+
+    @Override
+    public void onCreate() {
+        super.onCreate(); 
+        Log.i(TAG, "onCreate");    
+    }       
+
+    @Override    
+    public IBinder onBind(Intent intent) { 
+        return binder;  
     }
-  };
-  
-  @Override
-  public void onCreate() {
-    super.onCreate(); 
-    Log.i(TAG, "onCreate");    
-  }       
-  
-  @Override    
-  public IBinder onBind(Intent intent) { 
-    return binder;  
-  }
 }
 ```
 
@@ -1662,41 +1661,41 @@ public class MyService extends Service {
 
 ```java
 public class MainActivity extends AppCompatActivity {
-  public final static String TAG = "MainActivity";
-  private IMyInterface myInterface;
-  
-  private ServiceConnection serviceConnection = new ServiceConnection() {
-    
+    public final static String TAG = "MainActivity";
+    private IMyInterface myInterface;
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            myInterface = IMyInterface.Stub.asInterface(service);
+            Log.i(TAG, "连接Service 成功");
+            try {
+                String s = myInterface.getInfo("我是Activity传来的字符串");
+                Log.i(TAG, "从Service得到的字符串：" + s);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.e(TAG, "连接Service失败");
+        }
+    };
+
     @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-      myInterface = IMyInterface.Stub.asInterface(service);
-      Log.i(TAG, "连接Service 成功");
-      try {
-        String s = myInterface.getInfo("我是Activity传来的字符串");
-        Log.i(TAG, "从Service得到的字符串：" + s);
-      } catch (RemoteException e) {
-        e.printStackTrace();
-      }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        startAndBindService();
     }
-    
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-      Log.e(TAG, "连接Service失败");
+
+    private void startAndBindService() {
+        Intent service = new Intent(MainActivity.this, MyService.class);
+        startService(service);
+        bindService(service, serviceConnection, Context.BIND_AUTO_CREATE);
     }
-  };
-  
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
-    startAndBindService();
-  }
-  
-  private void startAndBindService() {
-    Intent service = new Intent(MainActivity.this, MyService.class);
-    startService(service);
-    bindService(service, serviceConnection, Context.BIND_AUTO_CREATE);
-  }
 }
 ```
 
@@ -1716,36 +1715,36 @@ Messager实现IPC通信，底层是使用了AIDL方式。和AIDL方式不同的�
 
 ```java
 public class RemoteService extends Service {
-  private static final String TAG = "RemoteService"
-    private final Messenger mMessenger = new Messenger(new Handler() {  
-      @Override  
-      public void handleMessage(Message msg) {  
-        switch (msg.what) {
-          case Constants.MSG_FROM_CLIENT:
-            Log.i(TAG, "receive msg from client:" + msg.getData().getString("msg"));
+    private static final String TAG = "RemoteService"
+        private final Messenger mMessenger = new Messenger(new Handler() {  
+            @Override  
+            public void handleMessage(Message msg) {  
+                switch (msg.what) {
+                    case Constants.MSG_FROM_CLIENT:
+                        Log.i(TAG, "receive msg from client:" + msg.getData().getString("msg"));
 
-            // 回复消息
-            Messager client = msg.replyTo;
-            Message replyMessage = Message.obtain(null, Constants.MSG_FROM_SERVICE);
-            Bundle data = new Bundle();
-            data.putString("reply", "reply message");
-            replyMessage.setData(data);
-            try {
-              client.send(replyMessage);
-            } catch (RemoteException e) {
-              e.printStackTrace();
-            }
-            break;
-          default:
-            super.handleMessage(msg);
-        }
-      }  
-    });  
+                        // 回复消息
+                        Messager client = msg.replyTo;
+                        Message replyMessage = Message.obtain(null, Constants.MSG_FROM_SERVICE);
+                        Bundle data = new Bundle();
+                        data.putString("reply", "reply message");
+                        replyMessage.setData(data);
+                        try {
+                            client.send(replyMessage);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    default:
+                        super.handleMessage(msg);
+                }
+            }  
+        });  
 
-  @Override  
-  public IBinder onBind(Intent intent) {  
-    return mMessenger.getBinder();  
-  }  
+    @Override  
+    public IBinder onBind(Intent intent) {  
+        return mMessenger.getBinder();  
+    }  
 }  
 ```
 
@@ -1753,42 +1752,42 @@ public class RemoteService extends Service {
 
 ```java
 private Messenger mGetReplyMessenger = new Messenger(new Handler() {
-  @Override  
-  public void handleMessage(Message msg) {  
-    switch (msg.what) {
-      case Constants.MSG_FROM_SERVICE:
-        // 接收服务器消息
-        Log.i(TAG, "receive msg from service:" + msg.getData().getString("msg"));
-        break;
-      default:
-        super.handleMessage(msg);
-    }
-  }  
+    @Override  
+    public void handleMessage(Message msg) {  
+        switch (msg.what) {
+            case Constants.MSG_FROM_SERVICE:
+                // 接收服务器消息
+                Log.i(TAG, "receive msg from service:" + msg.getData().getString("msg"));
+                break;
+            default:
+                super.handleMessage(msg);
+        }
+    }  
 });  
 
 private Messenger mService;  
 
 private ServiceConnection mConnection = new ServiceConnection() {  
-  @Override  
-  public void onServiceConnected(ComponentName name, IBinder service) {  
-    mService = new Messenger(service);
+    @Override  
+    public void onServiceConnected(ComponentName name, IBinder service) {  
+        mService = new Messenger(service);
 
-    // 发送消息
-    Message msg = Message.obtain(null, Constants.MSG_FROM_CLIENT);
-    Bundle data = new Bundle();
-    data.putString("msg", "message");
-    msg.setData(data);
-    msg.replyTo = mGetReplyMessenger;
-    try {
-      mService.send(msg);
-    } catch (RemoteException e) {
-      e.printStackTrace();
-    }
-  }  
+        // 发送消息
+        Message msg = Message.obtain(null, Constants.MSG_FROM_CLIENT);
+        Bundle data = new Bundle();
+        data.putString("msg", "message");
+        msg.setData(data);
+        msg.replyTo = mGetReplyMessenger; // 设置回复的Messenger
+        try {
+            mService.send(msg);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }  
 
-  @Override public void onServiceDisconnected(ComponentName name) {  
-    mService = null;  
-  } 
+    @Override public void onServiceDisconnected(ComponentName name) {  
+        mService = null;  
+    } 
 };
 ```
 
@@ -1874,21 +1873,21 @@ interface IBinderPool {
 ```java
 @Override
 public IBinder queryBinder(int binderCode) throws RemoteException {
-  IBinder binder = null;
-  switch (binderCode) {
-    case BINDER_SECURITY_CENTER: {
-      binder = new SecurityCenterImpl();
-      break;
+    IBinder binder = null;
+    switch (binderCode) {
+        case BINDER_SECURITY_CENTER: {
+            binder = new SecurityCenterImpl();
+            break;
+        }
+        case BINDER_COMPUTE: {
+            binder = new ComputeImpl();
+            break;
+        }
+        default:
+            break;
     }
-    case BINDER_COMPUTE: {
-      binder = new ComputeImpl();
-      break;
-    }
-    default:
-      break;
-  }
 
-  return binder;
+    return binder;
 }
 ```
 
@@ -1899,7 +1898,7 @@ private Binder mBinderPool = new BinderPool.BinderPoolImpl();
 
 @Override
 public IBinder onBind(Intent intent) {
-  return mBinderPool;
+    return mBinderPool;
 }
 ```
 
@@ -1907,50 +1906,50 @@ public IBinder onBind(Intent intent) {
 
 ```java
 public class BinderPool {
-  private static final String TAG = "BinderPool";
-  public static final int BINDER_NONE = -1;
-  public static final int BINDER_COMPUTE = 0;
-  public static final int BINDER_SECURITY_CENTER = 1;
+    private static final String TAG = "BinderPool";
+    public static final int BINDER_NONE = -1;
+    public static final int BINDER_COMPUTE = 0;
+    public static final int BINDER_SECURITY_CENTER = 1;
 
-  private Context mContext;
-  private IBinderPool mBinderPool;
-  private static volatile BinderPool sInstance;
-  private CountDownLatch mConnectBinderPoolCountDownLatch;
+    private Context mContext;
+    private IBinderPool mBinderPool;
+    private static volatile BinderPool sInstance;
+    private CountDownLatch mConnectBinderPoolCountDownLatch;
 
-  private BinderPool(Context context) {
-    mContext = context.getApplicationContext();
-    connectBinderPoolService();
-  }
-  
-  // 使用单例模式实现
-  public static BinderPool getInsance(Context context) {
-    if (sInstance == null) {
-      synchronized (BinderPool.class) {
+    private BinderPool(Context context) {
+        mContext = context.getApplicationContext();
+        connectBinderPoolService();
+    }
+
+    // 使用单例模式实现
+    public static BinderPool getInsance(Context context) {
         if (sInstance == null) {
-          sInstance = new BinderPool(context);
+            synchronized (BinderPool.class) {
+                if (sInstance == null) {
+                    sInstance = new BinderPool(context);
+                }
+            }
         }
-      }
+        return sInstance;
     }
-    return sInstance;
-  }
 
-  private synchronized void connectBinderPoolService() {
-    // CountDownLatch类位于java.util.concurrent包下
-    // 利用它可以实现类似计数器的功能。比如有一个任务A，它要等待其他4个任务执行完毕之后才能执行，
-    // 此时就可以利用CountDownLatch来实现这种功能了
-    mConnectBinderPoolCountDownLatch = new CountDownLatch(1);
-    Intent service = new Intent(mContext, BinderPoolService.class);
-    mContext.bindService(service, mBinderPoolConnection,
-                         Context.BIND_AUTO_CREATE);
-    try {
-      // 调用await()方法的线程会被挂起，它会等待直到count值为0才继续执行
-      mConnectBinderPoolCountDownLatch.await();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+    private synchronized void connectBinderPoolService() {
+        // CountDownLatch类位于java.util.concurrent包下
+        // 利用它可以实现类似计数器的功能。比如有一个任务A，它要等待其他4个任务执行完毕之后才能执行，
+        // 此时就可以利用CountDownLatch来实现这种功能了
+        mConnectBinderPoolCountDownLatch = new CountDownLatch(1);
+        Intent service = new Intent(mContext, BinderPoolService.class);
+        mContext.bindService(service, mBinderPoolConnection,
+                             Context.BIND_AUTO_CREATE);
+        try {
+            // 调用await()方法的线程会被挂起，它会等待直到count值为0才继续执行
+            mConnectBinderPoolCountDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
-  }
 
-  /**
+    /**
      * query binder by binderCode from binder pool
      * 
      * @param binderCode
@@ -1958,60 +1957,58 @@ public class BinderPool {
      * @return binder who's token is binderCode<br>
      *         return null when not found or BinderPoolService died.
      */
-  public IBinder queryBinder(int binderCode) {
-    IBinder binder = null;
-    try {
-      if (mBinderPool != null) {
-        binder = mBinderPool.queryBinder(binderCode);
-      }
-    } catch (RemoteException e) {
-      e.printStackTrace();
-    }
-    return binder;
-  }
-
-  private ServiceConnection mBinderPoolConnection = new ServiceConnection() {
-
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-      // ignored.
+    public IBinder queryBinder(int binderCode) {
+        IBinder binder = null;
+        try {
+            if (mBinderPool != null) {
+                binder = mBinderPool.queryBinder(binderCode);
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+        return binder;
     }
 
-    @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-      mBinderPool = IBinderPool.Stub.asInterface(service);
-      try {
-        mBinderPool.asBinder().linkToDeath(mBinderPoolDeathRecipient, 0);
-      } catch (RemoteException e) {
-        e.printStackTrace();
-      }
-      // 将count值减1
-      // 相当于通知connectBinderPoolService从await处继续执行
-      // 通过CountDownLatch将bindService这一异步操作转换为同步操作
-      // 应避免在主线程中执行
-      mConnectBinderPoolCountDownLatch.countDown();
-    }
-  };
+    private ServiceConnection mBinderPoolConnection = new ServiceConnection() {
 
-  private IBinder.DeathRecipient mBinderPoolDeathRecipient = new IBinder.DeathRecipient() {
-    @Override
-    public void binderDied() {
-      // 当binder意外死亡时重新连接
-      Log.w(TAG, "binder died.");
-      mBinderPool.asBinder().unlinkToDeath(mBinderPoolDeathRecipient, 0);
-      mBinderPool = null;
-      connectBinderPoolService();
-    }
-  };
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            // ignored.
+        }
 
-  public static class BinderPoolImpl extends IBinderPool.Stub {
-    //...
-  }
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mBinderPool = IBinderPool.Stub.asInterface(service);
+            try {
+                mBinderPool.asBinder().linkToDeath(mBinderPoolDeathRecipient, 0);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+            // 将count值减1
+            // 相当于通知connectBinderPoolService从await处继续执行
+            // 通过CountDownLatch将bindService这一异步操作转换为同步操作
+            // 应避免在主线程中执行
+            mConnectBinderPoolCountDownLatch.countDown();
+        }
+    };
+
+    private IBinder.DeathRecipient mBinderPoolDeathRecipient = new IBinder.DeathRecipient() {
+        @Override
+        public void binderDied() {
+            // 当binder意外死亡时重新连接
+            Log.w(TAG, "binder died.");
+            mBinderPool.asBinder().unlinkToDeath(mBinderPoolDeathRecipient, 0);
+            mBinderPool = null;
+            connectBinderPoolService();
+        }
+    };
+
+    public static class BinderPoolImpl extends IBinderPool.Stub {
+        //...
+    }
 
 }
 ```
-
-
 
 # JSON
 
@@ -2024,9 +2021,9 @@ public class BinderPool {
 
 ```json
 { "people": [
-  { "firstName": "Brett", "lastName":"McLaughlin", "email": "aaaa" },
-  { "firstName": "Jason", "lastName":"Hunter", "email": "bbbb"},
-  { "firstName": "Elliotte", "lastName":"Harold", "email": "cccc" }
+    { "firstName": "Brett", "lastName":"McLaughlin", "email": "aaaa" },
+    { "firstName": "Jason", "lastName":"Hunter", "email": "bbbb"},
+    { "firstName": "Elliotte", "lastName":"Harold", "email": "cccc" }
 ]}
 ```
 
@@ -2068,8 +2065,8 @@ javah com.xxx.TestHelloActivity
 
 ```c
 jstring Java_com_xxx_TestHelloActivity_sayHello(JNIEnv* env,jobject obj){
-  char* text = "hello from c!";
-  return (**env).NewsStringUTF(env,text);
+    char* text = "hello from c!";
+    return (**env).NewsStringUTF(env,text);
 }
 ```
 
@@ -2108,13 +2105,13 @@ System.loadLibrary("hello");
 ```java
 package com.example;
 public class MediaRecorder {
-  static {
-    System.loadLibrary("media_jni");
-    native_init();
-  }
+    static {
+        System.loadLibrary("media_jni");
+        native_init();
+    }
 
-  private static native final void native_init();
-  public native void start() throws IllegalStateException;
+    private static native final void native_init();
+    public native void start() throws IllegalStateException;
 }
 ```
 
@@ -2136,25 +2133,25 @@ javah com.example.MediaRecorder
 #define _Included_com_example_MediaRecorder
 #ifdef __cplusplus
 extern "C" {
-  #endif
-  /*
+    #endif
+    /*
  * Class:     com_example_MediaRecorder
  * Method:    native_init
  * Signature: ()V
  */
-  JNIEXPORT void JNICALL Java_com_example_MediaRecorder_native_1init
-    (JNIEnv *, jclass);
-  // 方法名多了一个“_l”，这是因为native_init方法有一个“_”，它会在转换为JNI方法时变成“_1”，类似于转义。 
+    JNIEXPORT void JNICALL Java_com_example_MediaRecorder_native_1init
+        (JNIEnv *, jclass);
+    // 方法名多了一个“_l”，这是因为native_init方法有一个“_”，它会在转换为JNI方法时变成“_1”，类似于转义。 
 
-  /*
+    /*
  * Class:     com_example_MediaRecorder
  * Method:    start
  * Signature: ()V
  */
-  JNIEXPORT void JNICALL Java_com_example_MediaRecorder_start
-    (JNIEnv *, jobject);
+    JNIEXPORT void JNICALL Java_com_example_MediaRecorder_start
+        (JNIEnv *, jobject);
 
-  #ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif
 #endif
@@ -2181,9 +2178,9 @@ JNI中有一种结构用来记录Java的Native方法和JNI方法的关联关系�
 
 ```c
 typedef struct{  
-  const char* name;  // Java中native函数的名字，不用携带包的路径，例如“native_init”  
-  const char* signature; // Java函数的签名信息，用字符串表示，是参数类型和返回类型的组合，用以应对Java里的函数重载  
-  void* fnPtr; // JNI层对应函数的函数指针，注意他是void*类型  
+    const char* name;  // Java中native函数的名字，不用携带包的路径，例如“native_init”  
+    const char* signature; // Java函数的签名信息，用字符串表示，是参数类型和返回类型的组合，用以应对Java里的函数重载  
+    void* fnPtr; // JNI层对应函数的函数指针，注意他是void*类型  
 } JNINativeMethod  
 ```
 
@@ -2191,10 +2188,10 @@ typedef struct{
 
 ```java
 static const JNINativeMethod gMethods[] = {
-  // start是Java层的Native方法，它对应的JNI层的方法为android_media_MediaRecorder_start。
-  // "()V"是start方法的签名信息
-  {"start", "()V", (void *)android_media_MediaRecorder_start},
-  {"stop",  "()V", (void *)android_media_MediaRecorder_stop}
+    // start是Java层的Native方法，它对应的JNI层的方法为android_media_MediaRecorder_start。
+    // "()V"是start方法的签名信息
+    {"start", "()V", (void *)android_media_MediaRecorder_start},
+    {"stop",  "()V", (void *)android_media_MediaRecorder_stop}
 };
 ```
 
@@ -2206,35 +2203,35 @@ JNI_OnLoad方法会在System.loadLibrary方法后调用，尝试进行调用跟�
 // frameworks/base/media/jni/android_media_MediaRecorder.cpp
 jint JNI_OnLoad(JavaVM* vm, void* /* reserved */)
 {
-  JNIEnv* env = NULL;
-  jint result = -1;
-  if (vm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK) {
-    ALOGE("ERROR: GetEnv failed\n");
-    goto *bail;
-  }
-  assert(env != NULL);
-  //...
-  if (register_android_media_MediaPlayer(env) < 0) {
-    ALOGE("ERROR: MediaPlayer native registration failed\n");
-    goto *bail;
-  }
-  if (register_android_media_MediaRecorder(env) < 0) {
-    ALOGE("ERROR: MediaRecorder native registration failed\n");
-    goto *bail;
-  }
-  //...
-  result = JNI_VERSION_1_4;
-  bail:
-  return result;
+    JNIEnv* env = NULL;
+    jint result = -1;
+    if (vm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK) {
+        ALOGE("ERROR: GetEnv failed\n");
+        goto *bail;
+    }
+    assert(env != NULL);
+    //...
+    if (register_android_media_MediaPlayer(env) < 0) {
+        ALOGE("ERROR: MediaPlayer native registration failed\n");
+        goto *bail;
+    }
+    if (register_android_media_MediaRecorder(env) < 0) {
+        ALOGE("ERROR: MediaRecorder native registration failed\n");
+        goto *bail;
+    }
+    //...
+    result = JNI_VERSION_1_4;
+    bail:
+    return result;
 }
 
 int register_android_media_MediaRecorder(JNIEnv *env)
 {
-  return AndroidRuntime::registerNativeMethods(
-    env,
-    "android/media/MediaRecorder",
-    gMethods, 
-    NELEM(gMethods));
+    return AndroidRuntime::registerNativeMethods(
+        env,
+        "android/media/MediaRecorder",
+        gMethods, 
+        NELEM(gMethods));
 }
 ```
 
@@ -2243,12 +2240,11 @@ int register_android_media_MediaRecorder(JNIEnv *env)
 ```c
 // frameworks/base/core/jni/AndroidRuntime.cpp
 /*static*/ int AndroidRuntime::registerNativeMethods(
-  JNIEnv* env,
-  const char* className, 
-  const JNINativeMethod* gMethods, 
-  int numMethods)
-{
-  return jniRegisterNativeMethods(env, className, gMethods, numMethods);
+    JNIEnv* env,
+    const char* className, 
+    const JNINativeMethod* gMethods, 
+    int numMethods) {
+    return jniRegisterNativeMethods(env, className, gMethods, numMethods);
 }
 ```
 
@@ -2257,22 +2253,24 @@ int register_android_media_MediaRecorder(JNIEnv *env)
 ```c
 // external/conscrypt/src/openjdk/native/JNIHelp.cpp
 extern "C" int jniRegisterNativeMethods(
-  JNIEnv* env, 
-  const char* className,
-  const JNINativeMethod* gMethods, 
-  int numMethods)
+    JNIEnv* env, 
+    const char* className,
+    const JNINativeMethod* gMethods, 
+    int numMethods)
 {
-  //...
-  if (env->RegisterNatives(c.get(), gMethods, numMethods) < 0) {//1
-    char* msg;
-    (void)asprintf(&msg, 
-                   "RegisterNatives failed for '%s'; aborting...", 
-                   className);
-    env->FatalError(msg);
-  }
-  return 0;
+    //...
+    if (env->RegisterNatives(c.get(), gMethods, numMethods) < 0) {//1
+        char* msg;
+        (void)asprintf(&msg, 
+                       "RegisterNatives failed for '%s'; aborting...", 
+                       className);
+        env->FatalError(msg);
+    }
+    return 0;
 }
 ```
+
+所以我们只需要在`JNI_Onload`中调用`RegisterNatives` 注册即可
 
 ## JNIEnv
 
@@ -2338,11 +2336,23 @@ MVC是一个架构模式，它分离了表现与交互。它被分为三个核�
 
 在MVP里，Presenter完全把Model和View进行了分离，主要的程序逻辑在Presenter里实现。而且，Presenter与具体的View是没有直接关联的，而是通过定义好的接口进行交互，从而使得在变更View时候可以保持Presenter的不变，即重用！
 
+![MVP架构调用关系](http://www.jcodecraeer.com/uploads/userup/13953/1G020140036-F40-0.png)
+
 作为一种新的模式，MVP与MVC有着一个重大的区别：在MVP中View并不直接使用Model，它们之间的通信是通过Presenter (MVC中的Controller)来进行的，所有的交互都发生在Presenter内部，而在MVC中View会直接从Model中读取数据而不是通过 Controller。
 
 在MVC里，View是可以直接访问Model的！从而，View里会包含Model信息，不可避免的还要包括一些业务逻辑。 在MVC模型里，更关注的Model的不变，而同时有多个对Model的不同显示，即View。所以，在MVC模型里，Model不依赖于View，但是View是依赖于Model的。不仅如此，因为有一些业务逻辑在View里实现了，导致要更改View也是比较困难的，至少那些业务逻辑是无法重用的。
 
 虽然 MVC 中的 View的确“可以”访问Model，但是我们不建议在 View 中依赖Model，而是要求尽可能把所有业务逻辑都放在 Controller 中处理，而 View 只和 Controller 交互
+
+日常开发中的Activity，Fragment和XML界面就相当于是一个 MVC 的架构模式，Activity中不仅要处理各种 UI 操作还要请求数据以及解析。
+
+这种开发方式的缺点就是业务量大的时候一个Activity 文件分分钟飙到上千行代码，想要改一处业务逻辑光是去找就要费半天劲，而且有点地方逻辑处理是一样的无奈是不同的 Activity 就没办法很好的写成通用方法
+
+MVP 模式将Activity 中的业务逻辑全部分离出来，让Activity 只做 UI 逻辑的处理，所有跟Android API无关的业务逻辑由 Presenter 层来完成。
+
+将业务处理分离出来后最明显的好处就是管理方便，但是缺点就是增加了代码量
+
+[Android MVP架构搭建](http://www.jcodecraeer.com/a/anzhuokaifa/2017/1020/8625.html?1508484926)
 
 ### 优势
 
@@ -2381,26 +2391,26 @@ MVC是一个架构模式，它分离了表现与交互。它被分为三个核�
 private final OkHttpClient client = new OkHttpClient();
 
 public void run() throws Exception {
-  Request request = new Request.Builder()
-    .url("http://publicobject.com/helloworld.txt")
-    .build();
+    Request request = new Request.Builder()
+        .url("http://publicobject.com/helloworld.txt")
+        .build();
 
-  client.newCall(request).enqueue(new Callback() {
-    @Override public void onFailure(Request request, Throwable throwable) {
-      throwable.printStackTrace();
-    }
+    client.newCall(request).enqueue(new Callback() {
+        @Override public void onFailure(Request request, Throwable throwable) {
+            throwable.printStackTrace();
+        }
 
-    @Override public void onResponse(Response response) throws IOException {
-      if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+        @Override public void onResponse(Response response) throws IOException {
+            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
 
-      Headers responseHeaders = response.headers();
-      for (int i = 0; i < responseHeaders.size(); i++) {
-        System.out.println(responseHeaders.name(i) + ": " + responseHeaders.value(i));
-      }
+            Headers responseHeaders = response.headers();
+            for (int i = 0; i < responseHeaders.size(); i++) {
+                System.out.println(responseHeaders.name(i) + ": " + responseHeaders.value(i));
+            }
 
-      System.out.println(response.body().string());
-    }
-  });
+            System.out.println(response.body().string());
+        }
+    });
 }
 ```
 
@@ -2448,7 +2458,7 @@ flags：
 
 在其他进程中显示并更新View界面
 
-由于没有提供findViewById方法，无法访问内部的View元素，必须通过一些列set方法来完成
+由于没有提供findViewById方法，无法访问内部的View元素，必须通过一系列set方法来完成
 
 主要用于通知栏和小部件
 
@@ -2491,35 +2501,35 @@ Service
 
 ```java
 public class MyService extends Service {
-  public MyService() {
-  }
+    public MyService() {
+    }
 
-  @Override
-  public IBinder onBind(Intent intent) {
-    //返回MyBind对象
-    return new MyBinder();
-  }
+    @Override
+    public IBinder onBind(Intent intent) {
+        //返回MyBind对象
+        return new MyBinder();
+    }
 
-  private void methodInMyService() {
-    Toast.makeText(getApplicationContext(), "服务里的方法执行了。。。",
-                   Toast.LENGTH_SHORT).show();
-  }
+    private void methodInMyService() {
+        Toast.makeText(getApplicationContext(), "服务里的方法执行了。。。",
+                       Toast.LENGTH_SHORT).show();
+    }
 
-  /**
+    /**
      * 该类用于在onBind方法执行后返回的对象，
      * 该对象对外提供了该服务里的方法
      */
-  private class MyBinder extends Binder implements IMyBinder {
+    private class MyBinder extends Binder implements IMyBinder {
 
-    @Override
-    public void invokeMethodInMyService() {
-      methodInMyService();
+        @Override
+        public void invokeMethodInMyService() {
+            methodInMyService();
+        }
     }
-  }
 }
 
 public interface IMyBinder { // 自定义的MyBinder接口用于保护服务中不想让外界访问的方法
-  void invokeMethodInMyService();
+    void invokeMethodInMyService();
 }
 ```
 
@@ -2528,43 +2538,43 @@ Activity
 ```java
 public class MainActivity extends Activity {
 
-  private MyConn conn;
-  private Intent intent;
-  private IMyBinder myBinder;
-
-  @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
-  }
-
-  //开启服务按钮的点击事件
-  public void start(View view) {
-    intent = new Intent(this, MyService.class);
-    conn = new MyConn();
-    //绑定服务，
-    // 第一个参数是intent对象，表面开启的服务。
-    // 第二个参数是绑定服务的监听器
-    // 第三个参数一般为BIND_AUTO_CREATE常量，表示自动创建bind
-    bindService(intent, conn, BIND_AUTO_CREATE);
-  }
-
-  //调用服务方法按钮的点击事件
-  public void invoke(View view) {
-    myBinder.invokeMethodInMyService();
-  }
-
-  private class MyConn implements ServiceConnection {
-    @Override
-    public void onServiceConnected(ComponentName componentName, IBinder iBinder){
-      //iBinder为服务里面onBind()方法返回的对象，所以可以强转为IMyBinder类型
-      myBinder = (IMyBinder) iBinder;
-    }
+    private MyConn conn;
+    private Intent intent;
+    private IMyBinder myBinder;
 
     @Override
-    public void onServiceDisconnected(ComponentName componentName) {
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
     }
-  }
+
+    //开启服务按钮的点击事件
+    public void start(View view) {
+        intent = new Intent(this, MyService.class);
+        conn = new MyConn();
+        //绑定服务，
+        // 第一个参数是intent对象，表面开启的服务。
+        // 第二个参数是绑定服务的监听器
+        // 第三个参数一般为BIND_AUTO_CREATE常量，表示自动创建bind
+        bindService(intent, conn, BIND_AUTO_CREATE);
+    }
+
+    //调用服务方法按钮的点击事件
+    public void invoke(View view) {
+        myBinder.invokeMethodInMyService();
+    }
+
+    private class MyConn implements ServiceConnection {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder){
+            //iBinder为服务里面onBind()方法返回的对象，所以可以强转为IMyBinder类型
+            myBinder = (IMyBinder) iBinder;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+        }
+    }
 }
 ```
 
@@ -2580,7 +2590,7 @@ public class MainActivity extends Activity {
 
 Android中的Service是用于后台服务的，当应用程序被挂到后台的时候，问了保证应用某些组件仍然可以工作而引入了Service这个概念，那么这里面要强调的是Service不是独立的进程，也不是独立的线程，它是依赖于应用程序的主线程的，也就是说，在更多时候不建议在Service中编写耗时的逻辑和操作，否则会引起ANR
 
-那么我们当我们编写的耗时逻辑，不得不被service来管理的时候，就需要引入IntentService，IntentService是继承Service的，那么它包含了Service的全部特性，当然也包含service的生命周期，那么与service不同的是，IntentService在执行onCreate操作的时候，内部开了一个线程，去你执行你的耗时操作
+那么我们当我们编写的耗时逻辑，不得不被service来管理的时候，就需要引入IntentService，IntentService是继承Service的，那么它包含了Service的全部特性，当然也包含service的生命周期，那么与service不同的是，IntentService在执行onCreate操作的时候，内部开了一个线程，在onHandleIntent中执行耗时操作
 
 ### 原理
 
@@ -2608,41 +2618,41 @@ SurfaceView继承之View，但拥有独立的绘制表面，即它不与其宿�
 
 ```java
 public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback,Runnable{
-  // SurfaceHolder,控制SurfaceView的大小，格式，监控或者改变SurfaceView
-  private SurfaceHolder mSurfaceHolder;
-  // 画布
-  private Canvas mCanvas;
-  // 子线程标志位，用来控制子线程
-  private boolean isDrawing;
+    // SurfaceHolder,控制SurfaceView的大小，格式，监控或者改变SurfaceView
+    private SurfaceHolder mSurfaceHolder;
+    // 画布
+    private Canvas mCanvas;
+    // 子线程标志位，用来控制子线程
+    private boolean isDrawing;
 
-  public SurfaceViewL(Context context, AttributeSet attrs) {
-    super(context, attrs);
-    init();
-  }
+    public SurfaceViewL(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
 
-  @Override
-  public void surfaceCreated(SurfaceHolder holder) {//创建
-  }
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {//创建
+    }
 
-  @Override
-  public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {//改变
-  }
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {//改变
+    }
 
-  @Override
-  public void surfaceDestroyed(SurfaceHolder holder) {//销毁
-  }
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {//销毁
+    }
 
-  @Override
-  public void run() {
-  }
+    @Override
+    public void run() {
+    }
 
-  private void init() {
-    mSurfaceHolder = getHolder();//得到SurfaceHolder对象
-    mSurfaceHolder.addCallback(this);//注册SurfaceHolder
-    setFocusable(true);
-    setFocusableInTouchMode(true); // 能否获得焦点
-    this.setKeepScreenOn(true);//保持屏幕长亮
-  }
+    private void init() {
+        mSurfaceHolder = getHolder();//得到SurfaceHolder对象
+        mSurfaceHolder.addCallback(this);//注册SurfaceHolder
+        setFocusable(true);
+        setFocusableInTouchMode(true); // 能否获得焦点
+        this.setKeepScreenOn(true);//保持屏幕长亮
+    }
 }
 ```
 
@@ -2654,7 +2664,7 @@ public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback,
 
 > lockCanvas()获取到的Canvas对象还是上次的Canvas对象，并不是一个新的对象。之前的绘图都将被保留，如果需要擦除，可以在绘制之前通过drawColor()方法来进行清屏
 
-绘制要充分利用SurfaceView的三个回调方法，在surfaceCreate()方法中开启子线程进行绘制。在子线程中，使用一个while(isDrawing)循环来不停地绘制。具体的绘制过程，由lockCanvas()方法进行绘制，并通过unlockCanvasAndPost(mCanvas)进行画布内容的提交
+绘制要充分利用SurfaceView的三个回调方法，在`surfaceCreate()`方法中开启子线程进行绘制。在子线程中，使用一个`while(isDrawing)`循环来不停地绘制。具体的绘制过程，由`lockCanvas()`方法进行绘制，并通过`unlockCanvasAndPost(mCanvas)`进行画布内容的提交
 
 ## 画图板示例
 
@@ -2662,133 +2672,133 @@ public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback,
 
 ```java
 public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback, Runnable {
-  // SurfaceHolder
-  private SurfaceHolder mSurfaceHolder;
-  // 画布
-  private Canvas mCanvas;
-  // 子线程标志位
-  private boolean isDrawing;
-  // 画笔
-  Paint mPaint;
-  // 路径
-  Path mPath;
-  private float mLastX, mLastY;//上次的坐标
+    // SurfaceHolder
+    private SurfaceHolder mSurfaceHolder;
+    // 画布
+    private Canvas mCanvas;
+    // 子线程标志位
+    private boolean isDrawing;
+    // 画笔
+    Paint mPaint;
+    // 路径
+    Path mPath;
+    private float mLastX, mLastY;//上次的坐标
 
-  public SurfaceViewL(Context context, AttributeSet attrs) {
-    super(context, attrs);
-    init();
-  }
+    public SurfaceViewL(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
 
-  /**
+    /**
      * 初始化
      */
-  private void init() {
-    //初始化 SurfaceHolder mSurfaceHolder
-    mSurfaceHolder = getHolder();
-    mSurfaceHolder.addCallback(this);
+    private void init() {
+        //初始化 SurfaceHolder mSurfaceHolder
+        mSurfaceHolder = getHolder();
+        mSurfaceHolder.addCallback(this);
 
-    setFocusable(true);
-    setFocusableInTouchMode(true);
-    this.setKeepScreenOn(true);
-    //画笔
-    mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
-    mPaint.setStrokeWidth(10f);
-    mPaint.setColor(Color.parseColor("#FF4081"));
-    mPaint.setStyle(Paint.Style.STROKE);
-    mPaint.setStrokeJoin(Paint.Join.ROUND);
-    mPaint.setStrokeCap(Paint.Cap.ROUND);
-    //路径
-    mPath = new Path();
-  }
-
-  @Override
-  public void surfaceCreated(SurfaceHolder holder) {//创建
-    Log.e("surfaceCreated","--"+isDrawing);
-    drawing();
-  }
-
-  @Override
-  public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {//改变
-
-  }
-
-  @Override
-  public void surfaceDestroyed(SurfaceHolder holder) {//销毁
-    isDrawing = false;
-    Log.e("surfaceDestroyed","--"+isDrawing);
-  }
-
-  @Override
-  public void run() {
-    while (isDrawing) {
-      drawing();
+        setFocusable(true);
+        setFocusableInTouchMode(true);
+        this.setKeepScreenOn(true);
+        //画笔
+        mPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+        mPaint.setStrokeWidth(10f);
+        mPaint.setColor(Color.parseColor("#FF4081"));
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeJoin(Paint.Join.ROUND);
+        mPaint.setStrokeCap(Paint.Cap.ROUND);
+        //路径
+        mPath = new Path();
     }
-  }
 
-  /**
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {//创建
+        Log.e("surfaceCreated","--"+isDrawing);
+        drawing();
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {//改变
+
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {//销毁
+        isDrawing = false;
+        Log.e("surfaceDestroyed","--"+isDrawing);
+    }
+
+    @Override
+    public void run() {
+        while (isDrawing) {
+            drawing();
+        }
+    }
+
+    /**
      * 绘制
      */
-  private void drawing() {
-    try {
-      mCanvas = mSurfaceHolder.lockCanvas();
-      mCanvas.drawColor(Color.WHITE);
-      mCanvas.drawPath(mPath, mPaint);
-    } finally {
-      if (mCanvas != null) {
-        mSurfaceHolder.unlockCanvasAndPost(mCanvas);
-      }
-    }
-  }
-
-  @Override
-  public boolean onTouchEvent(MotionEvent event) {
-    float x = event.getX();
-    float y = event.getY();
-    switch (event.getAction()) {
-      case MotionEvent.ACTION_DOWN:
-        isDrawing = true ;//每次开始将标记设置为ture
-        new Thread(this).start();//开启线程
-        mLastX = x;
-        mLastY = y;
-        mPath.moveTo(mLastX, mLastY);
-        break;
-        
-      case MotionEvent.ACTION_MOVE:
-        float dx = Math.abs(x - mLastX);
-        float dy = Math.abs(y - mLastY);
-        if (dx >= 3 || dy >= 3) {
-          mPath.quadTo(mLastX, mLastY, (mLastX + x) / 2, (mLastY + y) / 2);
+    private void drawing() {
+        try {
+            mCanvas = mSurfaceHolder.lockCanvas();
+            mCanvas.drawColor(Color.WHITE);
+            mCanvas.drawPath(mPath, mPaint);
+        } finally {
+            if (mCanvas != null) {
+                mSurfaceHolder.unlockCanvasAndPost(mCanvas);
+            }
         }
-        mLastX = x;
-        mLastY = y;
-        break;
-        
-      case MotionEvent.ACTION_UP:
-        isDrawing = false;
-        break;
     }
-    return true;
-  }
 
-  /**
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY();
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                isDrawing = true ;//每次开始将标记设置为ture
+                new Thread(this).start();//开启线程
+                mLastX = x;
+                mLastY = y;
+                mPath.moveTo(mLastX, mLastY);
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                float dx = Math.abs(x - mLastX);
+                float dy = Math.abs(y - mLastY);
+                if (dx >= 3 || dy >= 3) {
+                    mPath.quadTo(mLastX, mLastY, (mLastX + x) / 2, (mLastY + y) / 2);
+                }
+                mLastX = x;
+                mLastY = y;
+                break;
+
+            case MotionEvent.ACTION_UP:
+                isDrawing = false;
+                break;
+        }
+        return true;
+    }
+
+    /**
      * 测量
      */
-  @Override
-  protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    int wSpecMode = MeasureSpec.getMode(widthMeasureSpec);
-    int wSpecSize = MeasureSpec.getSize(widthMeasureSpec);
-    int hSpecMode = MeasureSpec.getMode(heightMeasureSpec);
-    int hSpecSize = MeasureSpec.getSize(heightMeasureSpec);
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int wSpecMode = MeasureSpec.getMode(widthMeasureSpec);
+        int wSpecSize = MeasureSpec.getSize(widthMeasureSpec);
+        int hSpecMode = MeasureSpec.getMode(heightMeasureSpec);
+        int hSpecSize = MeasureSpec.getSize(heightMeasureSpec);
 
-    if (wSpecMode == MeasureSpec.AT_MOST && hSpecMode == MeasureSpec.AT_MOST) {
-      setMeasuredDimension(300, 300);
-    } else if (wSpecMode == MeasureSpec.AT_MOST) {
-      setMeasuredDimension(300, hSpecSize);
-    } else if (hSpecMode == MeasureSpec.AT_MOST) {
-      setMeasuredDimension(wSpecSize, 300);
+        if (wSpecMode == MeasureSpec.AT_MOST && hSpecMode == MeasureSpec.AT_MOST) {
+            setMeasuredDimension(300, 300);
+        } else if (wSpecMode == MeasureSpec.AT_MOST) {
+            setMeasuredDimension(300, hSpecSize);
+        } else if (hSpecMode == MeasureSpec.AT_MOST) {
+            setMeasuredDimension(wSpecSize, 300);
+        }
     }
-  }
 }
 ```
 
@@ -2806,23 +2816,23 @@ DecorView是一个应用窗口的根容器，它本质上是一个FrameLayout。
 
 ### ViewRoot
 
-View的绘制是由ViewRoot来负责的。每个应用程序窗口的decorView都有一个与之关联的ViewRoot对象，这种关联关系是由WindowManager来维护的。Activity启动时，ActivityThread.handleResumeActivity()方法中建立了ViewRoot和decorView的关联关系。
+View的绘制是由ViewRoot来负责的。每个应用程序窗口的decorView都有一个与之关联的ViewRoot对象，这种关联关系是由WindowManager来维护的。Activity启动时，`ActivityThread.handleResumeActivity()`方法中建立了ViewRoot和decorView的关联关系。
 
-当建立好了decorView与ViewRoot的关联后，ViewRoot类的requestLayout()方法会被调用，以完成应用程序用户界面的初次布局。实际被调用的是ViewRootImpl类的requestLayout()方法
+当建立好了decorView与ViewRoot的关联后，ViewRoot类的`requestLayout()`方法会被调用，以完成应用程序用户界面的初次布局。实际被调用的是ViewRootImpl类的`requestLayout()`方法
 
 ```java
 @Override
 public void requestLayout() {
-  if (!mHandlingLayoutInLayoutRequest) {
-    // 检查发起布局请求的线程是否为主线程 
-    checkThread();
-    mLayoutRequested = true;
-    scheduleTraversals();
-  }
+    if (!mHandlingLayoutInLayoutRequest) {
+        // 检查发起布局请求的线程是否为主线程 
+        checkThread();
+        mLayoutRequested = true;
+        scheduleTraversals();
+    }
 }
 ```
 
-上面的方法中调用了scheduleTraversals()方法来调度一次完成的绘制流程，该方法会向主线程发送一个“遍历”消息，最终会导致ViewRootImpl的performTraversals()方法被调用，开始View绘制的以下三个阶段
+上面的方法中调用了`scheduleTraversals()`方法来调度一次完成的绘制流程，该方法会向主线程发送一个“遍历”消息，最终会导致ViewRootImpl的`performTraversals()`方法被调用，开始View绘制的以下三个阶段
 
 ## MeasureSpec和LayoutParams
 
@@ -2854,7 +2864,7 @@ SpecMode有3类：
 
 ## View的绘制过程
 
-View的工作流程主要是指measure、layout、drow这三大流程，即测量、布局和绘制，其中measure确定View的测量宽/高，layout确定View的最终宽/高和四个顶点的位置，而draw则将View绘制到屏幕上
+View的工作流程主要是指measure、layout、draw这三大流程，即测量、布局和绘制，其中measure确定View的测量宽/高，layout确定View的最终宽/高和四个顶点的位置，而draw则将View绘制到屏幕上
 
 ![image](http://upload-images.jianshu.io/upload_images/2397836-19c08de6439514a7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&_=6219915)
 
@@ -2864,7 +2874,7 @@ View的工作流程主要是指measure、layout、drow这三大流程，即测�
 
 #### View的measure过程
 
-直接继承View的自定义控件需要重写onMeasure方法并设置wrap_content时的自身大小，否则在不居中使用wrap_content相当于match_parent
+直接继承View的自定义控件需要重写`onMeasure方法`并设置wrap_content时的自身大小，否则使用wrap_content相当于match_parent
 
 > 如果View在不居中使用wrap_content，那么它的SpecMode是AT_MOST模式，在这种模式下，它的宽高等于specSize，即此时就相当于parentSize，也就是父容器当前剩余的大小
 
@@ -2873,19 +2883,19 @@ View的工作流程主要是指measure、layout、drow这三大流程，即测�
 ```java
 @Override
 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-  super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-  int widthSpecMode = MeasureSpec.getMode(widthMeasureSpec);
-  int widthSpecSize = MeasureSpec.getSize(widthMeasureSpec);
-  int heightSpecMode = MeasureSpec.getMode(heightMeasureSpec);
-  int heightSpecSize = MeasureSpec.getSize(heightMeasureSpec);
-  if (widthSpecMode == MeasureSpec.AT_MOST
-      && heightSpecMode == MeasureSpec.AT_MOST) {
-    setMeasuredDimension(mWidth, mHeight);
-  } else if (widthSpecMode == MeasureSpec.AT_MOST) {
-    setMeasuredDimension(mWidth, heightSpecSize);
-  } else if (heightSpecMode == MeasureSpec.AT_MOST) {
-    setMeasuredDimension(widthSpecSize, mHeight);
-  }
+    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    int widthSpecMode = MeasureSpec.getMode(widthMeasureSpec);
+    int widthSpecSize = MeasureSpec.getSize(widthMeasureSpec);
+    int heightSpecMode = MeasureSpec.getMode(heightMeasureSpec);
+    int heightSpecSize = MeasureSpec.getSize(heightMeasureSpec);
+    if (widthSpecMode == MeasureSpec.AT_MOST
+        && heightSpecMode == MeasureSpec.AT_MOST) {
+        setMeasuredDimension(mWidth, mHeight);
+    } else if (widthSpecMode == MeasureSpec.AT_MOST) {
+        setMeasuredDimension(mWidth, heightSpecSize);
+    } else if (heightSpecMode == MeasureSpec.AT_MOST) {
+        setMeasuredDimension(widthSpecSize, mHeight);
+    }
 }
 ```
 
@@ -2899,10 +2909,10 @@ protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 
 解决方法
 
-* Activity/View#onWindowFocusChanged：此时View已经初始化完毕，宽高已经准备好，一定能获取到
-* View.post(runnable)：通过post可以将一个runnable投递到消息队列的尾部，然后等待Looper调用此runnable时，View也已经初始化好了
-* ViewTreeObserver：比如使用ViewTreeObserver的onGlobalLayoutListener回调方法，当View树状态改变或View树内部View可见性改变时，onGlobalLayout将被回调，此时可以获取View的宽高
-* view.measure()：手动对View进行measure，根据View的LayoutParams分情况处理
+* `Activity/View#onWindowFocusChanged`：此时View已经初始化完毕，宽高已经准备好，一定能获取到
+* `View.post(runnable)`：通过post可以将一个runnable投递到消息队列的尾部，然后等待Looper调用此runnable时，View也已经初始化好了
+* `ViewTreeObserver`：比如使用ViewTreeObserver的onGlobalLayoutListener回调方法，当View树状态改变或View树内部View可见性改变时，onGlobalLayout将被回调，此时可以获取View的宽高
+* `view.measure()`：手动对View进行measure，根据View的LayoutParams分情况处理
   * match_parent：直接放弃，此种方法需要知道父容器parentSize，而此时无法知道
   * 具体数值或wrap_content：可行
 
@@ -2916,27 +2926,27 @@ layout方法的大致流程如下：首先通过setFrame方法来设定View的�
 
 将View绘制到屏幕上面
 
-绘制过程的传递是通过dispatchDraw实现的，dispatchDraw会遍历调用所有子元素的draw方法
+绘制过程的传递是通过`dispatchDraw`实现的，dispatchDraw会遍历调用所有子元素的`draw`方法
 
 ```java
 public void draw(Canvas canvas) {
-  // ...
-  // 绘制背景，只有dirtyOpaque为false时才进行绘制，下同
-  if (!dirtyOpaque) {
-    drawBackground(canvas);
-  }
+    // ...
+    // 绘制背景，只有dirtyOpaque为false时才进行绘制，下同
+    if (!dirtyOpaque) {
+        drawBackground(canvas);
+    }
 
-  // ...
+    // ...
 
-  // 绘制自身内容
-  if (!dirtyOpaque) onDraw(canvas);
+    // 绘制自身内容
+    if (!dirtyOpaque) onDraw(canvas);
 
-  // 绘制子View
-  dispatchDraw(canvas);
+    // 绘制子View
+    dispatchDraw(canvas);
 
-  // ...
-  // 绘制滚动条等装饰
-  onDrawForeground(canvas);
+    // ...
+    // 绘制滚动条等装饰
+    onDrawForeground(canvas);
 
 }
 ```
@@ -2947,7 +2957,7 @@ public void draw(Canvas canvas) {
 
 ### 通常情况
 
-1. 继承View重写onDraw：如果想控制View在屏幕上的渲染效果，就在重写onDraw()方法，在里面进行相应的处理，如处理wrap_content和padding；
+1. 继承View重写onDraw：如果想控制View在屏幕上的渲染效果，就在重写`onDraw()`方法，在里面进行相应的处理，如处理wrap_content和padding；
 2. 继承ViewGroup实现自定义布局：重点处理onMeasure和onLayout过程
 3. 继承特定View：扩展已有View的功能，例如TextView，一般不需要处理wrap_content和padding
 4. 继承特定ViewGroup：扩展已有ViewGroup功能
@@ -2956,7 +2966,7 @@ public void draw(Canvas canvas) {
 
 1. 让View支持wrap_content和padding
 2. 尽量不要在View中使用Handler
-3. View中如果有线程或动画，需要在onDetachFromWindow中及时停止，否则可能导致内存泄漏
+3. View中如果有线程或动画，需要在`onDetachFromWindow`中及时停止，否则可能导致内存泄漏
 4. 处理好滑动冲突
 
 **其他方面：**
@@ -2964,7 +2974,7 @@ public void draw(Canvas canvas) {
 1. 如果想要控制用户同View之间的交互操作，则在onTouchEvent()方法中对手势进行控制处理。
 2. 如果想要控制View中内容在屏幕上显示的尺寸大小，就重写onMeasure()方法中进行处理。
 3. 在 XML文件中设置自定义View的XML属性。
-4. 如果想避免失去View的相关状态参数的话，就在onSaveInstanceState() 和 onRestoreInstanceState()方法中保存有关View的状态信息。
+4. 如果想避免失去View的相关状态参数的话，就在`onSaveInstanceState() `和` onRestoreInstanceState()`方法中保存有关View的状态信息。
 
 ### 自定义属性
 
@@ -2975,9 +2985,9 @@ public void draw(Canvas canvas) {
    ```xml
    <?xml version="1.0" encoding="utf-8"?>
    <resources>
-     <declare-styleable name="CircleView">
-     	<attr name="circle_color" format="color"/>
-     </declare-styleable>
+       <declare-styleable name="CircleView">
+           <attr name="circle_color" format="color"/>
+       </declare-styleable>
    </resources>
    ```
 
@@ -2987,15 +2997,15 @@ public void draw(Canvas canvas) {
 
    ```java
    public CircleView(Context context, AttributeSet attrs, int defStyleAttr) {
-     super(context, attrs, defStyleAttr);
-     TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CircleView);
-     mColor = a.getColor(R.styleable.CircleView_circle_color, Color.RED);
-     a.recycle();
-     init();
+       super(context, attrs, defStyleAttr);
+       TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CircleView);
+       mColor = a.getColor(R.styleable.CircleView_circle_color, Color.RED);
+       a.recycle();
+       init();
    }
    ```
 
-3. 在布局文件中只用自定义属性
+3. 在布局文件中使用自定义属性
 
    ```xml
    app:circle_color="@color/light_green"
@@ -3014,99 +3024,99 @@ public void draw(Canvas canvas) {
 ```java
 public class AutoLinefeedLayout extends ViewGroup {  
 
-  public AutoLinefeedLayout(Context context, AttributeSet attrs, int defStyle) {  
-    super(context, attrs, defStyle);  
-  }  
+    public AutoLinefeedLayout(Context context, AttributeSet attrs, int defStyle) {  
+        super(context, attrs, defStyle);  
+    }  
 
-  public AutoLinefeedLayout(Context context, AttributeSet attrs) {  
-    this(context, attrs, 0);  
-  }  
+    public AutoLinefeedLayout(Context context, AttributeSet attrs) {  
+        this(context, attrs, 0);  
+    }  
 
-  public AutoLinefeedLayout(Context context) {  
-    this(context, null);  
-  }  
+    public AutoLinefeedLayout(Context context) {  
+        this(context, null);  
+    }  
 
-  @Override  
-  protected void onLayout(boolean changed, int l, int t, int r, int b) {  
-    layoutHorizontal();  
-  }  
+    @Override  
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {  
+        layoutHorizontal();  
+    }  
 
-  private void layoutHorizontal() {  
-    final int count = getChildCount();  
-    final int lineWidth = getMeasuredWidth() - getPaddingLeft()  
-      - getPaddingRight();  
-    int paddingTop = getPaddingTop();  
-    int childTop = 0;  
-    int childLeft = getPaddingLeft();  
+    private void layoutHorizontal() {  
+        final int count = getChildCount();  
+        final int lineWidth = getMeasuredWidth() - getPaddingLeft()  
+            - getPaddingRight();  
+        int paddingTop = getPaddingTop();  
+        int childTop = 0;  
+        int childLeft = getPaddingLeft();  
 
-    int availableLineWidth = lineWidth;  
-    int maxLineHight = 0;  
+        int availableLineWidth = lineWidth;  
+        int maxLineHight = 0;  
 
-    for (int i = 0; i < count; i++) {  
-      final View child = getChildAt(i);  
-      if (child == null) {  
-        continue;  
-      } else if (child.getVisibility() != GONE) {  
-        final int childWidth = child.getMeasuredWidth();  
-        final int childHeight = child.getMeasuredHeight();  
+        for (int i = 0; i < count; i++) {  
+            final View child = getChildAt(i);  
+            if (child == null) {  
+                continue;  
+            } else if (child.getVisibility() != GONE) {  
+                final int childWidth = child.getMeasuredWidth();  
+                final int childHeight = child.getMeasuredHeight();  
 
-        if (availableLineWidth < childWidth) {  
-          availableLineWidth = lineWidth;  
-          paddingTop = paddingTop + maxLineHight;  
-          childLeft = getPaddingLeft();  
-          maxLineHight = 0;  
+                if (availableLineWidth < childWidth) {  
+                    availableLineWidth = lineWidth;  
+                    paddingTop = paddingTop + maxLineHight;  
+                    childLeft = getPaddingLeft();  
+                    maxLineHight = 0;  
+                }  
+                childTop = paddingTop;  
+                setChildFrame(child, childLeft, childTop, childWidth,  
+                              childHeight);  
+                childLeft += childWidth;  
+                availableLineWidth = availableLineWidth - childWidth;  
+                maxLineHight = Math.max(maxLineHight, childHeight);  
+            }  
         }  
-        childTop = paddingTop;  
-        setChildFrame(child, childLeft, childTop, childWidth,  
-                      childHeight);  
-        childLeft += childWidth;  
-        availableLineWidth = availableLineWidth - childWidth;  
-        maxLineHight = Math.max(maxLineHight, childHeight);  
-      }  
     }  
-  }  
 
-  private void setChildFrame(View child, int left, int top, int width,  
-                             int height) {  
-    child.layout(left, top, left + width, top + height);  
-  }  
-
-  @Override  
-  protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {  
-    final int heightMode = MeasureSpec.getMode(heightMeasureSpec);  
-    int count = getChildCount();  
-    for (int i = 0; i < count; i++) {  
-      measureChild(getChildAt(i), widthMeasureSpec, heightMeasureSpec);  
+    private void setChildFrame(View child, int left, int top, int width,  
+                               int height) {  
+        child.layout(left, top, left + width, top + height);  
     }  
-    if (heightMode == MeasureSpec.AT_MOST||heightMode == MeasureSpec.UNSPECIFIED) {  
-      final int width = MeasureSpec.getSize(widthMeasureSpec);  
-      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(  
-        getDesiredHeight(width), MeasureSpec.EXACTLY));  
-    } else {  
-      super.onMeasure(widthMeasureSpec, heightMeasureSpec);  
-    }  
-  }  
 
-  private int getDesiredHeight(int width) {  
-    final int lineWidth = width - getPaddingLeft() - getPaddingRight();  
-    int availableLineWidth = lineWidth;  
-    int totalHeight = getPaddingTop() + getPaddingBottom();  
-    int lineHeight = 0;  
-    for (int i = 0; i < getChildCount(); i++) {  
-      View child = getChildAt(i);  
-      final int childWidth = child.getMeasuredWidth();  
-      final int childHeight = child.getMeasuredHeight();  
-      if (availableLineWidth < childWidth) {  
-        availableLineWidth = lineWidth;  
+    @Override  
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {  
+        final int heightMode = MeasureSpec.getMode(heightMeasureSpec);  
+        int count = getChildCount();  
+        for (int i = 0; i < count; i++) {  
+            measureChild(getChildAt(i), widthMeasureSpec, heightMeasureSpec);  
+        }  
+        if (heightMode == MeasureSpec.AT_MOST||heightMode == MeasureSpec.UNSPECIFIED) {  
+            final int width = MeasureSpec.getSize(widthMeasureSpec);  
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(  
+                getDesiredHeight(width), MeasureSpec.EXACTLY));  
+        } else {  
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);  
+        }  
+    }  
+
+    private int getDesiredHeight(int width) {  
+        final int lineWidth = width - getPaddingLeft() - getPaddingRight();  
+        int availableLineWidth = lineWidth;  
+        int totalHeight = getPaddingTop() + getPaddingBottom();  
+        int lineHeight = 0;  
+        for (int i = 0; i < getChildCount(); i++) {  
+            View child = getChildAt(i);  
+            final int childWidth = child.getMeasuredWidth();  
+            final int childHeight = child.getMeasuredHeight();  
+            if (availableLineWidth < childWidth) {  
+                availableLineWidth = lineWidth;  
+                totalHeight = totalHeight + lineHeight;  
+                lineHeight = 0;  
+            }  
+            availableLineWidth = availableLineWidth - childWidth;  
+            lineHeight = Math.max(childHeight, lineHeight);  
+        }  
         totalHeight = totalHeight + lineHeight;  
-        lineHeight = 0;  
-      }  
-      availableLineWidth = availableLineWidth - childWidth;  
-      lineHeight = Math.max(childHeight, lineHeight);  
+        return totalHeight;  
     }  
-    totalHeight = totalHeight + lineHeight;  
-    return totalHeight;  
-  }  
 
 }  
 ```
@@ -3198,7 +3208,7 @@ mButton.requestLayout();
 
 ### 弹性滑动
 
-将以此大的滑动分成若干次小的滑动并在一段时间内完成
+将一次大的滑动分成若干次小的滑动并在一段时间内完成
 
 * 使用Scroller：配合View的computeScroll，不断让View重绘，而每一次重绘距离滑动起始时间会有一个时间间隔，Scroller通过这个时间间隔获得View当前的滑动位置，知道了位置就可以通过scrollTo方法完成View的滑动
 * 使用动画：在动画的每一帧到来时获取动画完成的比例，根据比例计算出当前View要滑动的距离
@@ -3208,28 +3218,28 @@ mButton.requestLayout();
 
 ### 核心方法
 
-* dispatchTouchEvent(MotionEvent ev)：用来进行事件分发
+* `dispatchTouchEvent(MotionEvent ev)`：用来进行事件分发
   * 如果事件能传递给当前View则一定会被调用
-  * 返回结果受当前View的onTouchEvent和下级View的dispatchTouchEvent影响，表示是否消耗当前事件
-* onInterceptTouchEvent(MotionEvent ev)：判断是否拦截某个事件
-  * 在dispatchTouchEvent中调用
+  * 返回结果受当前View的`onTouchEvent`和下级View的`dispatchTouchEvent`影响，表示是否消耗当前事件
+* `onInterceptTouchEvent(MotionEvent ev)`：判断是否拦截某个事件
+  * 在`dispatchTouchEvent`中调用
   * 如果当前View拦截了某个事件，在同一事件序列中不会被再次调用
   * 返回结果表示是否拦截事件
-* onTouchEvent(MotionEvent ev)：处理点击事件
-  * 在dispatchTouchEvent中调用
+* `onTouchEvent(MotionEvent ev)`：处理点击事件
+  * 在`dispatchTouchEvent`中调用
   * 返回结果表示是否消耗当前事件，如果不消耗，当前View无法再次接收到事件
 
 三者的关系（伪代码）
 
 ```java
 public boolean dispatchTouchEvent(MotionEvent ev) {
-  boolean consume = false;
-  if (onInterceptTouchEvent(ev)) {
-    consume = onTouchEvent(ev);
-  } else {
-    consume = child.dispatchTouchEvent(ev);
-  }
-  return consume;
+    boolean consume = false;
+    if (onInterceptTouchEvent(ev)) {
+        consume = onTouchEvent(ev);
+    } else {
+        consume = child.dispatchTouchEvent(ev);
+    }
+    return consume;
 }
 ```
 
@@ -3241,32 +3251,32 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
 
 ![img](https://upload-images.jianshu.io/upload_images/966283-b9cb65aceea9219b.png)
 
-* 事件从左上角开始，由Activity的dispatchTouchEvent做分发
+* 事件从左上角开始，由Activity的`dispatchTouchEvent`做分发
 * 箭头的上面字代表方法返回值，（return true、return false、return super.xxxxx(),super 的意思是调用父类实现）
-* dispatchTouchEvent和 onTouchEvent的框里有个【**true---->消费**】的字，表示的意思是如果方法返回true，那么代表事件就此消费，不会继续往别的地方传了，事件终止
+* `dispatchTouchEvent`和 `onTouchEvent`的框里有个【**true---->消费**】的字，表示的意思是如果方法返回true，那么代表事件就此消费，不会继续往别的地方传了，事件终止
 * 目前图中的事件是仅仅针对ACTION_DOWN的
-* 只有return super.dispatchTouchEvent(ev) 才是往下走，返回true 或者 false 事件就被消费了（终止传递）
+* 只有`return super.dispatchTouchEvent(ev) `才是往下走，返回true 或者 false 事件就被消费了（终止传递）
 
 ### 关键点
 
 * 默认实现流程
-  * 整个事件流向应该是从Activity---->ViewGroup--->View 从上往下调用dispatchTouchEvent方法，一直到叶子节点（View）的时候，再由View--->ViewGroup--->Activity从下往上调用onTouchEvent方法
-  * ViewGroup 和View的这些方法的默认实现就是会让整个事件安装U型完整走完，所以 return super.xxxxxx() 就会让事件依照U型的方向的完整走完整个事件流动路径）
-* dispatchTouchEvent，onTouchEvent的返回值
+  * 整个事件流向应该是从Activity---->ViewGroup--->View 从上往下调用`dispatchTouchEvent`方法，一直到叶子节点（View）的时候，再由View--->ViewGroup--->Activity从下往上调用`onTouchEvent`方法
+  * ViewGroup 和View的这些方法的默认实现就是会让整个事件安装U型完整走完，所以` return super.xxxxxx() `就会让事件依照U型的方向的完整走完整个事件流动路径）
+* `dispatchTouchEvent`，`onTouchEvent`的返回值
   * true：终结事件传递
   * false：回溯到父View的onTouchEvent方法
-* 拦截器onInterceptTouchEvent
-   * ViewGroup 把事件分发给自己的onTouchEvent，需要拦截器onInterceptTouchEvent方法return true 把事件拦截下来。
-   * ViewGroup 的拦截器onInterceptTouchEvent 默认不拦截，即return false；
-   * View 没有拦截器，为了让View可以把事件分发给自己的onTouchEvent，View的dispatchTouchEvent默认实现（super）就是把事件分发给自己的onTouchEvent。
+* 拦截器`onInterceptTouchEvent`
+   * ViewGroup 把事件分发给自己的`onTouchEvent`，需要拦截器`onInterceptTouchEvent`方法return true 把事件拦截下来。
+   * ViewGroup 的拦截器`onInterceptTouchEvent `默认不拦截，即return false；
+   * View 没有拦截器，为了让View可以把事件分发给自己的`onTouchEvent`，View的`dispatchTouchEvent`默认实现（super）就是把事件分发给自己的`onTouchEvent`。
 * 正常情况下，一个事件序列只能被一个View拦截且消耗
   * ACTION_DOWN事件
-    * 在dispatchTouchEvent消费：事件到此为止停止传递
-    * 在onTouchEvent消费：把ACTION_MOVE或ACTION_UP事件传给该View的onTouchEvent处理并结束传递
+    * 在`dispatchTouchEvent`消费：事件到此为止停止传递
+    * 在`onTouchEvent`消费：把ACTION_MOVE或ACTION_UP事件传给该View的`onTouchEvent`处理并结束传递
     * 没有被消耗：同一事件序列的其他事件都不会再交给该View
-  * View的onTouchEvent默认都会消耗事件，除非clickable和longClickable同时为false，enable属性不影响
-  * View可以通过requestDisallowInterceptTouchEvent干预父元素的事件分发，但是ACTION_DOWN除外
-* onTouchListener的优先级比onTouchEvent要高，其中会调用onTouch方法，并屏蔽onTouchEvent
+  * View的`onTouchEvent`默认都会消耗事件，除非clickable和longClickable同时为false，enable属性不影响
+  * View可以通过`requestDisallowInterceptTouchEvent`干预父元素的事件分发，但是ACTION_DOWN除外
+* `onTouchListene`r的优先级比``onTouchEvent`要高，其中会调用`onTouch`方法，并屏蔽`onTouchEvent`
 
 [图解 Android 事件分发机制](https://www.jianshu.com/p/e99b5e8bd67b)
 
@@ -3290,76 +3300,76 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
 
 ### 外部拦截
 
-特点：子view代码无需修改，符合view事件分发机制
+特点：子View代码无需修改，符合View事件分发机制
 
-操作：需要在父ViewGroup，重写onInterceptTouchEvent方法，根据业务需要，判断哪些事件是父Viewgroup需要的，需要的话就对该事件进行拦截，然后交由onTouchEvent方法处理，若不需要，则不拦截，然后传递给子view或子viewGroup
+操作：需要在父ViewGroup，重写`onInterceptTouchEvent`方法，根据业务需要，判断哪些事件是父Viewgroup需要的，需要的话就对该事件进行拦截，然后交由`onTouchEvent`方法处理，若不需要，则不拦截，然后传递给子View或子ViewGroup
 
 ```java
 public boolean onInterceptTouchEvent(MotionEvent ev) {
-  boolean isIntercept = false;
-  int x = (int) ev.getX();
-  int y = (int) ev.getY();
+    boolean isIntercept = false;
+    int x = (int) ev.getX();
+    int y = (int) ev.getY();
 
-  switch (ev.getAction()){
-    case MotionEvent.ACTION_DOWN:
-      // 必须返回false，否则事件无法传递给子容器
-      isIntercept = false;
+    switch (ev.getAction()){
+        case MotionEvent.ACTION_DOWN:
+            // 必须返回false，否则事件无法传递给子容器
+            isIntercept = false;
 
-      // 如果用户正在水平滑动，但在水平滑动停止之前进行了竖直滑动，
-      // 则会导致界面在水平方向无法滑动到终点，
-      // 因此需要父容器拦截，从而优化滑动体验
-      if (!mScroller.isFinished()) {
-        mScroller.abortAnimation();
-        isIntercept = true;
-      }
-      break;
-    case MotionEvent.ACTION_MOVE:
-      if (父容器需要当前事件) {
-        isIntercept = true;
-      } else {
-        isIntercept = false;
-      }
-      break;
-    case MotionEvent.ACTION_UP:
-      isIntercept = false;
-      break;
-  }
-  mLastXIntercept = x;
-  mLastYIntercept = y;
-  return isIntercept;         //返回true表示拦截，返回false表示不拦截
+            // 如果用户正在水平滑动，但在水平滑动停止之前进行了竖直滑动，
+            // 则会导致界面在水平方向无法滑动到终点，
+            // 因此需要父容器拦截，从而优化滑动体验
+            if (!mScroller.isFinished()) {
+                mScroller.abortAnimation();
+                isIntercept = true;
+            }
+            break;
+        case MotionEvent.ACTION_MOVE:
+            if (父容器需要当前事件) {
+                isIntercept = true;
+            } else {
+                isIntercept = false;
+            }
+            break;
+        case MotionEvent.ACTION_UP:
+            isIntercept = false;
+            break;
+    }
+    mLastXIntercept = x;
+    mLastYIntercept = y;
+    return isIntercept;         //返回true表示拦截，返回false表示不拦截
 }
 ```
 
 ### 内部拦截
 
-特点：父viewgroup需要重写onInterceptTouchEvent，不符合view事件分发机制
+特点：父Viewgroup需要重写`onInterceptTouchEvent`，不符合View事件分发机制
 
-操作：在子view中拦截事件，父viewGroup默认是不拦截任何事件的，所以，当事件传递到子view时， 子view根据自己的实际情况来，如果该事件是需要子view来处理的，那么子view就自己消耗处理，如果该事件不需要由子view来处理，那么就调用getParent().requestDisallowInterceptTouchEvent()方法来通知父viewgroup来拦截这个事件，也就是说，叫父容器来处理这个事件，这刚好和view的分发机制相反
+操作：在子`View`中拦截事件，父ViewGroup默认是不拦截任何事件的，所以，当事件传递到子View时， 子View根据自己的实际情况来，如果该事件是需要子View来处理的，那么子view就自己消耗处理，如果该事件不需要由子View来处理，那么就调用`getParent().requestDisallowInterceptTouchEvent()`方法来通知父Viewgroup来拦截这个事件，也就是说，叫父容器来处理这个事件，这刚好和View的分发机制相反
 
 子View
 
 ```java
 public boolean dispatchTouchEvent(MotionEvent ev) {
-  int x = (int) ev.getX();
-  int y = (int) ev.getY();
-  switch (ev.getAction()) {
-    case MotionEvent.ACTION_DOWN:
-      getParent().requestDisallowInterceptTouchEvent(true);
-      break;
-    case MotionEvent.ACTION_MOVE:
-      int deltaX = x - mLastX;
-      int deltaY = y - mLastY;
-      
-      if (父容器需要此类事件) {
-        getParent().requestDisallowInterceptTouchEvent(false);
-      }
-      break;
-    case MotionEvent.ACTION_UP:
-      break;
-  }
-  mLastX = x;
-  mLastY = y;
-  return super.dispatchTouchEvent(ev);
+    int x = (int) ev.getX();
+    int y = (int) ev.getY();
+    switch (ev.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+            getParent().requestDisallowInterceptTouchEvent(true);
+            break;
+        case MotionEvent.ACTION_MOVE:
+            int deltaX = x - mLastX;
+            int deltaY = y - mLastY;
+
+            if (父容器需要此类事件) {
+                getParent().requestDisallowInterceptTouchEvent(false);
+            }
+            break;
+        case MotionEvent.ACTION_UP:
+            break;
+    }
+    mLastX = x;
+    mLastY = y;
+    return super.dispatchTouchEvent(ev);
 }
 ```
 
@@ -3367,15 +3377,15 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
 
 ```java
 public boolean onInterceptTouchEvent(MotionEvent ev) {
-  if (ev.getAction() == MotionEvent.ACTION_DOWN){
-    if (!mScroller.isFinished()) {
-      mScroller.abortAnimation();
-      isIntercept = true;
+    if (ev.getAction() == MotionEvent.ACTION_DOWN){
+        if (!mScroller.isFinished()) {
+            mScroller.abortAnimation();
+            isIntercept = true;
+        }
+        return false;
+    } else {
+        return true;
     }
-    return false;
-  } else {
-    return true;
-  }
 }
 ```
 
@@ -3389,7 +3399,7 @@ public boolean onInterceptTouchEvent(MotionEvent ev) {
 
 ### Android系统是如何保证一个线程只有一个Looper的
 
-Looper.prepare()使用了ThreadLocal来保证一个线程只有一个Looper
+`Looper.prepare()`使用了ThreadLocal来保证一个线程只有一个Looper
 
 ThreadLocal实现了线程本地存储。所有线程共享同一个ThreadLocal对象，但不同线程仅能访问与其线程相关联的值，一个线程修改ThreadLocal对象对其他线程没有影响
 
@@ -3401,7 +3411,7 @@ ThreadLocal实现了线程本地存储。所有线程共享同一个ThreadLocal�
 
 Android应用程序的主线程在进入消息循环过程前，会在内部创建一个Linux管道（Pipe），这个管道的作用是使得Android应用程序主线程在消息队列为空时可以进入空闲等待状态，并且使得当应用程序的消息队列有消息需要处理时唤醒应用程序的主线程
 
-在代码ActivityThread.main()中
+在代码`ActivityThread.main()`中
 
 ```java
 public static void main(String[] args) {
@@ -3420,41 +3430,41 @@ public static void main(String[] args) {
 }
 ```
 
-thread.attach(false) 会创建一个Binder线程（具体是指ApplicationThread，Binder的服务端，用于接收系统服务AMS发送来的事件），该Binder线程通过Handler将Message发送给主线程
+`thread.attach(false) `会创建一个Binder线程（具体是指ApplicationThread，Binder的服务端，用于接收系统服务AMS发送来的事件），该Binder线程通过Handler将Message发送给主线程
 
 ActivityThread实际上并非线程，不像HandlerThread类，ActivityThread并没有真正继承Thread类，只是往往运行在主线程，该人以线程的感觉，其实承载ActivityThread的主线程就是由Zygote fork而创建的进程。ActivityThread的内部类H继承于Handler，代码如下：
 
 ```java
 public void handleMessage(Message msg) {
-  if (DEBUG_MESSAGES) Slog.v(TAG, ">>> handling: " + codeToString(msg.what));
-  switch (msg.what) {
-    case LAUNCH_ACTIVITY:
-      ...
-    case RELAUNCH_ACTIVITY:
-      ...
-    case PAUSE_ACTIVITY:
-      ...
-    case PAUSE_ACTIVITY_FINISHING:
-      ...
-    case STOP_ACTIVITY_SHOW:
-      ...
-    case STOP_ACTIVITY_HIDE:
-      ...
-    case SHOW_WINDOW:
-      ...
-    case HIDE_WINDOW:
-      ...
-    case RESUME_ACTIVITY:
-      ...
-    case SEND_RESULT:
-      ...
-        
-    ...
-}
+    if (DEBUG_MESSAGES) Slog.v(TAG, ">>> handling: " + codeToString(msg.what));
+    switch (msg.what) {
+        case LAUNCH_ACTIVITY:
+            //...
+        case RELAUNCH_ACTIVITY:
+            //...
+        case PAUSE_ACTIVITY:
+            //...
+        case PAUSE_ACTIVITY_FINISHING:
+            //...
+        case STOP_ACTIVITY_SHOW:
+            //...
+        case STOP_ACTIVITY_HIDE:
+            //...
+        case SHOW_WINDOW:
+            //...
+        case HIDE_WINDOW:
+            //...
+        case RESUME_ACTIVITY:
+            //...
+        case SEND_RESULT:
+            //...
+
+            //...
+    }
 ```
 
-Activity的生命周期都是依靠主线程的Looper.loop，当收到不同Message时则采用相应措施：
-在H.handleMessage(msg)方法中，根据App进程中的其他线程通过Handler发送给主线程的msg，执行相应的生命周期
+Activity的生命周期都是依靠主线程的`Looper.loop`，当收到不同Message时则采用相应措施：
+在`H.handleMessage(msg)`方法中，根据App进程中的其他线程通过Handler发送给主线程的msg，执行相应的生命周期
 
 [Android中为什么主线程不会因为Looper.loop()方法造成阻塞](http://blog.csdn.net/u013435893/article/details/50903082)
 
@@ -3468,37 +3478,37 @@ Android提供的轻量级异步类，可以直接继承。其实现原理也是�
 
 AsyncTask定义了三种泛型类型*Params，Progress和Result*
 
-* **Params**：在执行AsyncTask时需要传入的参数，可用于在后台任务中使用（doInBackground方法的参数类型）如HTTP请求的URL
+* **Params**：在执行AsyncTask时需要传入的参数，可用于在后台任务中使用（`doInBackground`方法的参数类型）如HTTP请求的URL
 * **Progress**：后台任务执行时，如果需要在界面上显示当前的进度，则指定进度类型
 * **Result**：后台任务的返回结果类型
 
 ```java
 class myAsync extends AsyncTask<Params, Progress, Result> {
 
-  //下面这个方法在主线程中执行，在doInBackground函数执行前执行
-  @Override
-  protected void onPreExecute() {
-    super.onPreExecute();
-  }
+    //下面这个方法在主线程中执行，在doInBackground函数执行前执行
+    @Override
+    protected void onPreExecute() {
+        super.onPreExecute();
+    }
 
-  //下面这个方法在子线程中执行，用来处理耗时行为
-  @Override
-  protected String doInBackground(Params... arg0) {
-    Result res;
-    return res;
-  }
+    //下面这个方法在子线程中执行，用来处理耗时行为
+    @Override
+    protected String doInBackground(Params... arg0) {
+        Result res;
+        return res;
+    }
 
-  //下面这个方法在主线程中执行，用于显示子线程任务执行的进度
-  @Override
-  protected void onProgressUpdate(Progress values) {
-    super.onProgressUpdate(values);
-  }
+    //下面这个方法在主线程中执行，用于显示子线程任务执行的进度
+    @Override
+    protected void onProgressUpdate(Progress values) {
+        super.onProgressUpdate(values);
+    }
 
-  //下面这个方法在主线程中执行，在doinBackground方法执行完后执行
-  @Override
-  protected void onPostExecute(Result result) {
-    super.onPostExecute(result);
-  }
+    //下面这个方法在主线程中执行，在doinBackground方法执行完后执行
+    @Override
+    protected void onPostExecute(Result result) {
+        super.onPostExecute(result);
+    }
 }
 ```
 
@@ -3508,10 +3518,10 @@ class myAsync extends AsyncTask<Params, Progress, Result> {
 
 #### 使用
 
-1. 主线程中创建一个Handler对象，并重写handleMessage()方法 
-2. 当子线程需要进行UI操作时，就创建一个Message对象，并通过handler.sendMessage()将这条消息发送出去 
+1. 主线程中创建一个Handler对象，并重写`handleMessage()`方法 
+2. 当子线程需要进行UI操作时，就创建一个Message对象，并通过`handler.sendMessage()`将这条消息发送出去 
 3. 这条消息被添加到MessageQueue的队列中等待被处理 
-4. Looper一直尝试从MessageQueue中提出待处理消息，分发会Handler的handleMessage()方法中
+4. Looper一直尝试从MessageQueue中提出待处理消息，分发会Handler的`handleMessage()`方法中
 
 #### 原理
 
@@ -3521,11 +3531,11 @@ Handler 、 Looper 、Message 这三者都与Android异步消息处理线程相�
 
 #### 主要过程
 
-1. 首先Looper.prepare()在本线程中保存一个Looper实例，然后该实例中保存一个MessageQueue对象；因为Looper.prepare()在一个线程中只能调用一次，所以MessageQueue在一个线程中只会存在一个。
-2. Looper.loop()会让当前线程进入一个无限循环，不断从MessageQueue的实例中读取消息，然后回调msg.target.dispatchMessage(msg)方法。
+1. 首先`Looper.prepare()`在本线程中保存一个Looper实例，然后该实例中保存一个MessageQueue对象；因为`Looper.prepare()`在一个线程中只能调用一次，所以MessageQueue在一个线程中只会存在一个。
+2. `Looper.loop()`会让当前线程进入一个无限循环，不断从MessageQueue的实例中读取消息，然后回调`msg.target.dispatchMessage(msg)`方法。
 3. Handler的构造方法，会首先得到当前线程中保存的Looper实例，进而与Looper实例中的MessageQueue相关联。
-4. Handler的sendMessage方法，会给msg的target赋值为handler自身，然后加入MessageQueue中。
-5. 在构造Handler实例时，我们会重写handleMessage方法，也就是msg.target.dispatchMessage(msg)最终调用的方法。
+4. Handler的`sendMessage`方法，会给msg的target赋值为handler自身，然后加入MessageQueue中。
+5. 在构造Handler实例时，我们会重写handleMessage方法，也就是`msg.target.dispatchMessage(msg)`最终调用的方法。
 
 好了，总结完成，大家可能还会问，那么在Activity中，我们并没有显示的调用Looper.prepare()和Looper.loop()方法，为啥Handler可以成功创建呢，这是因为在Activity的启动代码中，已经在当前UI线程调用了Looper.prepare()和Looper.loop()方法。
 
@@ -3592,16 +3602,16 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 
    ```java
    public class MainActivity extends Activity {
-     private static Context sContext;
-     private static View sView;
+       private static Context sContext;
+       private static View sView;
 
-     @Override
-     protected void onCreate(Bundle savedInstanceState) {
-       super.onCreate(savedInstanceState);
-       setContentView(R.layout.activity_main);
-       sContext = this; 
-       // 或sView = new View(this);
-     }
+       @Override
+       protected void onCreate(Bundle savedInstanceState) {
+           super.onCreate(savedInstanceState);
+           setContentView(R.layout.activity_main);
+           sContext = this; 
+           // 或sView = new View(this);
+       }
    }
    ```
 
@@ -3612,44 +3622,44 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
    ```java
    public class TestManager {
 
-     private List<OnDataArrivedListener> mOnDataArrivedListeners = new ArrayList<OnDataArrivedListener>();
+       private List<OnDataArrivedListener> mOnDataArrivedListeners = new ArrayList<OnDataArrivedListener>();
 
-     private static class SingletonHolder {
-       public static final TestManager INSTANCE = new TestManager();
-     }
-
-     private TestManager() {
-     }
-
-     public static TestManager getInstance() {
-       return SingletonHolder.INSTANCE;
-     }
-
-     public synchronized void registerListener(OnDataArrivedListener listener) {
-       if (!mOnDataArrivedListeners.contains(listener)) {
-         mOnDataArrivedListeners.add(listener);
+       private static class SingletonHolder {
+           public static final TestManager INSTANCE = new TestManager();
        }
-     }
 
-     public synchronized void unregisterListener(OnDataArrivedListener listener) {
-       mOnDataArrivedListeners.remove(listener);
-     }
+       private TestManager() {
+       }
 
-     public interface OnDataArrivedListener {
-       public void onDataArrived(Object data);
-     }
+       public static TestManager getInstance() {
+           return SingletonHolder.INSTANCE;
+       }
+
+       public synchronized void registerListener(OnDataArrivedListener listener) {
+           if (!mOnDataArrivedListeners.contains(listener)) {
+               mOnDataArrivedListeners.add(listener);
+           }
+       }
+
+       public synchronized void unregisterListener(OnDataArrivedListener listener) {
+           mOnDataArrivedListeners.remove(listener);
+       }
+
+       public interface OnDataArrivedListener {
+           public void onDataArrived(Object data);
+       }
    }
    ```
 
-   如果Activity实现OnDataArrivedListener并向TestManager注册监听，并缺少解注册过程，则会引起内存泄露。因为Activity被单例TestManager持有，而单例模式生命周期与Application一致，因此Activity无法被释放
+   如果Activity实现`OnDataArrivedListener`并向TestManager注册监听，并缺少解注册过程，则会引起内存泄露。因为Activity被单例TestManager持有，而单例模式生命周期与Application一致，因此Activity无法被释放
 
    ```java
    public class MainActivity extends Activity implements OnDataArrivedListener {
-     protected void onCreate(Bundle savedInstanceState) {
-       super.onCreate(savedInstanceState);
-       setContentView(R.layout.activity_main);
-       TestManager.getInstance().registerListener(this);
-     }
+       protected void onCreate(Bundle savedInstanceState) {
+           super.onCreate(savedInstanceState);
+           setContentView(R.layout.activity_main);
+           TestManager.getInstance().registerListener(this);
+       }
    }
    ```
 
@@ -3658,8 +3668,7 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
    属性动画中有一类无限循环的动画，如果在Activity中播放此类动画且没有在onDestroy中停止，则View会被动画持有，而View持有Activity，则Activity无法被释放
 
    ```java
-   ObjectAnimator animator = ObjectAnimator.ofFloat(mButton, "rotation",
-                                                    0, 360).setDuration(2000);
+   ObjectAnimator animator = ObjectAnimator.ofFloat(mButton, "rotation", 0, 360).setDuration(2000);
    animator.setRepeatCount(ValueAnimator.INFINITE);
    animator.start();
    ```
@@ -3669,27 +3678,22 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 4. 非静态内部类的静态实例容易造成内存泄漏
 
    ```java
-   public class MainActivity extends Activity  
-   {  
-     static Demo sInstance = null;  
+   public class MainActivity extends Activity {  
+       static Demo sInstance = null;  
 
-     @Override  
-     public void onCreate(BundlesavedInstanceState)  
-     {  
-       super.onCreate(savedInstanceState);  
-       setContentView(R.layout.activity_main);  
-       if (sInstance == null)  
-       {  
-         sInstance= new Demo();  
+       @Override  
+       public void onCreate(BundlesavedInstanceState) {  
+           super.onCreate(savedInstanceState);  
+           setContentView(R.layout.activity_main);  
+           if (sInstance == null) {  
+               sInstance = new Demo();  
+           }  
        }  
-     }  
-     class Demo  
-     {  
-       void doSomething()  
-       {  
-         System.out.print("dosth.");  
+       class Demo {  
+           void doSomething() {  
+               System.out.print("dosth.");  
+           }  
        }  
-     }  
    } 
    ```
 
@@ -3701,21 +3705,21 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
    private static Drawable sBackground;    
    @Override    
    protected void onCreate(Bundle state) {    
-     super.onCreate(state);    
+       super.onCreate(state);    
 
-     TextView label = new TextView(this);    
-     label.setText("Leaks are bad");    
+       TextView label = new TextView(this);    
+       label.setText("Leaks are bad");    
 
-     if (sBackground == null) {    
-       sBackground = getDrawable(R.drawable.large_bitmap);    
-     }    
-     label.setBackgroundDrawable(sBackground);    
+       if (sBackground == null) {    
+           sBackground = getDrawable(R.drawable.large_bitmap);    
+       }    
+       label.setBackgroundDrawable(sBackground);    
 
-     setContentView(label);    
+       setContentView(label);    
    }   
    ```
 
-   label .setBackgroundDrawable函数调用会将label赋值给sBackground的成员变量mCallback。上面代码意味着：sBackground（GC Root）会持有TextView对象，而TextView持有Activity对象。所以导致Activity对象无法被系统回收
+   `label .setBackgroundDrawable`函数调用会将label赋值给sBackground的成员变量mCallback。上面代码意味着：sBackground（GC Root）会持有TextView对象，而TextView持有Activity对象。所以导致Activity对象无法被系统回收
 
 6. 使用handler时的内存问题
 
@@ -3800,40 +3804,40 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 ```java
 @Override
 public View getView(int position, View convertView, ViewGroup parent) {
-  ViewHolder holder;
-  View itemView = null;
-  if (convertView == null) {
-    itemView = View.inflate(context, R.layout.item_news_data, null);
-    holder = new ViewHolder(itemView);
-    //用setTag的方法把ViewHolder与convertView "绑定"在一起
-    itemView.setTag(holder);
-  } else {
-    //当不为null时，我们让itemView=converView，用getTag方法取出这个itemView对应的holder对象，就可以获取这个itemView对象中的组件
-    itemView = convertView;
-    holder = (ViewHolder) itemView.getTag();
-  }
+    ViewHolder holder;
+    View itemView = null;
+    if (convertView == null) {
+        itemView = View.inflate(context, R.layout.item_news_data, null);
+        holder = new ViewHolder(itemView);
+        //用setTag的方法把ViewHolder与convertView "绑定"在一起
+        itemView.setTag(holder);
+    } else {
+        //当不为null时，我们让itemView=converView，用getTag方法取出这个itemView对应的holder对象，就可以获取这个itemView对象中的组件
+        itemView = convertView;
+        holder = (ViewHolder) itemView.getTag();
+    }
 
-  NewsBean newsBean = newsListDatas.get(position);
-  holder.tvNewsTitle.setText(newsBean.title);
-  holder.tvNewsDate.setText(newsBean.pubdate);
-  mBitmapUtils.display(holder.ivNewsIcon, newsBean.listimage);
+    NewsBean newsBean = newsListDatas.get(position);
+    holder.tvNewsTitle.setText(newsBean.title);
+    holder.tvNewsDate.setText(newsBean.pubdate);
+    mBitmapUtils.display(holder.ivNewsIcon, newsBean.listimage);
 
-  return itemView;
+    return itemView;
 }
 
 public class ViewHolder {
-  @ViewInject(R.id.iv_item_news_icon)
-  private ImageView ivNewsIcon;// 新闻图片
-  @ViewInject(R.id.tv_item_news_title)
-  private TextView tvNewsTitle;// 新闻标题
-  @ViewInject(R.id.tv_item_news_pubdate)
-  private TextView tvNewsDate;// 新闻发布时间
-  @ViewInject(R.id.tv_comment_count)
-  private TextView tvCommentIcon;// 新闻评论
+    @ViewInject(R.id.iv_item_news_icon)
+    private ImageView ivNewsIcon;// 新闻图片
+    @ViewInject(R.id.tv_item_news_title)
+    private TextView tvNewsTitle;// 新闻标题
+    @ViewInject(R.id.tv_item_news_pubdate)
+    private TextView tvNewsDate;// 新闻发布时间
+    @ViewInject(R.id.tv_comment_count)
+    private TextView tvCommentIcon;// 新闻评论
 
-  public ViewHolder(View itemView) {
-    ViewUtils.inject(this, itemView);
-  }
+    public ViewHolder(View itemView) {
+        ViewUtils.inject(this, itemView);
+    }
 }
 ```
 

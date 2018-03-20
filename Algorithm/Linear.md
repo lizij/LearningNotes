@@ -68,19 +68,19 @@ Average time complexity: $$O(n)$$
 
 ```java
 int quickselect(int[] arr, int lo, int hi, int k) {
-  if (lo >= hi) return lo;
-  int p = partition(arr, lo, hi, k);//random-pick partition
-  if (p == k) return arr[p];
-  else if (p > k) return quickselect(arr, lo, p - 1, k);
-  else return quickselect(arr, p + 1, hi, k);
+    if (lo >= hi) return lo;
+    int p = partition(arr, lo, hi, k);//random-pick partition
+    if (p == k) return arr[p];
+    else if (p > k) return quickselect(arr, lo, p - 1, k);
+    else return quickselect(arr, p + 1, hi, k);
 }
 
 int quick3select(int[] arr, int lo, int hi, int k) {
-  if (lo >= hi) return lo;
-  int[] p = partition(arr, lo, hi, k);//random-pick partition
-  if (k >= p[0] && k <= p[1]) return arr[k];
-  else if (k < p[0]) return quick3select(arr, lo, p[0] - 1, k);
-  else return quick3select(arr, p[1] + 1, hi, k);
+    if (lo >= hi) return lo;
+    int[] p = partition(arr, lo, hi, k);//random-pick partition
+    if (k >= p[0] && k <= p[1]) return arr[k];
+    else if (k < p[0]) return quick3select(arr, lo, p[0] - 1, k);
+    else return quick3select(arr, p[1] + 1, hi, k);
 }
 ```
 
@@ -94,52 +94,52 @@ Because *M* is the median of medians, for every *i* < *M* and *i* in medians, th
 
 ```java
 int select(int[] arr, int lo, int hi, int k) {
-  //same as quick3select()
-  if (lo >= hi) return arr[lo];
-  int[] p = partition(arr, lo, hi);
-  if (k >= p[0] && k <= p[1]) return arr[k];
-  else if (k < p[0]) return select(arr, lo, p[0] - 1, k);
-  else return select(arr, p[1] + 1, hi, k)
+    //same as quick3select()
+    if (lo >= hi) return arr[lo];
+    int[] p = partition(arr, lo, hi);
+    if (k >= p[0] && k <= p[1]) return arr[k];
+    else if (k < p[0]) return select(arr, lo, p[0] - 1, k);
+    else return select(arr, p[1] + 1, hi, k)
 }
 
 int[] partition(int[] arr, int lo, int hi) {
-  int pivot = medianOfMedians(arr, lo, hi);
-  int small = lo - 1;
-  int cur = lo;
-  int big = hi + 1;
-  while (cur < big) {
-    if (arr[cur] < pivot) swap(arr, ++small, cur++);
-    else if (arr[cur] > pivot) swap(arr, cur, --big);
-    else cur++;
-  }
-  return new int[]{small + 1, big - 1};
+    int pivot = medianOfMedians(arr, lo, hi);
+    int small = lo - 1;
+    int cur = lo;
+    int big = hi + 1;
+    while (cur < big) {
+        if (arr[cur] < pivot) swap(arr, ++small, cur++);
+        else if (arr[cur] > pivot) swap(arr, cur, --big);
+        else cur++;
+    }
+    return new int[]{small + 1, big - 1};
 }
 
 // start of BFPRT part
 int medianOfMedians(int[] arr, lo, hi) {
-  int num = hi - lo + 1;
-  int offset = num % 5 == 0 ? 0 : 1;
-  int[] mArr = new int[num / 5 + offset];
-  for (int i = 0; i < mArr.length; i++) {
-    int begin = lo + i * 5;
-    mArr[i] = getMedian(arr, begin, Math.end(hi, begin + 4));
-  }
-  return select(mArr, 0, mArr.length - 1, mArr.length / 2);
+    int num = hi - lo + 1;
+    int offset = num % 5 == 0 ? 0 : 1;
+    int[] mArr = new int[num / 5 + offset];
+    for (int i = 0; i < mArr.length; i++) {
+        int begin = lo + i * 5;
+        mArr[i] = getMedian(arr, begin, Math.end(hi, begin + 4));
+    }
+    return select(mArr, 0, mArr.length - 1, mArr.length / 2);
 }
 
 int getMedian(int[] arr, int lo, int hi) {
-  insertionSort(arr, lo, hi);
-  int sum = lo + hi;
-  int mid = (sum / 2) + (sum % 2);
-  return arr[mid];
+    insertionSort(arr, lo, hi);
+    int sum = lo + hi;
+    int mid = (sum / 2) + (sum % 2);
+    return arr[mid];
 }
 
 void insertionSort(int[] arr, int lo, int hi) {
-  for (int i = lo + 1; i < hi; i++) {
-    for (int j = i; j > lo && arr[j - 1] > arr[j]; j--) {
-      swap(arr, j - 1, j);
+    for (int i = lo + 1; i < hi; i++) {
+        for (int j = i; j > lo && arr[j - 1] > arr[j]; j--) {
+            swap(arr, j - 1, j);
+        }
     }
-  }
 }
 ```
 
@@ -159,7 +159,7 @@ eg. We have 100 nubmers in [1, 10^8], which are unsorted and not necessarily dis
 // Coordinate Compression
 Set<Integer> coords = new HashSet<>(); // coordinates without duplicates
 for (int num: nums) {
-  coords.add(num);
+    coords.add(num);
 }
 
 // sort coordinates
@@ -170,7 +170,7 @@ sortedCoords.sort((o1, o2) -> o1 - o2);
 Map<Integer, Integer> index = new HashMap<>();
 int t = 0;
 for (int coord: sortedCoords) {
-  index.put(coord, t++);
+    index.put(coord, t++);
 }
 ```
 
@@ -200,9 +200,9 @@ This is because in class Integer.IntegerCache
 
 ```java
 public static Integer valueOf(int i) {
-  if (i >= IntegerCache.low && i <= IntegerCache.high) //low = -128, hi = 128 by default
-    return IntegerCache.cache[i + (-IntegerCache.low)];
-  return new Integer(i);
+    if (i >= IntegerCache.low && i <= IntegerCache.high) //low = -128, hi = 128 by default
+        return IntegerCache.cache[i + (-IntegerCache.low)];
+    return new Integer(i);
 }
 ```
 
@@ -210,7 +210,7 @@ public static Integer valueOf(int i) {
 
 ```java
 for (Entry<> entry: map.entrySet()) {
-  map.remove(entry.getKey());
+    map.remove(entry.getKey());
 }
 ```
 
@@ -234,37 +234,37 @@ Stack
 
 ```java
 class ArrayStack {
-  Integer[] arr;
-  Integer size;
+    Integer[] arr;
+    Integer size;
 
-  ArrayStack(int initSize) {
-    if (initSize < 0) {
-      throw new IllegalArgumentException("The init size is less than 0");
+    ArrayStack(int initSize) {
+        if (initSize < 0) {
+            throw new IllegalArgumentException("The init size is less than 0");
+        }
+        arr = new Integer[initSize];
+        size = 0;
     }
-    arr = new Integer[initSize];
-    size = 0;
-  }
 
-  Integer peek() {
-    if (size == 0) {
-      return null;
+    Integer peek() {
+        if (size == 0) {
+            return null;
+        }
+        return arr[size - 1];
     }
-    return arr[size - 1];
-  }
 
-  void push(int obj) {
-    if (size == arr.length) {
-      throw new ArrayIndexOutOfBoundsException("The queue is full");
+    void push(int obj) {
+        if (size == arr.length) {
+            throw new ArrayIndexOutOfBoundsException("The queue is full");
+        }
+        arr[size++] = obj;
     }
-    arr[size++] = obj;
-  }
 
-  Integer pop() {
-    if (size == 0) {
-      throw new ArrayIndexOutOfBoundsException("The queue is empty");
+    Integer pop() {
+        if (size == 0) {
+            throw new ArrayIndexOutOfBoundsException("The queue is empty");
+        }
+        return arr[--size];
     }
-    return arr[--size];
-  }
 }
 ```
 
@@ -272,46 +272,46 @@ Queue
 
 ```java
 class ArrayQueue {
-  Integer[] arr;
-  Integer size;
-  Integer first;
-  Integer last;
+    Integer[] arr;
+    Integer size;
+    Integer first;
+    Integer last;
 
-  ArrayQueue(int initSize) {
-    if (initSize < 0) {
-      throw new IllegalArgumentException("The init size is less than 0");
+    ArrayQueue(int initSize) {
+        if (initSize < 0) {
+            throw new IllegalArgumentException("The init size is less than 0");
+        }
+        arr = new Integer[initSize];
+        size = 0;
+        first = 0;
+        last = 0;
     }
-    arr = new Integer[initSize];
-    size = 0;
-    first = 0;
-    last = 0;
-  }
 
-  Integer peek() {
-    if (size == 0) {
-      return null;
+    Integer peek() {
+        if (size == 0) {
+            return null;
+        }
+        return arr[first];
     }
-    return arr[first];
-  }
 
-  void push(int obj) {
-    if (size == arr.length) {
-      throw new ArrayIndexOutOfBoundsException("The queue is full");
+    void push(int obj) {
+        if (size == arr.length) {
+            throw new ArrayIndexOutOfBoundsException("The queue is full");
+        }
+        size++;
+        arr[last] = obj;
+        last = last == arr.length - 1 ? 0 : last + 1;
     }
-    size++;
-    arr[last] = obj;
-    last = last == arr.length - 1 ? 0 : last + 1;
-  }
 
-  Integer poll() {
-    if (size == 0) {
-      throw new ArrayIndexOutOfBoundsException("The queue is empty");
+    Integer poll() {
+        if (size == 0) {
+            throw new ArrayIndexOutOfBoundsException("The queue is empty");
+        }
+        size--;
+        int tmp = first;
+        first = first == arr.length - 1 ? 0 : first + 1;
+        return arr[tmp];
     }
-    size--;
-    int tmp = first;
-    first = first == arr.length - 1 ? 0 : first + 1;
-    return arr[tmp];
-  }
 }
 ```
 
@@ -326,32 +326,32 @@ Use an extra min stack to remember all new mins in order. When in pop(), if the 
 
 ```java
 class GetMinStack {
-  Stack<Integer> data;
-  Stack<Integer> min;
-  GetMinStack() {
-    data = new Stack<>();
-    min = new Stack<>();
-  }
-
-  void push(int num) {
-    if (min.isEmpty() || num <= getmin()) {
-      min.push(num);
+    Stack<Integer> data;
+    Stack<Integer> min;
+    GetMinStack() {
+        data = new Stack<>();
+        min = new Stack<>();
     }
-    data.push(num);
-  }
 
-  void pop() {
-    if (data.isEmpty()) throw new RuntimeException("Empty stack");
-    int value = data.pop();
-    if (value == getmin()) min.pop();
-    return value;
-  }
+    void push(int num) {
+        if (min.isEmpty() || num <= getmin()) {
+            min.push(num);
+        }
+        data.push(num);
+    }
 
-  int getmin() {
-    // return min stack peek
-    if (min.isEmpty()) throw new RuntimeException("Empty stack");
-    return min.peek();
-  }
+    void pop() {
+        if (data.isEmpty()) throw new RuntimeException("Empty stack");
+        int value = data.pop();
+        if (value == getmin()) min.pop();
+        return value;
+    }
+
+    int getmin() {
+        // return min stack peek
+        if (min.isEmpty()) throw new RuntimeException("Empty stack");
+        return min.peek();
+    }
 }
 ```
 
@@ -359,33 +359,33 @@ Similiar with the last one, the difference is to remember every min for every pu
 
 ```java
 class GetMinStack {
-  Stack<Integer> data;
-  Stack<Integer> min;
-  GetMinStack() {
-    data = new Stack<>();
-    min = new Stack<>();
-  }
-
-  void push(int num) {
-    if (min.isEmpty() || num <= getMin()) {
-      min.push(num);
-    } else {
-      int newMin = min.peek();
-      min.push(newMin);
+    Stack<Integer> data;
+    Stack<Integer> min;
+    GetMinStack() {
+        data = new Stack<>();
+        min = new Stack<>();
     }
-    data.push(num);
-  }
 
-  void pop() {
-    if (data.isEmpty()) throw new RuntimeException("Empty stack");
-    min.pop();
-    return data.pop();
-  }
+    void push(int num) {
+        if (min.isEmpty() || num <= getMin()) {
+            min.push(num);
+        } else {
+            int newMin = min.peek();
+            min.push(newMin);
+        }
+        data.push(num);
+    }
 
-  int getMin() {
-    if (min.isEmpty()) throw new RuntimeException("Empty stack");
-    return min.peek();
-  }
+    void pop() {
+        if (data.isEmpty()) throw new RuntimeException("Empty stack");
+        min.pop();
+        return data.pop();
+    }
+
+    int getMin() {
+        if (min.isEmpty()) throw new RuntimeException("Empty stack");
+        return min.peek();
+    }
 }
 ```
 
@@ -397,39 +397,39 @@ Stack -> Queue
 
 ```java
 class TwoStacksQueue {
-  Stack<Integer> stackPush;
-  Stack<Integer> stackPop;
+    Stack<Integer> stackPush;
+    Stack<Integer> stackPop;
 
-  TwoStacksQueue() {
-    stackPush = new Stack<Integer>();
-    stackPop = new Stack<Integer>();
-  }
-
-  void push(int pushInt) {
-    stackPush.push(pushInt);
-  }
-
-  int poll() {
-    if (stackPop.empty() && stackPush.empty()) {
-      throw new RuntimeException("Queue is empty!");
-    } else if (stackPop.empty()) {
-      while (!stackPush.empty()) {
-        stackPop.push(stackPush.pop());
-      }
+    TwoStacksQueue() {
+        stackPush = new Stack<Integer>();
+        stackPop = new Stack<Integer>();
     }
-    return stackPop.pop();
-  }
 
-  int peek() {
-    if (stackPop.empty() && stackPush.empty()) {
-      throw new RuntimeException("Queue is empty!");
-    } else if (stackPop.empty()) {
-      while (!stackPush.empty()) {
-        stackPop.push(stackPush.pop());
-      }
+    void push(int pushInt) {
+        stackPush.push(pushInt);
     }
-    return stackPop.peek();
-  }
+
+    int poll() {
+        if (stackPop.empty() && stackPush.empty()) {
+            throw new RuntimeException("Queue is empty!");
+        } else if (stackPop.empty()) {
+            while (!stackPush.empty()) {
+                stackPop.push(stackPush.pop());
+            }
+        }
+        return stackPop.pop();
+    }
+
+    int peek() {
+        if (stackPop.empty() && stackPush.empty()) {
+            throw new RuntimeException("Queue is empty!");
+        } else if (stackPop.empty()) {
+            while (!stackPush.empty()) {
+                stackPop.push(stackPush.pop());
+            }
+        }
+        return stackPop.peek();
+    }
 }
 ```
 
@@ -437,48 +437,48 @@ Queue -> Stack
 
 ```java
 class TwoQueuesStack {
-  Queue<Integer> queue;
-  Queue<Integer> help;
+    Queue<Integer> queue;
+    Queue<Integer> help;
 
-  TwoQueuesStack() {
-    queue = new LinkedList<Integer>();
-    help = new LinkedList<Integer>();
-  }
-
-  void push(int pushInt) {
-    queue.add(pushInt);
-  }
-
-  int peek() {
-    if (queue.isEmpty()) {
-      throw new RuntimeException("Stack is empty!");
+    TwoQueuesStack() {
+        queue = new LinkedList<Integer>();
+        help = new LinkedList<Integer>();
     }
-    while (queue.size() != 1) {
-      help.add(queue.poll());
-    }
-    int res = queue.poll();
-    help.add(res);
-    swap();
-    return res;
-  }
 
-  int pop() {
-    if (queue.isEmpty()) {
-      throw new RuntimeException("Stack is empty!");
+    void push(int pushInt) {
+        queue.add(pushInt);
     }
-    while (queue.size() != 1) {
-      help.add(queue.poll());
-    }
-    int res = queue.poll();
-    swap();
-    return res;
-  }
 
-  void swap() {
-    Queue<Integer> tmp = help;
-    help = queue;
-    queue = tmp;
-  }
+    int peek() {
+        if (queue.isEmpty()) {
+            throw new RuntimeException("Stack is empty!");
+        }
+        while (queue.size() != 1) {
+            help.add(queue.poll());
+        }
+        int res = queue.poll();
+        help.add(res);
+        swap();
+        return res;
+    }
+
+    int pop() {
+        if (queue.isEmpty()) {
+            throw new RuntimeException("Stack is empty!");
+        }
+        while (queue.size() != 1) {
+            help.add(queue.poll());
+        }
+        int res = queue.poll();
+        swap();
+        return res;
+    }
+
+    void swap() {
+        Queue<Integer> tmp = help;
+        help = queue;
+        queue = tmp;
+    }
 
 }
 ```
@@ -487,27 +487,27 @@ class TwoQueuesStack {
 
 ```java
 class Pet {
-  String type;
+    String type;
 
-  Pet(String type) {
-    this.type = type;
-  }
+    Pet(String type) {
+        this.type = type;
+    }
 
-  String getPetType() {
-    return this.type;
-  }
+    String getPetType() {
+        return this.type;
+    }
 }
 
 class Dog extends Pet {
-  Dog() {
-    super("dog");
-  }
+    Dog() {
+        super("dog");
+    }
 }
 
 class Cat extends Pet {
-  Cat() {
-    super("cat");
-  }
+    Cat() {
+        super("cat");
+    }
 }
 ```
 
@@ -528,25 +528,25 @@ Define a class called PetEnterQueue, mark every Pet added in queue.
 
 ```java
 class PetEnterQueue {
-  Pet pet;
-  long count;
+    Pet pet;
+    long count;
 
-  PetEnterQueue(Pet pet, long count) {
-    this.pet = pet;
-    this.count = count;
-  }
+    PetEnterQueue(Pet pet, long count) {
+        this.pet = pet;
+        this.count = count;
+    }
 
-  Pet getPet() {
-    return this.pet;
-  }
+    Pet getPet() {
+        return this.pet;
+    }
 
-  long getCount() {
-    return this.count;
-  }
+    long getCount() {
+        return this.count;
+    }
 
-  String getEnterPetType() {
-    return this.pet.getPetType();
-  }
+    String getEnterPetType() {
+        return this.pet.getPetType();
+    }
 }
 ```
 
@@ -558,68 +558,68 @@ Then define a queue for Dog and a queue for Cat.
 
 ```java
 class DogCatQueue {
-  Queue<PetEnterQueue> dogQ;
-  Queue<PetEnterQueue> catQ;
-  long count;
+    Queue<PetEnterQueue> dogQ;
+    Queue<PetEnterQueue> catQ;
+    long count;
 
-  DogCatQueue() {
-    this.dogQ = new LinkedList<PetEnterQueue>();
-    this.catQ = new LinkedList<PetEnterQueue>();
-    this.count = 0;
-  }
-
-  void add(Pet pet) {
-    if (pet.getPetType().equals("dog")) {
-      this.dogQ.add(new PetEnterQueue(pet, this.count++));
-    } else if (pet.getPetType().equals("cat")) {
-      this.catQ.add(new PetEnterQueue(pet, this.count++));
-    } else {
-      throw new RuntimeException("err, not dog or cat");
+    DogCatQueue() {
+        this.dogQ = new LinkedList<PetEnterQueue>();
+        this.catQ = new LinkedList<PetEnterQueue>();
+        this.count = 0;
     }
-  }
 
-  Pet pollAll() {
-    if (!this.dogQ.isEmpty() && !this.catQ.isEmpty()) {
-      if (this.dogQ.peek().getCount() < this.catQ.peek().getCount()) {
-        return this.dogQ.poll().getPet();
-      } else {
-        return this.catQ.poll().getPet();
-      }
-    } else if (!this.dogQ.isEmpty()) {
-      return this.dogQ.poll().getPet();
-    } else if (!this.catQ.isEmpty()) {
-      return this.catQ.poll().getPet();
-    } else {
-      throw new RuntimeException("err, queue is empty!");
+    void add(Pet pet) {
+        if (pet.getPetType().equals("dog")) {
+            this.dogQ.add(new PetEnterQueue(pet, this.count++));
+        } else if (pet.getPetType().equals("cat")) {
+            this.catQ.add(new PetEnterQueue(pet, this.count++));
+        } else {
+            throw new RuntimeException("err, not dog or cat");
+        }
     }
-  }
 
-  Dog pollDog() {
-    if (!this.isDogQueueEmpty()) {
-      return (Dog) this.dogQ.poll().getPet();
-    } else {
-      throw new RuntimeException("Dog queue is empty!");
+    Pet pollAll() {
+        if (!this.dogQ.isEmpty() && !this.catQ.isEmpty()) {
+            if (this.dogQ.peek().getCount() < this.catQ.peek().getCount()) {
+                return this.dogQ.poll().getPet();
+            } else {
+                return this.catQ.poll().getPet();
+            }
+        } else if (!this.dogQ.isEmpty()) {
+            return this.dogQ.poll().getPet();
+        } else if (!this.catQ.isEmpty()) {
+            return this.catQ.poll().getPet();
+        } else {
+            throw new RuntimeException("err, queue is empty!");
+        }
     }
-  }
 
-  Cat pollCat() {
-    if (!this.isCatQueueEmpty()) {
-      return (Cat) this.catQ.poll().getPet();
-    } else
-      throw new RuntimeException("Cat queue is empty!");
-  }
+    Dog pollDog() {
+        if (!this.isDogQueueEmpty()) {
+            return (Dog) this.dogQ.poll().getPet();
+        } else {
+            throw new RuntimeException("Dog queue is empty!");
+        }
+    }
 
-  boolean isEmpty() {
-    return this.dogQ.isEmpty() && this.catQ.isEmpty();
-  }
+    Cat pollCat() {
+        if (!this.isCatQueueEmpty()) {
+            return (Cat) this.catQ.poll().getPet();
+        } else
+            throw new RuntimeException("Cat queue is empty!");
+    }
 
-  boolean isDogQueueEmpty() {
-    return this.dogQ.isEmpty();
-  }
+    boolean isEmpty() {
+        return this.dogQ.isEmpty() && this.catQ.isEmpty();
+    }
 
-  boolean isCatQueueEmpty() {
-    return this.catQ.isEmpty();
-  }
+    boolean isDogQueueEmpty() {
+        return this.dogQ.isEmpty();
+    }
+
+    boolean isCatQueueEmpty() {
+        return this.catQ.isEmpty();
+    }
 
 }
 ```
@@ -638,42 +638,42 @@ class DogCatQueue {
 
 ```java
 class Pool<K> {
-  HashMap<K, Integer> keyIndexMap;
-  HashMap<Integer, K> indexKeyMap;
-  int size;
+    HashMap<K, Integer> keyIndexMap;
+    HashMap<Integer, K> indexKeyMap;
+    int size;
 
-  Pool() {
-    this.keyIndexMap = new HashMap<K, Integer>();
-    this.indexKeyMap = new HashMap<Integer, K>();
-    this.size = 0;
-  }
-
-  void insert(K key) {
-    if (!this.keyIndexMap.containsKey(key)) {
-      this.keyIndexMap.put(key, this.size);
-      this.indexKeyMap.put(this.size++, key);
+    Pool() {
+        this.keyIndexMap = new HashMap<K, Integer>();
+        this.indexKeyMap = new HashMap<Integer, K>();
+        this.size = 0;
     }
-  }
 
-  void delete(K key) {
-    if (this.keyIndexMap.containsKey(key)) {
-      int deleteIndex = this.keyIndexMap.get(key);
-      int lastIndex = --this.size;
-      K lastKey = this.indexKeyMap.get(lastIndex);
-      this.keyIndexMap.put(lastKey, deleteIndex);
-      this.indexKeyMap.put(deleteIndex, lastKey);
-      this.keyIndexMap.remove(key);
-      this.indexKeyMap.remove(lastIndex);
+    void insert(K key) {
+        if (!this.keyIndexMap.containsKey(key)) {
+            this.keyIndexMap.put(key, this.size);
+            this.indexKeyMap.put(this.size++, key);
+        }
     }
-  }
 
-  K getRandom() {
-    if (this.size == 0) {
-      return null;
+    void delete(K key) {
+        if (this.keyIndexMap.containsKey(key)) {
+            int deleteIndex = this.keyIndexMap.get(key);
+            int lastIndex = --this.size;
+            K lastKey = this.indexKeyMap.get(lastIndex);
+            this.keyIndexMap.put(lastKey, deleteIndex);
+            this.indexKeyMap.put(deleteIndex, lastKey);
+            this.keyIndexMap.remove(key);
+            this.indexKeyMap.remove(lastIndex);
+        }
     }
-    int randomIndex = (int) (Math.random() * this.size);
-    return this.indexKeyMap.get(randomIndex);
-  }
+
+    K getRandom() {
+        if (this.size == 0) {
+            return null;
+        }
+        int randomIndex = (int) (Math.random() * this.size);
+        return this.indexKeyMap.get(randomIndex);
+    }
 
 }
 ```
@@ -692,41 +692,41 @@ class Pool<K> {
 
 ```java
 void main(int[][] matrix) {
-  int tR = 0;
-  int tC = 0;
-  int dR = matrix.length - 1;
-  int dC = matrix[0].length - 1;
-  while (tR <= dR && tC <= dC) {
-    printEdge(matrix, tR++, tC++, dR--, dC--);
-  }	
+    int tR = 0;
+    int tC = 0;
+    int dR = matrix.length - 1;
+    int dC = matrix[0].length - 1;
+    while (tR <= dR && tC <= dC) {
+        printEdge(matrix, tR++, tC++, dR--, dC--);
+    }	
 }
 
 void print(int[][] matrix, int tR, int tC, int dR, int dC) {
-  //print a square determined by (tr, tc) in the topleft and (dr, dc) in the bottomright
-  if (tR == dR) { 
-    // only one row
-    for (int i = tC; i <= dC; i++) System.out.print(m[tR][i] + " ");
-  } else if (tC == dC) { 
-    // only one column
-    for (int i = tR; i <= dR; i++) System.out.print(m[i][tC] + " ");
-  } else {
-    // other cases
-    int curC = tC;
-    int curR = tR;
-    while (curC != dC) { // left to right in tr row
-      System.out.print(m[tR][curC++] + " ");
+    //print a square determined by (tr, tc) in the topleft and (dr, dc) in the bottomright
+    if (tR == dR) { 
+        // only one row
+        for (int i = tC; i <= dC; i++) System.out.print(m[tR][i] + " ");
+    } else if (tC == dC) { 
+        // only one column
+        for (int i = tR; i <= dR; i++) System.out.print(m[i][tC] + " ");
+    } else {
+        // other cases
+        int curC = tC;
+        int curR = tR;
+        while (curC != dC) { // left to right in tr row
+            System.out.print(m[tR][curC++] + " ");
+        }
+        while (curR != dR) { // up to down in dc column
+            System.out.print(m[curR++][dC] + " ");
+            curR++;
+        }
+        while (curC != tC) { // right to left in dr row
+            System.out.print(m[dR][curC--] + " ");
+        }
+        while (curR != tR) { // down to up in tc column
+            System.out.print(m[curR--][tC] + " ");
+        }
     }
-    while (curR != dR) { // up to down in dc column
-      System.out.print(m[curR++][dC] + " ");
-      curR++;
-    }
-    while (curC != tC) { // right to left in dr row
-      System.out.print(m[dR][curC--] + " ");
-    }
-    while (curR != tR) { // down to up in tc column
-      System.out.print(m[curR--][tC] + " ");
-    }
-  }
 }
 ```
 
@@ -759,32 +759,32 @@ From the table, for (tr, tc), tc increases in every loop until tc == 3, then tr 
 
 ```java
 void main(int[][] matrix) {
-  int tr = 0, tc = 0, dr = 0, dc = 0, endr = matrix.length - 1, endc = matrix[0].length - 1;
-  boolean fromUp = false;
-  while(tr <= endr) {
-    print(matrix, tr, tc, dr, dc, fromUp);
-    // increase tc or tr
-    tr = tc == endc ? tr + 1 : tr;
-    tc = tc == endc ? tc : tc + 1;
+    int tr = 0, tc = 0, dr = 0, dc = 0, endr = matrix.length - 1, endc = matrix[0].length - 1;
+    boolean fromUp = false;
+    while(tr <= endr) {
+        print(matrix, tr, tc, dr, dc, fromUp);
+        // increase tc or tr
+        tr = tc == endc ? tr + 1 : tr;
+        tc = tc == endc ? tc : tc + 1;
 
-    // increase dr or dc
-    dc = dr == endr ? dc + 1 : dc;
-    dr = dr == endr ? dr : dr + 1;
-    fromUp = !fromUp; // reverse direction
-  }
+        // increase dr or dc
+        dc = dr == endr ? dc + 1 : dc;
+        dr = dr == endr ? dr : dr + 1;
+        fromUp = !fromUp; // reverse direction
+    }
 }
 
 void print(int[] matrix, int tr, int tc, int dr, int dc, boolean fromUp) {
-  //print the line from (tr, tc) to (dr, dc) if fromUp, else print reversely
-  if (fromUp) {
-    while (tr != dr + 1) {
-      System.out.print(m[tr++][tc--] + " ");
+    //print the line from (tr, tc) to (dr, dc) if fromUp, else print reversely
+    if (fromUp) {
+        while (tr != dr + 1) {
+            System.out.print(m[tr++][tc--] + " ");
+        }
+    } else {
+        while (dr != tr - 1) {
+            System.out.print(m[dr--][dc++] + " ");
+        }
     }
-  } else {
-    while (dr != tr - 1) {
-      System.out.print(m[dr--][dc++] + " ");
-    }
-  }
 }
 ```
 
@@ -816,13 +816,13 @@ Therefore use one of these conclusions to search:
 
 ```java
 boolean isContains(int[][] matrix, int K) {
-  int row = 0, col = matrix[0].length - 1;
-  while(row < matrix.length && col > -1) {
-    if (matrix[row][col] == K) return true;
-    // matrix[row - 1][col] < matrix[row][col] < matrix[row][col + 1];
-    else if (matrix[row][col] > K) col--;
-    else row++;
-  }
+    int row = 0, col = matrix[0].length - 1;
+    while(row < matrix.length && col > -1) {
+        if (matrix[row][col] == K) return true;
+        // matrix[row - 1][col] < matrix[row][col] < matrix[row][col + 1];
+        else if (matrix[row][col] > K) col--;
+        else row++;
+    }
 }
 ```
 
@@ -834,9 +834,9 @@ boolean isContains(int[][] matrix, int K) {
 if (h1.value < h2.value) h1 = h1.next;
 else if (h1.value > h2.value) h2 = h2.next;
 else { // h1.value == h2.value
-  System.out.println(h1.value);
-  h1 = h1.next;
-  h2 = h2.next;
+    System.out.println(h1.value);
+    h1 = h1.next;
+    h2 = h2.next;
 }
 ```
 
@@ -848,17 +848,17 @@ Classic stack solution: push the list in stack and return true if the list is eq
 
 ```java
 boolean isPalindrome(Node head) {
-  Stack<Node> stack = new Stack<Node>();
-  Node cur = head;
-  while (cur != null) {
-    stack.push(cur);
-    cur = cur.next;
-  }
-  while (head != null) {
-    if (head.value != stack.pop().value) return false;
-    head = head.next;
-  }
-  return true;
+    Stack<Node> stack = new Stack<Node>();
+    Node cur = head;
+    while (cur != null) {
+        stack.push(cur);
+        cur = cur.next;
+    }
+    while (head != null) {
+        if (head.value != stack.pop().value) return false;
+        head = head.next;
+    }
+    return true;
 }
 ```
 
@@ -866,24 +866,24 @@ Better solution with stack: use slow-fast pointers to find the center of the lis
 
 ```java
 boolean isPalindrome(Node head) {
-  if (head == null || head.next == null) return true;
-  Node slow = head.next;
-  Node fast = head;
-  while (fast.next != null && fast.next.next != null) {
-    slow = slow.next;
-    fast = fast.next.next;
-  }
-  // the length of the list is 2n or 2n + 1, slow will be n + 1, fast will be 2n
-  Stack<Node> stack = new Stack<Node>();
-  while (slow != null) {
-    stack.push(slow);
-    slow = slow.next;
-  }
-  while (!stack.isEmpty()) {
-    if (head.value != stack.pop().value) return false;
-    head = head.next;
-  }
-  return true;
+    if (head == null || head.next == null) return true;
+    Node slow = head.next;
+    Node fast = head;
+    while (fast.next != null && fast.next.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    // the length of the list is 2n or 2n + 1, slow will be n + 1, fast will be 2n
+    Stack<Node> stack = new Stack<Node>();
+    while (slow != null) {
+        stack.push(slow);
+        slow = slow.next;
+    }
+    while (!stack.isEmpty()) {
+        if (head.value != stack.pop().value) return false;
+        head = head.next;
+    }
+    return true;
 }
 ```
 
@@ -891,42 +891,42 @@ $$O(1)$$ extra space solution: use slow-fast pointers to find the center of the 
 
 ```java
 boolean isPalindrome(Node head) {
-  if (head == null || head.next == null) return true;
-  Node n1 = head;
-  Node n2 = head;
-  while (n2.next != null && n2.next.next != null) { // find mid node
-    n1 = n1.next; // n1 -> mid
-    n2 = n2.next.next; // n2 -> end
-  }
-  n2 = n1.next; // n2 -> right part first node
-  n1.next = null; // mid.next -> null
-  Node n3 = null;
-  while (n2 != null) { // right part convert
-    n3 = n2.next; // n3 -> save next node
-    n2.next = n1; // next of right node convert
-    n1 = n2; // n1 move
-    n2 = n3; // n2 move
-  }
-  n3 = n1; // n3 -> save last node
-  n2 = head;// n2 -> left first node
-  boolean res = true;
-  while (n1 != null && n2 != null) { // check palindrome
-    if (n1.value != n2.value) {
-      res = false;
-      break;
+    if (head == null || head.next == null) return true;
+    Node n1 = head;
+    Node n2 = head;
+    while (n2.next != null && n2.next.next != null) { // find mid node
+        n1 = n1.next; // n1 -> mid
+        n2 = n2.next.next; // n2 -> end
     }
-    n1 = n1.next; // left to mid
-    n2 = n2.next; // right to mid
-  }
-  n1 = n3.next;
-  n3.next = null;
-  while (n1 != null) { // recover list
-    n2 = n1.next;
-    n1.next = n3;
-    n3 = n1;
-    n1 = n2;
-  }
-  return res;
+    n2 = n1.next; // n2 -> right part first node
+    n1.next = null; // mid.next -> null
+    Node n3 = null;
+    while (n2 != null) { // right part convert
+        n3 = n2.next; // n3 -> save next node
+        n2.next = n1; // next of right node convert
+        n1 = n2; // n1 move
+        n2 = n3; // n2 move
+    }
+    n3 = n1; // n3 -> save last node
+    n2 = head;// n2 -> left first node
+    boolean res = true;
+    while (n1 != null && n2 != null) { // check palindrome
+        if (n1.value != n2.value) {
+            res = false;
+            break;
+        }
+        n1 = n1.next; // left to mid
+        n2 = n2.next; // right to mid
+    }
+    n1 = n3.next;
+    n3.next = null;
+    while (n1 != null) { // recover list
+        n2 = n1.next;
+        n1.next = n3;
+        n3 = n1;
+        n1 = n2;
+    }
+    return res;
 }
 ```
 
@@ -940,52 +940,52 @@ Use 3 queue: traverse the list and enqueue the node in smaller, equal and bigger
 
 ```java
 Node listPartition2(Node head, int pivot) {
-  Node sH = null; // small head
-  Node sT = null; // small tail
-  Node eH = null; // equal head
-  Node eT = null; // equal tail
-  Node bH = null; // big head
-  Node bT = null; // big tail
-  Node next = null; // save next node
-  // every node distributed to three lists
-  while (head != null) {
-    next = head.next;
-    head.next = null;
-    if (head.value < pivot) {
-      if (sH == null) {
-        sH = head;
-        sT = head;
-      } else {
-        sT.next = head;
-        sT = head;
-      }
-    } else if (head.value == pivot) {
-      if (eH == null) {
-        eH = head;
-        eT = head;
-      } else {
-        eT.next = head;
-        eT = head;
-      }
-    } else {
-      if (bH == null) {
-        bH = head;
-        bT = head;
-      } else {
-        bT.next = head;
-        bT = head;
-      }
+    Node sH = null; // small head
+    Node sT = null; // small tail
+    Node eH = null; // equal head
+    Node eT = null; // equal tail
+    Node bH = null; // big head
+    Node bT = null; // big tail
+    Node next = null; // save next node
+    // every node distributed to three lists
+    while (head != null) {
+        next = head.next;
+        head.next = null;
+        if (head.value < pivot) {
+            if (sH == null) {
+                sH = head;
+                sT = head;
+            } else {
+                sT.next = head;
+                sT = head;
+            }
+        } else if (head.value == pivot) {
+            if (eH == null) {
+                eH = head;
+                eT = head;
+            } else {
+                eT.next = head;
+                eT = head;
+            }
+        } else {
+            if (bH == null) {
+                bH = head;
+                bT = head;
+            } else {
+                bT.next = head;
+                bT = head;
+            }
+        }
+        head = next;
     }
-    head = next;
-  }
-  // small and equal reconnect
-  if (sT != null) {
-    sT.next = eH;
-    eT = eT == null ? sT : eT;
-  }
-  // all reconnect
-  if (eT != null) eT.next = bH;
-  return sH != null ? sH : eH != null ? eH : bH;
+    // small and equal reconnect
+    if (sT != null) {
+        sT.next = eH;
+        eT = eT == null ? sT : eT;
+    }
+    // all reconnect
+    if (eT != null) eT.next = bH;
+    return sH != null ? sH : eH != null ? eH : bH;
 }
 ```
 
@@ -995,13 +995,13 @@ Or converse the list to array then partition.
 
 ```java
 class Node {
-  public int value;
-  public Node next;
-  public Node rand;
+    public int value;
+    public Node next;
+    public Node rand;
 
-  public Node(int data) {
-    this.value = data;
-  }
+    public Node(int data) {
+        this.value = data;
+    }
 }
 ```
 
@@ -1014,14 +1014,14 @@ class Node {
 ```java
 Node cur = head;
 while(cur != null) {
-  map.put(cur, new Node(cur.value));
-  cur = cur.next;
+    map.put(cur, new Node(cur.value));
+    cur = cur.next;
 }
 cur = head;
 while(cur != null) {
-  map.get(cur).next = map.get(cur.next);
-  map.get(cur).rand = map.get(cur.rand);
-  cur = cur.next;
+    map.get(cur).next = map.get(cur.next);
+    map.get(cur).rand = map.get(cur.rand);
+    cur = cur.next;
 }
 return map.get(head);
 ```
@@ -1032,37 +1032,37 @@ Then traverse this list, evert time we can get i->i'. If i.rand == j, i'.rand = 
 
 ```java
 Node copyListWithRand(Node head) {
-  if (head == null) return null;
-  Node cur = head;
-  Node next = null;
-  // copy node and link to every node
-  while (cur != null) {
-    // create i -> i'
-    next = cur.next;
-    cur.next = new Node(cur.value);
-    cur.next.next = next;
-    cur = next;
-  }
-  cur = head;
-  Node curCopy = null;
-  // set copy node rand
-  while (cur != null) {
-    next = cur.next.next;
-    curCopy = cur.next;
-    curCopy.rand = cur.rand != null ? cur.rand.next : null;
-    cur = next;
-  }
-  Node res = head.next;
-  cur = head;
-  // split
-  while (cur != null) {
-    next = cur.next.next;
-    curCopy = cur.next;
-    cur.next = next;
-    curCopy.next = next != null ? next.next : null;
-    cur = next;
-  }
-  return res;
+    if (head == null) return null;
+    Node cur = head;
+    Node next = null;
+    // copy node and link to every node
+    while (cur != null) {
+        // create i -> i'
+        next = cur.next;
+        cur.next = new Node(cur.value);
+        cur.next.next = next;
+        cur = next;
+    }
+    cur = head;
+    Node curCopy = null;
+    // set copy node rand
+    while (cur != null) {
+        next = cur.next.next;
+        curCopy = cur.next;
+        curCopy.rand = cur.rand != null ? cur.rand.next : null;
+        cur = next;
+    }
+    Node res = head.next;
+    cur = head;
+    // split
+    while (cur != null) {
+        next = cur.next.next;
+        curCopy = cur.next;
+        cur.next = next;
+        curCopy.next = next != null ? next.next : null;
+        cur = next;
+    }
+    return res;
 }
 ```
 
@@ -1107,94 +1107,94 @@ If not, from the start of loop1 to find loop2's start, if find it, this case is 
 
 ```java
 Node getIntersectNode(Node head1, Node head2) {
-  if (head1 == null || head2 == null) {
+    if (head1 == null || head2 == null) {
+        return null;
+    }
+    Node loop1 = getLoopNode(head1);
+    Node loop2 = getLoopNode(head2);
+    if (loop1 == null && loop2 == null) {
+        return noLoop(head1, head2, null);
+    }
+    if (loop1 != null && loop2 != null) {
+        return bothLoop(head1, loop1, head2, loop2);
+    }
     return null;
-  }
-  Node loop1 = getLoopNode(head1);
-  Node loop2 = getLoopNode(head2);
-  if (loop1 == null && loop2 == null) {
-    return noLoop(head1, head2, null);
-  }
-  if (loop1 != null && loop2 != null) {
-    return bothLoop(head1, loop1, head2, loop2);
-  }
-  return null;
 }
 
 public static Node getLoopNode(Node head) {
-  // return the circle entry if there is one
-  if (head == null || head.next == null || head.next.next == null) {
-    return null;
-  }
-  Node n1 = head.next; // n1 -> slow
-  Node n2 = head.next.next; // n2 -> fast
-  while (n1 != n2) {
-    if (n2.next == null || n2.next.next == null) {
-      return null;
+    // return the circle entry if there is one
+    if (head == null || head.next == null || head.next.next == null) {
+        return null;
     }
-    n2 = n2.next.next;
-    n1 = n1.next;
-  }
-  n2 = head; // n2 -> walk again from head
-  while (n1 != n2) {
-    n1 = n1.next;
-    n2 = n2.next;
-  }
-  return n1;
+    Node n1 = head.next; // n1 -> slow
+    Node n2 = head.next.next; // n2 -> fast
+    while (n1 != n2) {
+        if (n2.next == null || n2.next.next == null) {
+            return null;
+        }
+        n2 = n2.next.next;
+        n1 = n1.next;
+    }
+    n2 = head; // n2 -> walk again from head
+    while (n1 != n2) {
+        n1 = n1.next;
+        n2 = n2.next;
+    }
+    return n1;
 }
 
 Node noLoop(Node head1, Node head2, Node end) {
-  // from head1 and head2 to find the same end, if found return the first intersect node
-  if (head1 == null || head2 == null) {
-    return null;
-  }
-  Node cur1 = head1; // list1
-  Node cur2 = head2; // list2
-  int n = 0;
-  while (cur1.next != end) {
-    // find list1's end and count list1's length
-    n++;
-    cur1 = cur1.next;
-  }
-  while (cur2.next != end) {
-    // find list2's end and count list2's length
-    n--;
-    cur2 = cur2.next;
-  }
-  if (cur1 != cur2) {
-    // no same end -> no intersect node
-    return null;
-  }
-  cur1 = n > 0 ? head1 : head2; // cur1 = the longer list head
-  cur2 = cur1 == head1 ? head2 : head1; // cur2 = the other
-  n = Math.abs(n); // get the diff
-  // find the intersect
-  while (n != 0) {
-    n--;
-    cur1 = cur1.next;
-  }
-  while (cur1 != cur2) {
-    cur1 = cur1.next;
-    cur2 = cur2.next;
-  }
-  return cur1;
+    // from head1 and head2 to find the same end, if found return the first intersect node
+    if (head1 == null || head2 == null) {
+        return null;
+    }
+    Node cur1 = head1; // list1
+    Node cur2 = head2; // list2
+    int n = 0;
+    while (cur1.next != end) {
+        // find list1's end and count list1's length
+        n++;
+        cur1 = cur1.next;
+    }
+    while (cur2.next != end) {
+        // find list2's end and count list2's length
+        n--;
+        cur2 = cur2.next;
+    }
+    if (cur1 != cur2) {
+        // no same end -> no intersect node
+        return null;
+    }
+    cur1 = n > 0 ? head1 : head2; // cur1 = the longer list head
+    cur2 = cur1 == head1 ? head2 : head1; // cur2 = the other
+    n = Math.abs(n); // get the diff
+    // find the intersect
+    while (n != 0) {
+        n--;
+        cur1 = cur1.next;
+    }
+    while (cur1 != cur2) {
+        cur1 = cur1.next;
+        cur2 = cur2.next;
+    }
+    return cur1;
 }
 
 Node bothLoop(Node head1, Node loop1, Node head2, Node loop2) {
-  Node cur1 = null;
-  Node cur2 = null;
-  if (loop1 == loop2) {
-    return noLoop(head1, head2, loop1);
-  } else {
-    cur1 = loop1.next;
-    while (cur1 != loop1) {
-      if (cur1 == loop2) {
-        return loop1;
-      }
-      cur1 = cur1.next;
+    Node cur1 = null;
+    Node cur2 = null;
+    if (loop1 == loop2) {
+        return noLoop(head1, head2, loop1);
+    } else {
+        cur1 = loop1.next;
+        while (cur1 != loop1) {
+            if (cur1 == loop2) {
+                return loop1;
+            }
+            cur1 = cur1.next;
+        }
+        return null;
     }
-    return null;
-  }
 }
 ```
 
@@ -1204,15 +1204,15 @@ Node bothLoop(Node head1, Node loop1, Node head2, Node loop2) {
 
 ```java
 Node reverseList(Node head) {
-  Node pre = null;
-  Node next = null;
-  while (head != null) {
-    next = head.next;
-    head.next = pre;
-    pre = head;
-    head = next;
-  }
-  return pre;
+    Node pre = null;
+    Node next = null;
+    while (head != null) {
+        next = head.next;
+        head.next = pre;
+        pre = head;
+        head = next;
+    }
+    return pre;
 }
 ```
 
@@ -1224,18 +1224,18 @@ Judge if A[0] or A[N-1] is less-value. If A[0] and A[N-1] are both not less-valu
 
 ```java
 int getLessIndex(int[] arr) {
-  if (arr == null || arr.length == 0) return;
-  int N = arr.length;
-  if (N == 1 || arr[0] < arr[1]) return 0;
-  if (arr[N - 1] < arr[N - 2]) return N - 1;
-  int lo = 1, hi = N - 2;
-  while (lo < hi) {
-    int mid = lo + (hi - lo) / 2;
-    if (arr[mid] > arr[mid - 1]) hi = mid - 1;
-    else if (arr[mid] > arr[mid + 1]) lo = mid + 1;
-    else return mid;
-  }
-  return lo;
+    if (arr == null || arr.length == 0) return;
+    int N = arr.length;
+    if (N == 1 || arr[0] < arr[1]) return 0;
+    if (arr[N - 1] < arr[N - 2]) return N - 1;
+    int lo = 1, hi = N - 2;
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (arr[mid] > arr[mid - 1]) hi = mid - 1;
+        else if (arr[mid] > arr[mid + 1]) lo = mid + 1;
+        else return mid;
+    }
+    return lo;
 }
 ```
 
@@ -1253,22 +1253,22 @@ brute force solution $$O(n^2)$$&$$O(1)$$
 
 ```java
 int getWater(int[] arr) {
-  if (arr == null || arr.length < 3) {
-    return 0;
-  }
-  int value = 0;
-  for (int i = 1; i < arr.length - 1; i++) {
-    int leftMax = 0;
-    int rightMax = 0;
-    for (int l = 0; l < i; l++) {
-      leftMax = Math.max(arr[l], leftMax);
+    if (arr == null || arr.length < 3) {
+        return 0;
     }
-    for (int r = i + 1; r < arr.length; r++) {
-      rightMax = Math.max(arr[r], rightMax);
+    int value = 0;
+    for (int i = 1; i < arr.length - 1; i++) {
+        int leftMax = 0;
+        int rightMax = 0;
+        for (int l = 0; l < i; l++) {
+            leftMax = Math.max(arr[l], leftMax);
+        }
+        for (int r = i + 1; r < arr.length; r++) {
+            rightMax = Math.max(arr[r], rightMax);
+        }
+        value += Math.max(0, Math.min(leftMax, rightMax) - arr[i]);
     }
-    value += Math.max(0, Math.min(leftMax, rightMax) - arr[i]);
-  }
-  return value;
+    return value;
 }
 ```
 
@@ -1276,25 +1276,25 @@ better solution. Compute leftMax and rightMax in advance $$O(n)$$&$$O(n)$$
 
 ```java
 int getWater(int[] arr) {
-  if (arr == null || arr.length < 3) {
-    return 0;
-  }
-  int n = arr.length - 2;
-  int[] leftMaxs = new int[n];
-  leftMaxs[0] = arr[0];
-  for (int i = 1; i < n; i++) {
-    leftMaxs[i] = Math.max(leftMaxs[i - 1], arr[i]);
-  }
-  int[] rightMaxs = new int[n];
-  rightMaxs[n - 1] = arr[n + 1];
-  for (int i = n - 2; i >= 0; i--) {
-    rightMaxs[i] = Math.max(rightMaxs[i + 1], arr[i + 2]);
-  }
-  int value = 0;
-  for (int i = 1; i <= n; i++) {
-    value += Math.max(0, Math.min(leftMaxs[i - 1], rightMaxs[i - 1]) - arr[i]);
-  }
-  return value;
+    if (arr == null || arr.length < 3) {
+        return 0;
+    }
+    int n = arr.length - 2;
+    int[] leftMaxs = new int[n];
+    leftMaxs[0] = arr[0];
+    for (int i = 1; i < n; i++) {
+        leftMaxs[i] = Math.max(leftMaxs[i - 1], arr[i]);
+    }
+    int[] rightMaxs = new int[n];
+    rightMaxs[n - 1] = arr[n + 1];
+    for (int i = n - 2; i >= 0; i--) {
+        rightMaxs[i] = Math.max(rightMaxs[i + 1], arr[i + 2]);
+    }
+    int value = 0;
+    for (int i = 1; i <= n; i++) {
+        value += Math.max(0, Math.min(leftMaxs[i - 1], rightMaxs[i - 1]) - arr[i]);
+    }
+    return value;
 }
 ```
 
@@ -1302,19 +1302,19 @@ best two-pointer. $$O(n)$$&$$O(1)$$: Use 2 pointers `left` and `right`. Record `
 
 ```java
 int getWater(int[] arr) {
-  if (arr == null || arr.length < 3) return 0;
-  int res = 0, leftMax = arr[0], rightMax = arr[arr.length - 1];
-  int left = 1, right = arr.length - 2;
-  while (left <= right) {
-    if (leftMax <= rightMax) {
-      res += Math.max(0, leftMax - arr[left]);
-      leftMax = Math.max(leftMax, arr[left++]);
-    } else {
-      res += Math.max(0, rightMax - arr[right]);
-      rightMax = Math.max(rightMax, arr[right--]);
+    if (arr == null || arr.length < 3) return 0;
+    int res = 0, leftMax = arr[0], rightMax = arr[arr.length - 1];
+    int left = 1, right = arr.length - 2;
+    while (left <= right) {
+        if (leftMax <= rightMax) {
+            res += Math.max(0, leftMax - arr[left]);
+            leftMax = Math.max(leftMax, arr[left++]);
+        } else {
+            res += Math.max(0, rightMax - arr[right]);
+            rightMax = Math.max(rightMax, arr[right--]);
+        }
     }
-  }
-  return res;
+    return res;
 }
 ```
 
@@ -1330,15 +1330,15 @@ best $$O(n)$$&$$O(1)$$:  if `arr[i]` is positive, `sum[...i...]` will be larger,
 
 ```java
 int maxSum(int[] arr) {
-  if (arr == null || arr.length == 0) return 0;
-  int maxSum = Integer.MIN_VALUE;
-  int curSum = 0;
-  for (int i = 0; i < arr.length; i++) {
-    curSum += arr[i];
-    maxSum = Math.max(maxSum, curSum);
-    curSum = Math.max(curSum, 0);
-  }
-  return maxSum;
+    if (arr == null || arr.length == 0) return 0;
+    int maxSum = Integer.MIN_VALUE;
+    int curSum = 0;
+    for (int i = 0; i < arr.length; i++) {
+        curSum += arr[i];
+        maxSum = Math.max(maxSum, curSum);
+        curSum = Math.max(curSum, 0);
+    }
+    return maxSum;
 }
 ```
 
@@ -1350,21 +1350,21 @@ brute force $$O(n^2)$$&$$O(1)$$: for every i, find the left max and the right ma
 
 ```java
 int maxABS(int[] arr) {
-  int res = Integer.MIN_VALUE;
-  int maxLeft = 0;
-  int maxRight = 0;
-  for (int i = 0; i != arr.length - 1; i++) {
-    maxLeft = Integer.MIN_VALUE;
-    for (int j = 0; j != i + 1; j++) {
-      maxLeft = Math.max(arr[j], maxLeft);
+    int res = Integer.MIN_VALUE;
+    int maxLeft = 0;
+    int maxRight = 0;
+    for (int i = 0; i != arr.length - 1; i++) {
+        maxLeft = Integer.MIN_VALUE;
+        for (int j = 0; j != i + 1; j++) {
+            maxLeft = Math.max(arr[j], maxLeft);
+        }
+        maxRight = Integer.MIN_VALUE;
+        for (int j = i + 1; j != arr.length; j++) {
+            maxRight = Math.max(arr[j], maxRight);
+        }
+        res = Math.max(Math.abs(maxLeft - maxRight), res);
     }
-    maxRight = Integer.MIN_VALUE;
-    for (int j = i + 1; j != arr.length; j++) {
-      maxRight = Math.max(arr[j], maxRight);
-    }
-    res = Math.max(Math.abs(maxLeft - maxRight), res);
-  }
-  return res;
+    return res;
 }
 ```
 
@@ -1372,21 +1372,21 @@ better brute force $$O(n)$$&$$O(n)$$: find the left max and the right max then f
 
  ```java
 int maxABS(int[] arr) {
-  int[] lArr = new int[arr.length];
-  int[] rArr = new int[arr.length];
-  lArr[0] = arr[0];
-  rArr[arr.length - 1] = arr[arr.length - 1];
-  for (int i = 1; i < arr.length; i++) {
-    lArr[i] = Math.max(lArr[i - 1], arr[i]);
-  }
-  for (int i = arr.length - 2; i > -1; i--) {
-    rArr[i] = Math.max(rArr[i + 1], arr[i]);
-  }
-  int max = 0;
-  for (int i = 0; i < arr.length - 1; i++) {
-    max = Math.max(max, Math.abs(lArr[i] - rArr[i + 1]));
-  }
-  return max;
+    int[] lArr = new int[arr.length];
+    int[] rArr = new int[arr.length];
+    lArr[0] = arr[0];
+    rArr[arr.length - 1] = arr[arr.length - 1];
+    for (int i = 1; i < arr.length; i++) {
+        lArr[i] = Math.max(lArr[i - 1], arr[i]);
+    }
+    for (int i = arr.length - 2; i > -1; i--) {
+        rArr[i] = Math.max(rArr[i + 1], arr[i]);
+    }
+    int max = 0;
+    for (int i = 0; i < arr.length - 1; i++) {
+        max = Math.max(max, Math.abs(lArr[i] - rArr[i + 1]));
+    }
+    return max;
 }
  ```
 
@@ -1394,11 +1394,11 @@ best (not understand) $$O(n)$$&$$O(1)$$: compute the max of the array, then use 
 
 ```java
 int maxABS(int[] arr) {
-  int max = Integer.MIN_VALUE;
-  for (int i = 0; i < arr.length; i++) {
-    max = Math.max(arr[i], max);
-  }
-  return max - Math.min(arr[0], arr[arr.length - 1]);
+    int max = Integer.MIN_VALUE;
+    for (int i = 0; i < arr.length; i++) {
+        max = Math.max(arr[i], max);
+    }
+    return max - Math.min(arr[0], arr[arr.length - 1]);
 }
 ```
 
@@ -1428,17 +1428,17 @@ i  [4, 3, 5, 4, 3, 3, 6, 7], w = 3
 
 ```java
 int[] getMaxWindow(int[] arr, int w) {
-  if (arr == null || w < 1 || arr.length < w) return null;
-  LinkedList<Integer> qmax = new LinkedList<Integer>();
-  int[] res = new int[arr.length - w + 1];
-  int index = 0;
-  for (int i = 0; i < arr.length; i++) {
-    while (!qmax.isEmpty() && arr[qmax.peekLast()] <= arr[i]) qmax.pollLast();
-    qmax.addLast(i);
-    if (qmax.peekFirst() == i - w) qmax.pollFirst();//remove out-date index
-    if (i >= w - 1) res[index++] = arr[qmax.peekFirst()];//from w - 1, start to record every max of sliding windows
-  }
-  return res;
+    if (arr == null || w < 1 || arr.length < w) return null;
+    LinkedList<Integer> qmax = new LinkedList<Integer>();
+    int[] res = new int[arr.length - w + 1];
+    int index = 0;
+    for (int i = 0; i < arr.length; i++) {
+        while (!qmax.isEmpty() && arr[qmax.peekLast()] <= arr[i]) qmax.pollLast();
+        qmax.addLast(i);
+        if (qmax.peekFirst() == i - w) qmax.pollFirst();//remove out-date index
+        if (i >= w - 1) res[index++] = arr[qmax.peekFirst()];//from w - 1, start to record every max of sliding windows
+    }
+    return res;
 }
 ```
 
@@ -1456,21 +1456,21 @@ dp\[i\]\[j\]: the longest common prefix of A[i...] and B[j...]
 
 ```java
 int findLength(int[] A, int[] B) {
-  if (A == null || A.length == 0 || B == null || B.length == 0) {
-    return 0;
-  }
-
-  int[][] dp = new int[A.length + 1][B.length + 1];
-  int res = 0;
-  for (int i = A.length - 1; i >= 0; i--) {
-    for (int j = B.length - 1; j >= 0; j--) {
-      if (A[i] == B[j]) {
-        dp[i][j] = dp[i + 1][j + 1] + 1;
-        res = Math.max(res, dp[i][j]);
-      }
+    if (A == null || A.length == 0 || B == null || B.length == 0) {
+        return 0;
     }
-  }
-  return res;
+
+    int[][] dp = new int[A.length + 1][B.length + 1];
+    int res = 0;
+    for (int i = A.length - 1; i >= 0; i--) {
+        for (int j = B.length - 1; j >= 0; j--) {
+            if (A[i] == B[j]) {
+                dp[i][j] = dp[i + 1][j + 1] + 1;
+                res = Math.max(res, dp[i][j]);
+            }
+        }
+    }
+    return res;
 }
 ```
 
@@ -1484,18 +1484,18 @@ Recursion with cache
 
 ```java
 int lcs(int[] a, int alen, int[] b, int blen, int[][] mem){
-  if (alen < 0 || blen < 0) {
-    return 0;
-  }
-  if (mem[alen][blen] == 0) {
-    if (a[alen] == b[blen]) {
-      mem[alen][blen] = lcs(a, alen - 1, b, blen - 1, mem) + 1;
+    if (alen < 0 || blen < 0) {
+        return 0;
     }
-    else {
-      mem[alen][blen] = Math.max(lcs(a, alen - 1, b, blen, mem), lcs(a, alen, b, blen - 1, mem));
+    if (mem[alen][blen] == 0) {
+        if (a[alen] == b[blen]) {
+            mem[alen][blen] = lcs(a, alen - 1, b, blen - 1, mem) + 1;
+        }
+        else {
+            mem[alen][blen] = Math.max(lcs(a, alen - 1, b, blen, mem), lcs(a, alen, b, blen - 1, mem));
+        }
     }
-  }
-  return mem[alen][blen];
+    return mem[alen][blen];
 }
 ```
 
@@ -1517,23 +1517,23 @@ Count times solution $$O(n)$$: record current number as res and count times as c
 
 ```java
 int moreThanHalfNum(int[] nums) {
-  if (nums == null || nums.length == 0) {
-    throws new IllegalArgumentException();
-  }
-
-  int res = nums[0];
-  int count = 1;
-  for (int i = 1; i < nums.length; i++) {
-    if (res == nums[i]) {
-      count++;
-    } else {
-      if (--count == 0) {
-        count = 1;
-        res = arr[i];
-      }
+    if (nums == null || nums.length == 0) {
+        throws new IllegalArgumentException();
     }
-  }
-  return res;
+
+    int res = nums[0];
+    int count = 1;
+    for (int i = 1; i < nums.length; i++) {
+        if (res == nums[i]) {
+            count++;
+        } else {
+            if (--count == 0) {
+                count = 1;
+                res = arr[i];
+            }
+        }
+    }
+    return res;
 }
 ```
 
@@ -1553,24 +1553,216 @@ Similarly, we can count 2 numbers appears more than 1/3, 3 numbers appears more 
 
 ```java
 int numSubarrayBoundedMax(int[] A, int L, int R) {
-  if (A == null || A.length == 0 || L > R) {
-    return 0;
-  }
-
-  int res = 0, count = 0, head = 0;
-  for (int i = 0; i < A.length; i++) {
-    if (A[i] >= L && A[i] <= R) {
-      res += i - head + 1;
-      count = i - head + 1;
-    } else if (A[i] < L) {
-      res += count;
-    } else {
-      head = i + 1;
-      count = 0;
+    if (A == null || A.length == 0 || L > R) {
+        return 0;
     }
-  }
 
-  return res;
+    int res = 0, count = 0, head = 0;
+    for (int i = 0; i < A.length; i++) {
+        if (A[i] >= L && A[i] <= R) {
+            res += i - head + 1;
+            count = i - head + 1;
+        } else if (A[i] < L) {
+            res += count;
+        } else {
+            head = i + 1;
+            count = 0;
+        }
+    }
+
+    return res;
+}
+```
+
+### Combination Sum
+
+> Given a **set** of candidate numbers (**C**) and a target number (**T**), find all unique combinations in **C** where the candidate numbers sums to **T**.
+>
+> [Combination Sum](https://leetcode.com/problems/combination-sum/description/)
+>
+> *  **C** is without duplicates
+>
+>
+> * The **same** repeated number may be chosen from **C** unlimited number of times.
+>
+> * The solution set must not contain duplicate combinations.
+>
+> [Combination Sum II](https://leetcode.com/problems/combination-sum-ii/description/)
+>
+> * Each number in **C** may only be used **once** in the combination.
+> * The solution set must not contain duplicate combinations.
+>
+> [Combination Sum III](https://leetcode.com/problems/combination-sum-iii/description/)
+>
+> * **C** is [1, 2, 3, 4, 5, 6, 7, 8, 9]
+> * The solution set must not contain duplicate combinations.
+>
+> [Combination Sum IV](https://leetcode.com/problems/combination-sum-iv/description/)
+>
+> * **C** is without duplicates
+>
+>
+> * **Different sequences are counted as different combinations.**
+
+For I, DFS solution
+
+```java
+List<List<Integer>> combinationSum2(int[] candidates, int target) {
+    if (candidates == null || candidates.length == 0 || target < 0) {
+        return null;
+    }
+
+    List<List<Integer>> res = new ArrayList<>();
+    backtrack(candidates, target, 0, new ArrayList<>(), res);
+    return res;
+}
+
+void backtrack(int[] nums, int target, int startIndex, List<Integer> tmp, List<List<Integer>> res) {
+    if (target == 0) {
+        res.add(new ArrayList<>(tmp));
+        return;
+    }
+
+    for (int i = startIndex; i < nums.length; i++) {
+        if (nums[i] > target) continue;
+        tmp.add(nums[i]);
+        backtrack(nums, target - nums[i], i, tmp, res);
+        tmp.remove(tmp.size() - 1);
+    }
+}
+```
+
+For II, DFS solution too. The difference is using `sort` and `nums[i] == nums[i - 1]` to filter the same number and avoid duplicate sets.
+
+```java
+List<List<Integer>> combinationSum2(int[] candidates, int target) {
+    if (candidates == null || candidates.length == 0 || target < 0) {
+        return null;
+    }
+
+    Arrays.sort(candidates);
+
+    List<List<Integer>> res = new ArrayList<>();
+    backtrack(candidates, target, 0, new ArrayList<>(), res);
+    return res;
+}
+
+void backtrack(int[] nums, int target, int startIndex, List<Integer> tmp, List<List<Integer>> res) {
+    if (target == 0) {
+        res.add(new ArrayList<>(tmp));
+    }
+
+    for (int i = startIndex; i < nums.length; i++) {
+        if (nums[i] > target || i > startIndex && nums[i] == nums[i - 1]) continue;
+        tmp.add(nums[i]);
+        backtrack(nums, target - nums[i], i + 1, tmp, res);
+        tmp.remove(tmp.size() - 1);
+    }
+}
+```
+
+For III, DFS solution also works
+
+```java
+List<List<Integer>> combinationSum3(int k, int n) {
+    if (k <= 0 || n <= 0) {
+        return null;
+    }
+    List<List<Integer>> res = new ArrayList<>();
+    int[] nums = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    backtrack(nums, n, k, 0, new ArrayList<>(), res);
+    return res;
+}
+
+void backtrack(int[] nums, int target, int quantity, int startIndex, List<Integer> tmp, List<List<Integer>> res) {
+    if (tmp.size() > quantity) {
+        return;
+    }
+
+    if (target == 0 && tmp.size() == quantity) {
+        res.add(new ArrayList<>(tmp));
+        return;
+    }
+
+    for (int i = startIndex; i < nums.length; i++) {
+        if (nums[i] > target) continue;
+        tmp.add(nums[i]);
+        backtrack(nums, target - nums[i], quantity, i + 1, tmp, res);
+        tmp.remove(tmp.size() - 1);
+    }
+}
+```
+
+For IV, DFS solution is too slow now
+
+```java
+public int combinationSum4(int[] nums, int target) {
+    if (nums == null || nums.length == 0) return 0;
+    return backtrack(nums, target);
+}
+
+private int backtrack(int[] nums, int target) {
+    if (target == 0) {
+        return 1;
+    }
+
+    int res = 0;
+
+    for (int i = 0; i < nums.length; i++) {
+        if (nums[i] > target) continue;
+        res += backtrack(nums, target - nums[i]);
+    }
+    return res;
+}
+```
+
+DP solution
+
+```java
+public int combinationSum4(int[] nums, int target) {
+    if (nums == null || nums.length == 0) return 0;
+    int[] dp = new int[target + 1];
+    dp[0] = 1;
+    for (int curTarget = 1; curTarget < dp.length; curTarget++) {
+        for (int i = 0; i < nums.length; i++) {
+            if (curTarget >= nums[i]) {
+                dp[curTarget] += dp[curTarget - nums[i]];
+            }
+        }
+    }
+    return dp[target];
+}
+```
+
+### [Subarray Sum Equals K](https://leetcode.com/problems/subarray-sum-equals-k/description/)
+
+> Given an array of integers and an integer **k**, you need to find the total number of continuous subarrays whose sum equals to **k**.
+>
+> Input:nums = [1,1,1], k = 2
+> Output: 2
+
+While traversing the array:
+
+1. Use hashmap to store the current sum value `sum` and its occurences
+2. If map.contains(`sum` - k),  there is a subarray sum equals to `sum`-k, which means there is a subarray sum equals to k
+
+```java
+int subarraySum(int[] nums, int k) {
+    if (nums == null || nums.length == 0) return 0;
+    int res = 0;
+    Map<Integer, Integer> map = new HashMap<>();
+    map.put(0, 1);
+    for (int i = 0, sum = 0; i < nums.length; i++) {
+        sum += nums[i]; // current sum
+        if (map.containsKey(sum - k)) {
+            // There is a subarray sum equals to sum-k
+            // which means there is a subarray sum equals to k
+            res+= map.get(sum - k);
+        }
+        // store the occurrences of  the subarray sum in map
+        map.put(sum, map.getOrDefault(sum, 0) + 1);
+    }
+    return res;
 }
 ```
 
