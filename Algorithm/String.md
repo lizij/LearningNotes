@@ -12,18 +12,18 @@ From every index of B, start matching A. The time complexity is $$O(mn)$$
 
 ```java
 int contains(String s, String m) {
-  if (s == null || m == null || s.length() < 1 || s.length() < m.length()) return -1;
-  char[] str1 = s.toCharArray(), str2 = m.toCharArray();
-  int i = 0, j = 0;
-  while (i < str1.length && j < str2.length) {
-    if (str[i] == str2[j]) {
-      i++;
-      j++;
-    } else {
-      j = 0;
+    if (s == null || m == null || s.length() < 1 || s.length() < m.length()) return -1;
+    char[] str1 = s.toCharArray(), str2 = m.toCharArray();
+    int i = 0, j = 0;
+    while (i < str1.length && j < str2.length) {
+        if (str[i] == str2[j]) {
+            i++;
+            j++;
+        } else {
+            j = 0;
+        }
     }
-  }
-  return j == str2.length ? i - j : -1;
+    return j == str2.length ? i - j : -1;
 }
 ```
 
@@ -37,18 +37,18 @@ Set next[0] = -1, next[1] = 0, next[i] means if matching fails, set j to next[i]
 
 ```java
 int[] getNextArray(char[] ms) {
-  if (ms.length == 1) return new int[]{-1};
-  int[] next = new int[ms.length];
-  next[0] = -1; // start position
-  next[1] = 0;
-  int pos = 2; // computing current position of next
-  int cn = 0; // start with next[pos - 1], current next value
-  while(pos < next.length) {
-    if (ms[pos - 1] == ms[cn]) next[pos++] = ++cn; // ms[0...cn] == ms[pos-cn-1...pos-1]
-    else if (cn > 0) cn = next[cn]; // shrink to ms[0..ms[cn]]
-    else next[pos++] = 0; // return to start
-  }
-  return next;
+    if (ms.length == 1) return new int[]{-1};
+    int[] next = new int[ms.length];
+    next[0] = -1; // start position
+    next[1] = 0;
+    int pos = 2; // computing current position of next
+    int cn = 0; // start with next[pos - 1], current next value
+    while(pos < next.length) {
+        if (ms[pos - 1] == ms[cn]) next[pos++] = ++cn; // ms[0...cn] == ms[pos-cn-1...pos-1]
+        else if (cn > 0) cn = next[cn]; // shrink to ms[0..ms[cn]]
+        else next[pos++] = 0; // return to start
+    }
+    return next;
 }
 ```
 
@@ -75,21 +75,21 @@ A:           1234|a|bc1234a...
 
 ```java
 int contains(String s, String m) {
-  if (s == null || m == null || s.length() < 1 || s.length() < m.length()) return -1;
-  char[] str1 = s.toCharArray(), str2 = m.toCharArray();
-  int i = 0, j = 0;
-  int[] next = getNextArray(str2);
-  while (i < str1.length && j < str2.length) {
-    if (str[i] == str2[j]) {
-      // slide A and B at the same time
-      i++;
-      j++;
-    } else if (next[j] == -1) {
-      // same with j == 0, which means A has been slided to head
-      i++;
-    } else j = next[j]; // slide A to next[j]
-  }
-  return j == str2.length ? i - j : -1;
+    if (s == null || m == null || s.length() < 1 || s.length() < m.length()) return -1;
+    char[] str1 = s.toCharArray(), str2 = m.toCharArray();
+    int i = 0, j = 0;
+    int[] next = getNextArray(str2);
+    while (i < str1.length && j < str2.length) {
+        if (str[i] == str2[j]) {
+            // slide A and B at the same time
+            i++;
+            j++;
+        } else if (next[j] == -1) {
+            // same with j == 0, which means A has been slided to head
+            i++;
+        } else j = next[j]; // slide A to next[j]
+    }
+    return j == str2.length ? i - j : -1;
 }
 ```
 
@@ -131,13 +131,13 @@ C: 3("#1#2#1#"), R: 7, r:3
 
 ```java
 char[] manacherString(String str) {
-  char charArr = str.toCharArray();
-  char res = new char[str.length() * 2 + 1];
-  int index = 0;
-  for (int i = 0; i < res.length; i++) {
-    res[i] = (i & 1) == 0 ? '#' : charArr[index++];
-  }
-  return res;
+    char charArr = str.toCharArray();
+    char res = new char[str.length() * 2 + 1];
+    int index = 0;
+    for (int i = 0; i < res.length; i++) {
+        res[i] = (i & 1) == 0 ? '#' : charArr[index++];
+    }
+    return res;
 }
 ```
 
@@ -180,27 +180,27 @@ Because *R* increases strictly, the time complexity of Manacher is $$O(n)$$
 
 ```java
 int maxLcpsLength(String str) {
-  if (str == null || str.length() == 0) return 0;
-  char[] charArr = manacherString(str);
-  int[] r = new int[charArr.length];//r + 1
-  int C = -1;//C
-  int R = -1;//R
-  int max = Integer.MIN_VALUE;
-  for (int i = 0; i < charArr.length; i++) {
-    r[i] = i < R ? Math.min(r[2 * C - i], R - i) : 1;//give the least possbile r
-    while(i + r[i] < charArr.length && i - r[i] > -1 && charArr[i + r[i]] == charArr[i - r[i]]) {
-      // try to extend in valid indexes
-      // if i <= R && rj != R, this will fail at once
-      r[i]++;
-    }
+    if (str == null || str.length() == 0) return 0;
+    char[] charArr = manacherString(str);
+    int[] r = new int[charArr.length];//r + 1
+    int C = -1;//C
+    int R = -1;//R
+    int max = Integer.MIN_VALUE;
+    for (int i = 0; i < charArr.length; i++) {
+        r[i] = i < R ? Math.min(r[2 * C - i], R - i) : 1;//give the least possbile r
+        while(i + r[i] < charArr.length && i - r[i] > -1 && charArr[i + r[i]] == charArr[i - r[i]]) {
+            // try to extend in valid indexes
+            // if i <= R && rj != R, this will fail at once
+            r[i]++;
+        }
 
-    if (i + r[i] > R) {
-      R = i + r[i];
-      C = i;
+        if (i + r[i] > R) {
+            R = i + r[i];
+            C = i;
+        }
+        max = Math.max(max, r[i]);
     }
-    max = Math.max(max, r[i]);
-  }
-  return max - 1;
+    return max - 1;
 }
 ```
 
@@ -218,77 +218,77 @@ An example TrieTree for lower-case strings
 
 ```java
 class TrieNode {
-  int path; // how many strings are using this node
-  int end; // how many strings are ended with this node
-  TrieNode[] map; // default size 26, point to chars
-  TrieNode() {
-    path = 0;
-    end = 0;
-    map = new TrieNode[26];
-  }
+    int path; // how many strings are using this node
+    int end; // how many strings are ended with this node
+    TrieNode[] map; // default size 26, point to chars
+    TrieNode() {
+        path = 0;
+        end = 0;
+        map = new TrieNode[26];
+    }
 }
 
 class Trie {
-  TrieNode root;
+    TrieNode root;
 
-  Trie() {
-    root = new TrieNode();
-  }
-
-  void insert(String word) {
-    if (word == null) return;
-    char[] chs = word.toCharArray();
-    TrieNode node = root;
-    int index = 0;
-    for (int i = 0; i < chs.length; i++) {
-      index = chs[i] - 'a';
-      if (node.map[index] == null) node.map[index] = new TrieNode();
-      node = node.map[index];
-      node.path++;
+    Trie() {
+        root = new TrieNode();
     }
-    node.end++;
-  }
 
-  void delete(String word) {
-    if (!search(word)) return;
-    char[] chs = word.toCharArray();
-    TrieNode node = root;
-    int index = 0;
-    for (int i = 0; i < chs.length; i++) {
-      index = chs[i] - 'a';
-      if (--node.map[index].path == 0) {
-        node.map[index] = null;
-        return;
-      }
-      node = node.map[index];
+    void insert(String word) {
+        if (word == null) return;
+        char[] chs = word.toCharArray();
+        TrieNode node = root;
+        int index = 0;
+        for (int i = 0; i < chs.length; i++) {
+            index = chs[i] - 'a';
+            if (node.map[index] == null) node.map[index] = new TrieNode();
+            node = node.map[index];
+            node.path++;
+        }
+        node.end++;
     }
-    node.end--;
-  }
 
-  boolean search(String word) {
-    if (word == null) return false;
-    char[] chs = word.toCharArray();
-    TrieNode node = root;
-    int index = 0;
-    for (int i = 0; i < chs.length; i++) {
-      index = chs[i] - 'a';
-      if (node.map[index] == null) return false;
-      node = node.map[index];
+    void delete(String word) {
+        if (!search(word)) return;
+        char[] chs = word.toCharArray();
+        TrieNode node = root;
+        int index = 0;
+        for (int i = 0; i < chs.length; i++) {
+            index = chs[i] - 'a';
+            if (--node.map[index].path == 0) {
+                node.map[index] = null;
+                return;
+            }
+            node = node.map[index];
+        }
+        node.end--;
     }
-    return node.end > 0;
-  }
 
-  int prefixNumber(String pre) {
-    if (pre == null) return 0;
-    char[] chs = pre.toCharArray();
-    int index = 0;
-    for (int i = 0; i < chs.length; i++) {
-      index = chs[i] - 'a';
-      if (node.map[index] == null) return 0;
-      node = node.map[index];
+    boolean search(String word) {
+        if (word == null) return false;
+        char[] chs = word.toCharArray();
+        TrieNode node = root;
+        int index = 0;
+        for (int i = 0; i < chs.length; i++) {
+            index = chs[i] - 'a';
+            if (node.map[index] == null) return false;
+            node = node.map[index];
+        }
+        return node.end > 0;
     }
-    return node.path;
-  }
+
+    int prefixNumber(String pre) {
+        if (pre == null) return 0;
+        char[] chs = pre.toCharArray();
+        int index = 0;
+        for (int i = 0; i < chs.length; i++) {
+            index = chs[i] - 'a';
+            if (node.map[index] == null) return 0;
+            node = node.map[index];
+        }
+        return node.path;
+    }
 }
 ```
 
@@ -296,55 +296,55 @@ Another implementation using HashMap
 
 ```java
 class Node {
-  char c;
-  HashMap<Character, Node> children;
-  int end; // the index of the string ending with this
+    char c;
+    HashMap<Character, Node> children;
+    int end; // the index of the string ending with this
 
-  public Node(char c) {
-    this.c = c;
-    children = new HashMap<>();
-    end = -1;
-  }
+    public Node(char c) {
+        this.c = c;
+        children = new HashMap<>();
+        end = -1;
+    }
 }
 
 class Trie {
 
-  Node root;
-  List<String> words;
+    Node root;
+    List<String> words;
 
-  public Trie() {
-    // start with '\0' node
-    root = new Node('\0');
-    words = new ArrayList<>();
-  }
+    public Trie() {
+        // start with '\0' node
+        root = new Node('\0');
+        words = new ArrayList<>();
+    }
 
-  public void insert(String word) {
-    if (contains(word)) {
-      return;
+    public void insert(String word) {
+        if (contains(word)) {
+            return;
+        }
+        // from root to set each child in their position
+        Node cur = root;
+        for (char c: word.toCharArray()) {
+            cur.children.putIfAbsent(c, new Node(c));
+            cur = cur.children.get(c);
+        }
+        words.add(word);
+        cur.end = words.size() - 1;
     }
-    // from root to set each child in their position
-    Node cur = root;
-    for (char c: word.toCharArray()) {
-      cur.children.putIfAbsent(c, new Node(c));
-      cur = cur.children.get(c);
-    }
-    words.add(word);
-    cur.end = words.size() - 1;
-  }
 
-  public boolean contains(String word) {
-    if (word == null || word.length() == 0) {
-      return false;
+    public boolean contains(String word) {
+        if (word == null || word.length() == 0) {
+            return false;
+        }
+        Node cur = root;
+        for (char c: word.toCharArray()) {
+            if (!cur.children.containsKey(c)) {
+                return false;
+            }
+            cur = cur.children.get(c);
+        }
+        return cur.end >= 0;
     }
-    Node cur = root;
-    for (char c: word.toCharArray()) {
-      if (!cur.children.containsKey(c)) {
-        return false;
-      }
-      cur = cur.children.get(c);
-    }
-    return cur.end >= 0;
-  }
 }
 ```
 
@@ -375,12 +375,12 @@ So building next[] is the right way to solve this.
 
 ```java
 String shortestHaveTwice(String str) {
-  if (str == null || str.length == 0) return null;
-  char[] chs = str.toCharArray;
-  if (chs.length == 1) return str + str;
-  if (chs.length == 2) return chs[0] == chs[1] ? str + chs[0] : str + str;
-  int[] next = getNextArray(chs);
-  return str + str.substring(next[next.length - 1]);
+    if (str == null || str.length == 0) return null;
+    char[] chs = str.toCharArray;
+    if (chs.length == 1) return str + str;
+    if (chs.length == 2) return chs[0] == chs[1] ? str + chs[0] : str + str;
+    int[] next = getNextArray(chs);
+    return str + str.substring(next[next.length - 1]);
 }
 ```
 
@@ -392,14 +392,14 @@ Traditional way: DFS traverse and match A from root in B
 
 ```java
 boolean isSameTree(Node t1, Node t2) {
-  return t1 == null && t2 == null
-    || t1 != null && t2 != null && t1.value == t2.value && isSameTree(t1.left, t2.left) && isSameTree(t1.right, t2.right);
+    return t1 == null && t2 == null
+        || t1 != null && t2 != null && t1.value == t2.value && isSameTree(t1.left, t2.left) && isSameTree(t1.right, t2.right);
 }
 
 boolean isSubtree(Node t1, Node t2) { // t2 is a subtree of t1?
-  return isSameTree(t1, t2) 
-    || isSameTree(t1.left, t2) 
-    || isSameTree(t1.right, t2);
+    return isSameTree(t1, t2) 
+        || isSameTree(t1.left, t2) 
+        || isSameTree(t1.right, t2);
 }
 ```
 
@@ -415,14 +415,14 @@ Obviously, B's string cotains A's string
 
 ```java
 boolean isSubtree(Node t1, Node t2) {// t2 is a subtree of t1?
-  String t1Str = serialByPre(t1);
-  String t2Str = serialByPre(t2);
-  return contains(t1Str, t2Str) != -1;
+    String t1Str = serialByPre(t1);
+    String t2Str = serialByPre(t2);
+    return contains(t1Str, t2Str) != -1;
 }
 
 String serialByPre(Node node) {
-  if (node == null) return "#";
-  return node.value + "!" + serialByPre(node.left) + serialByPre(node.right);
+    if (node == null) return "#";
+    return node.value + "!" + serialByPre(node.left) + serialByPre(node.right);
 }
 ```
 
@@ -434,19 +434,19 @@ Use Manacher to get R to the end and C. Copy the reverse order substring from 0 
 
 ```java
 String shortestEnd(String str) {
-  //same as maxLcpsLength()
-  for (int i = 0; i < charArr.length; i++) {
     //same as maxLcpsLength()
-    if (R == charArr.length) {
-      maxContainsEnd = r[i];
-      break;
+    for (int i = 0; i < charArr.length; i++) {
+        //same as maxLcpsLength()
+        if (R == charArr.length) {
+            maxContainsEnd = r[i];
+            break;
+        }
     }
-  }
-  char[] res = new char[str.length() - maxContainsEnd + 1];
-  for (int i = 0; i < res.length; i++) {
-    res[res.length - 1 - i] = charArr[i * 2 + 1];
-  }
-  return String.valueOf(res);
+    char[] res = new char[str.length() - maxContainsEnd + 1];
+    for (int i = 0; i < res.length; i++) {
+        res[res.length - 1 - i] = charArr[i * 2 + 1];
+    }
+    return String.valueOf(res);
 }
 ```
 
@@ -466,11 +466,11 @@ eg. "abc" -> "abcabc": "cab", "bca", "abc" are all in.
 
 ```java
 boolean isRotation(String a, String b) {
-  if (a == null || b == null || a.length() != b.length()) {
-    return false;
-  }
-  String bb = b + b;
-  return contains(b2, a) != -1;
+    if (a == null || b == null || a.length() != b.length()) {
+        return false;
+    }
+    String bb = b + b;
+    return contains(b2, a) != -1;
 }
 ```
 
@@ -504,24 +504,24 @@ merge&reverse:	[n - k, n - k + 1, ..., n - 1, 0, 1, ..., n - k - 1]
 
 ```java
 void rotate(char[] chs, int k) {
-  if (chs == null) return;
-  int n = chs.length;
-  k = k % n;
-  k = k < 0 ? k + n ? k;
-  reverse(chs, 0, n - k - 1);
-  reverse(chs, n - k, n - 1);
-  reverse(chs, 0, n - 1);
+    if (chs == null) return;
+    int n = chs.length;
+    k = k % n;
+    k = k < 0 ? k + n ? k;
+    reverse(chs, 0, n - k - 1);
+    reverse(chs, n - k, n - 1);
+    reverse(chs, 0, n - 1);
 }
 
 void reverse(char[] chs, int start, int end) {
-  char tmp = 0;
-  while (start < end) {
-    tmp = chs[start];
-    chs[start] = chs[end];
-    chs[end] = tmp;
-    start++;
-    end--;
-  }
+    char tmp = 0;
+    while (start < end) {
+        tmp = chs[start];
+        chs[start] = chs[end];
+        chs[end] = tmp;
+        start++;
+        end--;
+    }
 }
 ```
 
@@ -553,11 +553,11 @@ eg. "ba", "b" -> "bab" < "bba", "ba" < "b"; "ab", "bc" -> "abbc" < "bcab", "ab" 
 
 ```java
 lowestString(String[] strs) {
-  if (strs == null || strs.length == 0) return "";
-  Arrays.sort(strs, (a, b) -> (a + b).compareTo(b + a));
-  StringBuilder builder = new StringBuilder();
-  for (int i = 0; i < strs.length; i++) res.append(strs[i]);
-  return res;
+    if (strs == null || strs.length == 0) return "";
+    Arrays.sort(strs, (a, b) -> (a + b).compareTo(b + a));
+    StringBuilder builder = new StringBuilder();
+    for (int i = 0; i < strs.length; i++) res.append(strs[i]);
+    return res;
 }
 ```
 
@@ -585,26 +585,26 @@ Greedy solution: only consider the last occurrence fo a letter
 
 ```java
 public List<Integer> partitionLabels(String S) {
-  if (S == null || S.length() == 0) {
-    return null;
-  }
-
-  List<Integer> res = new ArrayList<>();
-  int[] last = new int[26];
-  for (int i = 0; i < S.length(); i++) {
-    last[S.charAt(i) - 'a'] = i;
-  }
-
-  int j = 0, anchor = 0;
-  for (int i = 0; i < S.length(); i++) {
-    j = Math.max(j, last[S.charAt(i) - 'a']);
-    if (i == j) {
-      res.add(i - anchor + 1);
-      anchor = i + 1;
+    if (S == null || S.length() == 0) {
+        return null;
     }
-  }
 
-  return res;
+    List<Integer> res = new ArrayList<>();
+    int[] last = new int[26];
+    for (int i = 0; i < S.length(); i++) {
+        last[S.charAt(i) - 'a'] = i;
+    }
+
+    int j = 0, anchor = 0;
+    for (int i = 0; i < S.length(); i++) {
+        j = Math.max(j, last[S.charAt(i) - 'a']);
+        if (i == j) {
+            res.add(i - anchor + 1);
+            anchor = i + 1;
+        }
+    }
+
+    return res;
 }
 ```
 

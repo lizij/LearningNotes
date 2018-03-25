@@ -509,9 +509,7 @@ public void run() {
 
 如果使用很多**synchronized关键字**来同步控制，必然会导致**性能降低**
 
-### 同步
-
-#### Lock
+### Lock
 
 Lock可以确保任何时候只有一个线程可以进入临界区
 
@@ -535,7 +533,167 @@ class A {
 }
 ```
 
-#### 条件对象
+### ReentrantLock中的公平锁和非公平锁
+
+#### 概念
+
+`ReentrantLock`的实现是基于其内部类`FairSync`(公平锁)和`NonFairSync`(非公平锁)实现的。 
+
+公平锁：公平和非公平锁的队列都基于锁内部维护的一个双向链表，表结点Node的值就是每一个请求当前锁的线程。公平锁则在于每次都是依次从队首取值
+
+非公平锁：在等待锁的过程中， 如果有任意新的线程妄图获取锁，都是有很大的几率直接获取到锁的
+
+#### 可重入性
+
+基于`Thread.currentThread()`实现的，如果当前线程已经获得了执行序列中的锁， 那执行序列之后的所有方法都可以获得这个锁
+
+可重入性的实现基于下面代码片段的 `else if` 语句
+
+```java
+protected final boolean tryAcquire(int acquires) {
+    final Thread current = Thread.currentThread();
+    int c = getState();
+    if (c == 0) {
+        //...
+        // 尝试获取锁成功
+    }
+    else if (current == getExclusiveOwnerThread()) {
+        // 是当前线程，直接获取到锁。实现可重入性。
+        int nextc = c + acquires;
+        if (nextc < 0)
+            throw new Error("Maximum lock count exceeded");
+        setState(nextc);
+        return true;
+    }
+    return false;
+}
+```
+
+#### 实现分析
+
+`ReentrantLock` 的公平锁和非公平锁都委托了 `AbstractQueuedSynchronizer#acquire` 去请求获取
+
+```java
+public final void acquire(int arg) {
+    if (!tryAcquire(arg) &&
+        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+        selfInterrupt();
+}
+```
+
+* `tryAcquire` 是一个抽象方法，是**公平与非公平**的实现原理所在。
+* `addWaiter` 是将当前线程结点加入等待队列之中。**公平锁在锁释放后会严格按照等到队列去取后续值**，*而非公平锁在对于新晋线程有很大优势*。
+* `acquireQueued` 在多次循环中尝试获取到锁或者将当前线程阻塞。
+* `selfInterrupt` 如果线程在阻塞期间发生了中断，调用 `Thread.currentThread().interrupt()`中断当前线程。
+
+公平锁和非公平锁在锁的获取上都使用到了 `volatile `关键字修饰的`state`字段， 这是保证多线程环境下锁的获取与否的核心。 
+但是当并发情况下多个线程都读取到 `state == 0`时，则必须用到CAS技术，一门CPU的原子锁技术，可通过CPU对共享变量加锁的形式，实现数据变更的原子操作。 
+`volatile `和 CAS的结合是并发抢占的关键
+
+> `volatile`可以保证：
+>
+> * 任何进程在读取的时候，都会清空本进程里面持有的共享变量的值，强制从主存里面获取
+> * 任何进程在写入完毕的时候，都会强制将共享变量的值写会主存。 
+> * volatile 会干预指令重排。 
+> * volatile 实现了JMM规范的 happen-before 原则
+>
+> CAS是CPU提供的一门技术：
+>
+> * 使用CAS技术可以锁定住元素的值。[Intel开发文档, 第八章](https://www.intel.com/content/www/us/en/architecture-and-technology/64-ia-32-architectures-software-developer-vol-3a-part-1-manual.html) 
+> * 编译器在将线程持有的值与被锁定的值进行比较，相同则更新为更新的值。 
+> * CAS同样遵循JMM规范的 happen-before 原则。
+>
+> JMM 允许编译器在指令重排上自由发挥，除非程序员通过 **volatile**等 显式干预这种重排机制，建立起同步机制，保证多线程代码正确运行。见文章：[Java并发：volatile内存可见性和指令重排](http://blog.csdn.net/jiyiqinlovexx/article/details/50989328)。
+
+##### 公平锁
+
+公平锁的实现机理在于每次有线程来抢占锁的时候，都会检查一遍有没有等待队列，如果有， 当前线程会执行如下步骤：
+
+```java
+if (!hasQueuedPredecessors() &&
+    compareAndSetState(0, acquires)) {
+    setExclusiveOwnerThread(current);
+    return true;
+}
+```
+
+其中`hasQueuedPredecessors`是用于检查是否有等待队列的。
+
+```java
+public final boolean hasQueuedPredecessors() {
+    Node t = tail; // Read fields in reverse initialization order
+    Node h = head;
+    Node s;
+    return h != t &&
+        ((s = h.next) == null || s.thread != Thread.currentThread());
+}
+```
+
+##### 非公平锁
+
+非公平锁在实现的时候多次强调随机抢占：
+
+```java
+if (c == 0) {
+    if (compareAndSetState(0, acquires)) {
+        setExclusiveOwnerThread(current);
+        return true;
+    }
+}
+```
+
+与公平锁的区别在于新晋获取锁的进程会有多次机会去抢占锁。如果被加入了等待队列后则跟公平锁没有区别。
+
+#### 释放锁
+
+ReentrantLock锁的释放是逐级释放的，也就是说在**可重入性**场景中，必须要等到场景内所有的加锁的方法都释放了锁，当前线程持有的锁才会被释放！ 
+释放的方式很简单，state字段减一即可：
+
+```java
+protected final boolean tryRelease(int releases) {
+    //  releases = 1
+    int c = getState() - releases;
+    if (Thread.currentThread() != getExclusiveOwnerThread())
+        throw new IllegalMonitorStateException();
+    boolean free = false;
+    if (c == 0) {
+        free = true;
+        setExclusiveOwnerThread(null);
+    }
+    setState(c);
+    return free;
+}
+```
+
+#### 等待队列中元素的唤醒
+
+当当前拥有锁的线程释放锁之后， 且非公平锁无线程抢占，就开始线程唤醒的流程。 
+通过`tryRelease`释放锁成功，调用`LockSupport.unpark(s.thread);` 终止线程阻塞。
+
+```java
+private void unparkSuccessor(Node node) {
+    // 强行回写将被唤醒线程的状态
+    int ws = node.waitStatus;
+    if (ws < 0)
+        compareAndSetWaitStatus(node, ws, 0);
+    Node s = node.next;
+    // s为h的下一个Node, 一般情况下都是非Null的
+    if (s == null || s.waitStatus > 0) {
+        s = null;
+        // 否则按照FIFO原则寻找最先入队列的并且没有被Cancel的Node
+        for (Node t = tail; t != null && t != node; t = t.prev)
+            if (t.waitStatus <= 0)
+                s = t;
+    }
+    // 再唤醒它
+    if (s != null)
+        LockSupport.unpark(s.thread);
+}
+```
+
+[Java中的公平锁和非公平锁实现详解](http://blog.csdn.net/qyp199312/article/details/70598480)
+
+### 条件对象
 
 使用条件对象让线程进入等待状态
 
@@ -693,6 +851,8 @@ abstract void fun();
 
 # 类构造顺序
 
+## 执行顺序
+
 静态优先执行，父类优先于子类执行。静态代码块是在JVM加载类的时候执行的，而且静态代码块执行且仅执行一次
 
 1. 父类静态代码块
@@ -701,6 +861,29 @@ abstract void fun();
 4. 父类构造函数
 5. 子类非静态代码块
 6. 子类构造函数
+
+## 应用实例
+
+由于子类的静态代码块在父类的构造函数之前执行，所以可以用来进行一些针对子类的初始化操作
+
+```java
+class A {
+    public A() {
+        System.out.print("A");
+    }
+}
+
+class B extends A {
+    static {
+        System.out.print("B");
+    }
+    
+    public B() {
+    }
+}
+
+B mB = new B(); // 会输出BA
+```
 
 # 枚举类
 
@@ -1608,7 +1791,7 @@ FileInputStream fileInputStream = new FileInputStream(file);
 InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
 ```
 
-### 装饰器模式
+## 装饰器模式
 
 装饰器模式（Decorator Pattern）允许向一个现有的对象添加新的功能，同时又不改变其结构。这种类型的设计模式属于结构型模式，它是作为现有的类的一个包装。
 
@@ -1621,6 +1804,100 @@ InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
 InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
 //3、 构造缓冲字符流
 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+```
+
+## 桥接模式
+
+### 概念
+
+桥接（Bridge）是用于把抽象化与实现化解耦，使得二者可以独立变化。这种类型的设计模式属于结构型模式，它通过提供抽象化和实现化之间的桥接结构，来实现二者的解耦
+
+**何时使用：**实现系统可能有多个角度分类，每一种角度都可能变化。
+
+**如何解决：**把这种多角度分类分离出来，让它们独立变化，减少它们之间耦合
+
+### 使用
+
+![桥接模式的 UML 图](http://www.runoob.com/wp-content/uploads/2014/08/bridge_pattern_uml_diagram.jpg)
+
+创建桥接实现接口DrawAPI.java
+
+```java
+public interface DrawAPI {
+    public void drawCircle(int radius, int x, int y);
+}
+```
+
+创建实现了 DrawAPI接口的实体桥接实现类
+
+```java
+public class RedCircle implements DrawAPI {
+    @Override
+    public void drawCircle(int radius, int x, int y) {
+        System.out.println("Drawing Circle[ color: red, radius: "
+                           + radius +", x: " +x+", "+ y +"]");
+    }
+}
+
+public class GreenCircle implements DrawAPI {
+    @Override
+    public void drawCircle(int radius, int x, int y) {
+        System.out.println("Drawing Circle[ color: green, radius: "
+                           + radius +", x: " +x+", "+ y +"]");
+    }
+}
+```
+
+使用 DrawAPI接口创建抽象类 Shape.java
+
+```java
+public abstract class Shape {
+    protected DrawAPI drawAPI;
+    protected Shape(DrawAPI drawAPI){
+        this.drawAPI = drawAPI;
+    }
+    public abstract void draw();    
+}
+```
+
+创建实现了 Shape接口的实体类Circle.java
+
+```java
+public class Circle extends Shape {
+    private int x, y, radius;
+
+    public Circle(int x, int y, int radius, DrawAPI drawAPI) {
+        super(drawAPI);
+        this.x = x;  
+        this.y = y;  
+        this.radius = radius;
+    }
+
+    public void draw() {
+        drawAPI.drawCircle(radius,x,y);
+    }
+}
+```
+
+使用 Shape 和 DrawAPI类画出不同颜色的圆BridgePatternDemo.java
+
+```java
+public class BridgePatternDemo {
+    public static void main(String[] args) {
+        Shape redCircle = new Circle(100,100, 10, new RedCircle());
+        Shape greenCircle = new Circle(100,100, 10, new GreenCircle());
+
+        redCircle.draw();
+        greenCircle.draw();
+    }
+}
+```
+
+验证输出。
+
+```shell
+Drawing Circle[ color: red, radius: 10, x: 100, 100]
+Drawing Circle[  color: green, radius: 10, x: 100, 100]
 ```
 
 # 修饰符

@@ -1718,6 +1718,11 @@ private int backtrack(int[] nums, int target) {
 
 DP solution
 
+dp[i] : result for nums[] if target is i
+
+* If i >= nums[i], dp[i] = dp[i] + dp[i - nums[i]]
+* else dp[i] don't change
+
 ```java
 public int combinationSum4(int[] nums, int target) {
     if (nums == null || nums.length == 0) return 0;
@@ -1766,3 +1771,6 @@ int subarraySum(int[] nums, int k) {
 }
 ```
 
+### TargetSubsequenceSum
+
+See TargetSubsequenceSum in [RecursionDP.md](RecursionDP.md)

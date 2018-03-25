@@ -16,22 +16,22 @@ Pre-order(head, left, right)
 
 ```java
 void preOrder(Node head) {
-  if (head == null) return;
-  // print head.value
-  preOrder(head.left);
-  preOrder(head.right);
+    if (head == null) return;
+    // print head.value
+    preOrder(head.left);
+    preOrder(head.right);
 }
 
 void preOrder(Node head) {
-  if (head == null) return;
-  Stack<Node> stack = new Stack<>();
-  stack.add(head);
-  while (!stack.isEmpty()) {
-    head = stack.pop();
-    // print head.value
-    if (head.right != null) stack.push(head.right); // push head.right, 2nd to pop
-    if (head.left != null) stack.push(head.left); // push head.left, 1st to pop
-  }
+    if (head == null) return;
+    Stack<Node> stack = new Stack<>();
+    stack.add(head);
+    while (!stack.isEmpty()) {
+        head = stack.pop();
+        // print head.value
+        if (head.right != null) stack.push(head.right); // push head.right, 2nd to pop
+        if (head.left != null) stack.push(head.left); // push head.left, 1st to pop
+    }
 }
 ```
 
@@ -39,27 +39,27 @@ In-order(left, head, right)
 
 ```java
 void inOrder(Node head) {
-  if (head == null) return;
-  inOrder(head.left);
-  // print head.value
-  inOrder(head.right);
+    if (head == null) return;
+    inOrder(head.left);
+    // print head.value
+    inOrder(head.right);
 }
 
 void inOrder(Node head) {
-  Stack<Node> stack = new Stack<>();
-  while (!stack.isEmpty() || head != null) {
-    if (head != null) {
-      // move to the leftmost node
-      stack.push(head);
-      head = head.left; 
-    } else {
-      // no left node
-      head = stack.pop();
-      // print head.value
-      // move to head.right
-      head = head.right;
+    Stack<Node> stack = new Stack<>();
+    while (!stack.isEmpty() || head != null) {
+        if (head != null) {
+            // move to the leftmost node
+            stack.push(head);
+            head = head.left; 
+        } else {
+            // no left node
+            head = stack.pop();
+            // print head.value
+            // move to head.right
+            head = head.right;
+        }
     }
-  }
 }
 ```
 
@@ -67,50 +67,50 @@ Post-order(left, right, head)
 
 ```java
 void postOrder(Node head) {
-  if (head == null) return;
-  postOrder(head.left);
-  postOrder(head.right);
-  // print head.value
-}
-
-void postOrder(Node head) {
-  if (head == null) return;
-  Stack<Node> s1 = new Stack<>();
-  Stack<Node> s2 = new Stack<>();
-  s1.push(head);
-  while (!s1.isEmpty()) {
-    // use s1 to generate "head-right-left", push in s2 to generate "left-right-head"
-    head = s1.pop();
-    s2.push(head);
-    if (head.left != null) {
-      s1.push(head.left);
-    }
-    if (head.right != null) {
-      s1.push(head.right);
-    }
-  }
-  while (!s2.isEmpty()) {
-    head = s2.pop();
+    if (head == null) return;
+    postOrder(head.left);
+    postOrder(head.right);
     // print head.value
-  }
 }
 
 void postOrder(Node head) {
-  if (head == null) return;
-  Stack<Node> stack = new Stack<>();
-  stack.push(head);
-  Node current = null;
-  while (!stack.isEmpty()) {
-    current = stack.peek();
-    if (current.left != null && head != current.left && head != current.right) {
-      stack.push(current.left);
-    } else if (current.right != null && head != current.right) {
-      stack.push(current.right);
-    } else {
-      // print current.value
-      head = current;
+    if (head == null) return;
+    Stack<Node> s1 = new Stack<>();
+    Stack<Node> s2 = new Stack<>();
+    s1.push(head);
+    while (!s1.isEmpty()) {
+        // use s1 to generate "head-right-left", push in s2 to generate "left-right-head"
+        head = s1.pop();
+        s2.push(head);
+        if (head.left != null) {
+            s1.push(head.left);
+        }
+        if (head.right != null) {
+            s1.push(head.right);
+        }
     }
-  }
+    while (!s2.isEmpty()) {
+        head = s2.pop();
+        // print head.value
+    }
+}
+
+void postOrder(Node head) {
+    if (head == null) return;
+    Stack<Node> stack = new Stack<>();
+    stack.push(head);
+    Node current = null;
+    while (!stack.isEmpty()) {
+        current = stack.peek();
+        if (current.left != null && head != current.left && head != current.right) {
+            stack.push(current.left);
+        } else if (current.right != null && head != current.right) {
+            stack.push(current.right);
+        } else {
+            // print current.value
+            head = current;
+        }
+    }
 }
 ```
 
@@ -151,11 +151,11 @@ This is the same with:
 
 ```java
 void traverse(Node node) {
-  if (node == null) return;
-  // visit first time, in Morris if node.left == null, go to node.right
-  traverse(node.left);
-  // visit second time, in Morris, use mostright.right to return to node, then reset mostright.right and go to node.right
-  traverse(node.right);
+    if (node == null) return;
+    // visit first time, in Morris if node.left == null, go to node.right
+    traverse(node.left);
+    // visit second time, in Morris, use mostright.right to return to node, then reset mostright.right and go to node.right
+    traverse(node.right);
 }
 ```
 
@@ -163,28 +163,28 @@ plain morris
 
 ```java
 void morris(Node head) {
-  if (head == null) return;
-  Node cur = head;
-  Node mostright = null;
-  while (cur != null) {
-    if (cur.left != null) {
-      // cur.left != null, find mostright in cur.left tree
-      mostright = cur.left;
-      while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
-      if (mostright.right == null) {
-        // set link to cur and move to cur.left
-        mostright.right = cur;
-        cur = cur.left;
-      } else {
-        // reset mostright.right to null
-        mostright.right = null;
-        cur = cur.right;
-      }
-    } else {
-      // cur.left == null, move to cur.right
-      cur = cur.right;
+    if (head == null) return;
+    Node cur = head;
+    Node mostright = null;
+    while (cur != null) {
+        if (cur.left != null) {
+            // cur.left != null, find mostright in cur.left tree
+            mostright = cur.left;
+            while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
+            if (mostright.right == null) {
+                // set link to cur and move to cur.left
+                mostright.right = cur;
+                cur = cur.left;
+            } else {
+                // reset mostright.right to null
+                mostright.right = null;
+                cur = cur.right;
+            }
+        } else {
+            // cur.left == null, move to cur.right
+            cur = cur.right;
+        }
     }
-  }
 }
 ```
 
@@ -192,30 +192,30 @@ pre-order morris
 
 ```java
 void morris(Node head) {
-  if (head == null) return;
-  Node cur = head;
-  Node mostright = null;
-  while (cur != null) {
-    if (cur.left != null) {
-      // cur.left != null, find mostright in cur.left tree
-      mostright = cur.left;
-      while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
-      if (mostright.right == null) {
-        // set link to cur and move to cur.left
-        mostright.right = cur;
-        // print cur.value before go to cur.left
-        cur = cur.left;
-      } else {
-        // reset mostright.right to null
-        mostright.right = null;
-        cur = cur.right;
-      }
-    } else {
-      // cur.left == null, move to cur.right
-      // print cur.value before go to cur.right since cur.left == null
-      cur = cur.right;
+    if (head == null) return;
+    Node cur = head;
+    Node mostright = null;
+    while (cur != null) {
+        if (cur.left != null) {
+            // cur.left != null, find mostright in cur.left tree
+            mostright = cur.left;
+            while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
+            if (mostright.right == null) {
+                // set link to cur and move to cur.left
+                mostright.right = cur;
+                // print cur.value before go to cur.left
+                cur = cur.left;
+            } else {
+                // reset mostright.right to null
+                mostright.right = null;
+                cur = cur.right;
+            }
+        } else {
+            // cur.left == null, move to cur.right
+            // print cur.value before go to cur.right since cur.left == null
+            cur = cur.right;
+        }
     }
-  }
 }
 ```
 
@@ -228,22 +228,22 @@ void morris(Node head) {
     Node mostright = null;
     while (cur != null) {
         if (cur.left != null) {
-          	// cur.left != null, find mostright in cur.left tree
+            // cur.left != null, find mostright in cur.left tree
             mostright = cur.left;
             while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
             if (mostright.right == null) {
-              	// set link to cur and move to cur.left
+                // set link to cur and move to cur.left
                 mostright.right = cur;
                 cur = cur.left;
             } else {
-              	// reset mostright.right to null
+                // reset mostright.right to null
                 mostright.right = null;
-              	// print cur.value before go to cur.right
-              	cur = cur.right;
+                // print cur.value before go to cur.right
+                cur = cur.right;
             }
         } else {
-          	// cur.left == null, move to cur.right
-          	// print cur.value before go to cur.right
+            // cur.left == null, move to cur.right
+            // print cur.value before go to cur.right
             cur = cur.right;
         }
     }
@@ -369,104 +369,104 @@ Use probability to decide the location of an element
 
 ```java
 class SkipListNode {
-  Integer value;
-  ArrayList<SkipListNode> nextNodes;
+    Integer value;
+    ArrayList<SkipListNode> nextNodes;
 
-  SkipListNode(Integer value) {
-    this.value = value;
-    nextNodes = new ArrayList<SkipListNode>();
-  }
+    SkipListNode(Integer value) {
+        this.value = value;
+        nextNodes = new ArrayList<SkipListNode>();
+    }
 }
 
 class SkipList {
-  SkipListNode head;
-  int maxLevel;
-  int size;
-  double PROBABILITY = 0.5;
+    SkipListNode head;
+    int maxLevel;
+    int size;
+    double PROBABILITY = 0.5;
 
-  SkipList() {
-    size = 0;
-    maxLevel = 0;
-    head = new SkipListNode(null);
-    head.nextNodes.add(null);
-  }
-
-  void add(Integer newValue) {
-    if (!contains(newValue)) {
-      size++;
-      int level = 0;
-      while (Math.random() < PROBABILITY) {
-        level++;
-      }
-      while (level > maxLevel) {
+    SkipList() {
+        size = 0;
+        maxLevel = 0;
+        head = new SkipListNode(null);
         head.nextNodes.add(null);
-        maxLevel++;
-      }
-      SkipListNode newNode = new SkipListNode(newValue);
-      SkipListNode current = head;
-      do {
-        current = findNext(newValue, current, level);
-        newNode.nextNodes.add(0, current.nextNodes.get(level));
-        current.nextNodes.set(level, newNode);
-      } while (level-- > 0);
     }
-  }
 
-  void delete(Integer deleteValue) {
-    if (contains(deleteValue)) {
-      SkipListNode deleteNode = find(deleteValue);
-      size--;
-      int level = maxLevel;
-      SkipListNode current = head;
-      do {
-        current = findNext(deleteNode.value, current, level);
-        if (deleteNode.nextNodes.size() > level) {
-          current.nextNodes.set(level, deleteNode.nextNodes.get(level));
+    void add(Integer newValue) {
+        if (!contains(newValue)) {
+            size++;
+            int level = 0;
+            while (Math.random() < PROBABILITY) {
+                level++;
+            }
+            while (level > maxLevel) {
+                head.nextNodes.add(null);
+                maxLevel++;
+            }
+            SkipListNode newNode = new SkipListNode(newValue);
+            SkipListNode current = head;
+            do {
+                current = findNext(newValue, current, level);
+                newNode.nextNodes.add(0, current.nextNodes.get(level));
+                current.nextNodes.set(level, newNode);
+            } while (level-- > 0);
         }
-      } while (level-- > 0);
     }
-  }
 
-  // Returns the skiplist node with greatest value <= e
-  SkipListNode find(Integer e) {
-    return find(e, head, maxLevel);
-  }
-
-  // Returns the skiplist node with greatest value <= e
-  // Starts at node start and level
-  SkipListNode find(Integer e, SkipListNode current, int level) {
-    do {
-      current = findNext(e, current, level);
-    } while (level-- > 0);
-    return current;
-  }
-
-  // Returns the node at a given level with highest value less than e
-  SkipListNode findNext(Integer e, SkipListNode current, int level) {
-    SkipListNode next = current.nextNodes.get(level);
-    while (next != null) {
-      Integer value = next.value;
-      if (lessThan(e, value)) { // e < value
-        break;
-      }
-      current = next;
-      next = current.nextNodes.get(level);
+    void delete(Integer deleteValue) {
+        if (contains(deleteValue)) {
+            SkipListNode deleteNode = find(deleteValue);
+            size--;
+            int level = maxLevel;
+            SkipListNode current = head;
+            do {
+                current = findNext(deleteNode.value, current, level);
+                if (deleteNode.nextNodes.size() > level) {
+                    current.nextNodes.set(level, deleteNode.nextNodes.get(level));
+                }
+            } while (level-- > 0);
+        }
     }
-    return current;
-  }
 
-  boolean contains(Integer value) {
-    SkipListNode node = find(value);
-    return node != null && node.value != null && equalTo(node.value, value);
-  }
+    // Returns the skiplist node with greatest value <= e
+    SkipListNode find(Integer e) {
+        return find(e, head, maxLevel);
+    }
 
-  boolean lessThan(Integer a, Integer b) {
-    return a.compareTo(b) < 0;
-  }
+    // Returns the skiplist node with greatest value <= e
+    // Starts at node start and level
+    SkipListNode find(Integer e, SkipListNode current, int level) {
+        do {
+            current = findNext(e, current, level);
+        } while (level-- > 0);
+        return current;
+    }
 
-  boolean equalTo(Integer a, Integer b) {
-    return a.compareTo(b) == 0;
-  }
+    // Returns the node at a given level with highest value less than e
+    SkipListNode findNext(Integer e, SkipListNode current, int level) {
+        SkipListNode next = current.nextNodes.get(level);
+        while (next != null) {
+            Integer value = next.value;
+            if (lessThan(e, value)) { // e < value
+                break;
+            }
+            current = next;
+            next = current.nextNodes.get(level);
+        }
+        return current;
+    }
+
+    boolean contains(Integer value) {
+        SkipListNode node = find(value);
+        return node != null && node.value != null && equalTo(node.value, value);
+    }
+
+    boolean lessThan(Integer a, Integer b) {
+        return a.compareTo(b) < 0;
+    }
+
+    boolean equalTo(Integer a, Integer b) {
+        return a.compareTo(b) == 0;
+    }
 }
 ```
 
@@ -501,18 +501,18 @@ To balance the size of 2 heaps, we need to adjust 2 heaps by poll one's root and
 
 ```java
 class MedianHolder{
-  PriorityQueue<Integer> maxHeap; // the first n/2 part
-  PriorityQueue<Integer> minHeap; // the last n/2 part
-  void modifyTwoHeapSize() {
-    if (maxHeap.size() == minHeap.size() + 2) {
-      minHeap.add(maxHeap.poll());
-    } else if (minHeap.size() == maxHeap.size() + 2) {
-      maxHeap.add(minHeap.poll());
+    PriorityQueue<Integer> maxHeap; // the first n/2 part
+    PriorityQueue<Integer> minHeap; // the last n/2 part
+    void modifyTwoHeapSize() {
+        if (maxHeap.size() == minHeap.size() + 2) {
+            minHeap.add(maxHeap.poll());
+        } else if (minHeap.size() == maxHeap.size() + 2) {
+            maxHeap.add(minHeap.poll());
+        }
     }
-  }
 
-  void addNumber(int num) {
-    /*
+    void addNumber(int num) {
+        /*
     if (maxHeap.isEmpty()) {
       // maxHeap is empty -> no num added before
       maxHeap.add(num);
@@ -537,28 +537,28 @@ class MedianHolder{
       }
     }
     */
-    
-    if (maxHeap.isEmpty() || maxHeap.peek() >= num || !minHeap.isEmpty() && minHeap.peek() > num) {
-      maxHeap.add(num);
-    } else {
-      minHeap.add(num);
-    }
-    modifyTwoHeapSize();
-  }
 
-  Integer getMedian() {
-    int maxHeapSize = maxHeap.size();
-    int minHeapSize = minHeap.size();
-    if (maxHeapSize + minHeapSize == 0) {
-      return null;
+        if (maxHeap.isEmpty() || maxHeap.peek() >= num || !minHeap.isEmpty() && minHeap.peek() > num) {
+            maxHeap.add(num);
+        } else {
+            minHeap.add(num);
+        }
+        modifyTwoHeapSize();
     }
-    Integer maxHeapHead = maxHeap.peek();
-    Integer minHeapHead = minHeap.peek();
-    if (((maxHeapSize + minHeapSize) & 1) == 0) {
-      return (maxHeapHead + minHeapHead) / 2;
+
+    Integer getMedian() {
+        int maxHeapSize = maxHeap.size();
+        int minHeapSize = minHeap.size();
+        if (maxHeapSize + minHeapSize == 0) {
+            return null;
+        }
+        Integer maxHeapHead = maxHeap.peek();
+        Integer minHeapHead = minHeap.peek();
+        if (((maxHeapSize + minHeapSize) & 1) == 0) {
+            return (maxHeapHead + minHeapHead) / 2;
+        }
+        return maxHeapSize > minHeapSize ? maxHeapHead : minHeapHead;
     }
-    return maxHeapSize > minHeapSize ? maxHeapHead : minHeapHead;
-  }
 }
 ```
 
@@ -576,18 +576,18 @@ Build a [Huffman](https://en.wikipedia.org/wiki/Huffman_coding) tree
 
 ```java
 int lessMoney(int[] arr) {
-  PriorityQueue<Integer> queue = new PriorityQueue<>();
-  for (int i = 0; i < arr.length; i++) {
-    queue.add(arr[i]);
-  }
-  int sum = 0;
-  int cur = 0;
-  while (queue.size > 1) {
-    cur = queue.poll() + queue.poll();
-    sum += cur;
-    queue.add(cur);
-  }
-  return sum;
+    PriorityQueue<Integer> queue = new PriorityQueue<>();
+    for (int i = 0; i < arr.length; i++) {
+        queue.add(arr[i]);
+    }
+    int sum = 0;
+    int cur = 0;
+    while (queue.size > 1) {
+        cur = queue.poll() + queue.poll();
+        sum += cur;
+        queue.add(cur);
+    }
+    return sum;
 }
 ```
 
@@ -609,13 +609,13 @@ Firstly, define the node class
 
 ```java
 class Node {
-  int p;// profit
-  int c;// cost
+    int p;// profit
+    int c;// cost
 
-  Node(int p, int c) {
-    this.p = p; 
-    this.c = c;
-  }
+    Node(int p, int c) {
+        this.p = p; 
+        this.c = c;
+    }
 }
 ```
 
@@ -623,33 +623,33 @@ Now compute the max profit
 
 ```java
 int findMaximizedCapital(int k, int W, int[] Profits, int[] Capital) {
-  Node[] nodes = new Node[Profits.length];
-  for (int i = 0; i < Profits.length; i++) {
-    nodes[i] = new Node(Profits[i], Capital[i]);
-  }
+    Node[] nodes = new Node[Profits.length];
+    for (int i = 0; i < Profits.length; i++) {
+        nodes[i] = new Node(Profits[i], Capital[i]);
+    }
 
-  PriorityQueue<Node> minCostQ = new PriorityQueue<>((o1, o2) -> o1.c - o2.c);
-  PriorityQueue<Node> maxProfitQ = new PriorityQueue<>((o1, o2) -> o2.p - o1.p);
-  
-  for (int i = 0; i < nodes.length; i++) {
-    minCostQ.add(nodes[i]);
-  }
-  
-  for (int i = 0; i < k; i++) {
-    // unlock affordable jobs
-    while (!minCostQ.isEmpty() && minCostQ.peek().c <= W) {
-      maxProfitQ.add(minCostQ.poll());
+    PriorityQueue<Node> minCostQ = new PriorityQueue<>((o1, o2) -> o1.c - o2.c);
+    PriorityQueue<Node> maxProfitQ = new PriorityQueue<>((o1, o2) -> o2.p - o1.p);
+
+    for (int i = 0; i < nodes.length; i++) {
+        minCostQ.add(nodes[i]);
     }
-    
-    // no affordable jobs
-    if (maxProfitQ.isEmpty()) {
-      return W;
+
+    for (int i = 0; i < k; i++) {
+        // unlock affordable jobs
+        while (!minCostQ.isEmpty() && minCostQ.peek().c <= W) {
+            maxProfitQ.add(minCostQ.poll());
+        }
+
+        // no affordable jobs
+        if (maxProfitQ.isEmpty()) {
+            return W;
+        }
+
+        // do the most profitable job
+        W += maxProfitQ.poll().p;
     }
-    
-    // do the most profitable job
-    W += maxProfitQ.poll().p;
-  }
-  return W;
+    return W;
 }
 ```
 
@@ -672,14 +672,14 @@ Every time of folding will generate a pair of `d` and `u` in both sides of a fol
 
 ```java
 void printAllFolds(int N) {
-  printProcess(1, N, true);
+    printProcess(1, N, true);
 }
 
 void printProcess(int i, int N, boolean down) {
-  if (i > N) return;
-  printProcess(i + 1, N, true);
-  System.out.println(down ? "down " : "up ");
-  printProcess(i + 1, N, false);
+    if (i > N) return;
+    printProcess(i + 1, N, true);
+    System.out.println(down ? "down " : "up ");
+    printProcess(i + 1, N, false);
 }
 ```
 
@@ -687,14 +687,14 @@ void printProcess(int i, int N, boolean down) {
 
 ```java
 class Node {
-  int value;
-  Node left;
-  Node right;
-  Node parent; // head.parent = null
+    int value;
+    Node left;
+    Node right;
+    Node parent; // head.parent = null
 
-  Node(int data) {
-    this.value = data;
-  }
+    Node(int data) {
+        this.value = data;
+    }
 }
 ```
 
@@ -704,31 +704,31 @@ class Node {
 
 The descent of the node is:
 
-* If the node.right != null: the leftmost node of the subtree
+* If the node.right != null: the leftmost node of node.right
 * If the node.right == null:
-  * If the node.parent.left == node.parent
-  * If the node.parent.right == node: find the parent.parent until meet the last case or null (root node).
+  * If the node.parent.left == node.parent: return node.parent
+  * If the node.parent.right == node: find the node.parent.parent until meet the last case or null (root node).
 
 ```java
 Node getNextNode(Node node) {
-  if (node == null) return node;
+    if (node == null) return node;
 
-  if (node.right != null) return getLeftMost(node.right);
+    if (node.right != null) return getLeftMost(node.right);
 
-  Node parent = node.parent;
-  while (parent != null && parent.left != node) {
-    node = parent;
-    parent = node.parent;
-  }
-  return parent;
+    Node parent = node.parent;
+    while (parent != null && parent.left != node) {
+        node = parent;
+        parent = node.parent;
+    }
+    return parent;
 }
 
 Node getLeftMost(Node node) {
-  if (node == null) return node;
-  while (node.left != null) {
-    node = node.left;
-  }
-  return node;
+    if (node == null) return node;
+    while (node.left != null) {
+        node = node.left;
+    }
+    return node;
 }
 ```
 
@@ -762,7 +762,7 @@ Now we start to traverse all values in **timeline**. We can know the active even
 ```java
 int active = 0; // representing the active events at the current time, also the number of conflicts
 for (Integer i: timeline.values()) {
-  	active += i;
+    active += i;
 }
 ```
 
@@ -780,21 +780,21 @@ Two key points:
 
 ```java
 public int countNodes(TreeNode root) {
-  if (root == null) return 0;
-  int left = 0, right = 0;
-  TreeNode leftmost = root, rightmost = root;
-  while (leftmost != null) {
-    left++;
-    leftmost = leftmost.left;
-  }
+    if (root == null) return 0;
+    int left = 0, right = 0;
+    TreeNode leftmost = root, rightmost = root;
+    while (leftmost != null) {
+        left++;
+        leftmost = leftmost.left;
+    }
 
-  while (rightmost != null) {
-    right++;
-    rightmost = rightmost.right;
-  }
+    while (rightmost != null) {
+        right++;
+        rightmost = rightmost.right;
+    }
 
-  if (left == right) return (1 << left) - 1;
-  return countNodes(root.left) + countNodes(root.right) + 1;
+    if (left == right) return (1 << left) - 1;
+    return countNodes(root.left) + countNodes(root.right) + 1;
 }
 ```
 

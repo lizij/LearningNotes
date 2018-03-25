@@ -103,6 +103,53 @@ taskAffinity和singleTask配对使用时，它是具有该模式的Activity的�
 15. B.onStop()
 16. B.onDestroy()
 
+### 不同位置调用finish()的结果
+
+#### 表现
+
+1. 在onCreate方法中调用finish
+
+   在onCreate中，调用finish方法，不会显示出此Activity的界面，因为调用finish方法后，立马就会跑onDestroy。即跑的生命周期为：onCreate、onDestroy。
+
+2. 在onStart方法中调用finish
+
+   在onStart方法中，调用finish，会出现闪退，因为调用finish方法后，立马就会跑onStop方法。即跑的生命周期为：onCreate、onStart、onStop、onDestroy。
+
+
+3. 在onResume方法中调用finish
+
+   在onStart方法中，调用finish，会出现闪退，因为调用finish方法后，立马就会跑onStop方法。即跑的生命周期为：onCreate、onStart、onResume、onPause、onStop、onDestroy。
+
+
+4. 在onPause、onStop、onDestroy中调用finish
+
+   在onPause、onStop、onDestroy中，调用finish，显示正常。在退出时，正常退出。跑的生命周期为：onCreate、onStart、onResume、onPause、onStop、onDestroy。
+
+#### 原理
+
+在`mInstrumentation.callActivityOnCreate(activity, r.state)`中，执行完 onCreate()后，判断这时 activity 有没有finish ，没有就会接着执行 onStart()，否则会调用 destory()
+
+```java
+if (!r.activity.mFinished) {
+    activity.performStart();
+    r.stopped = false;
+}
+```
+
+执行完 onStart()后会执行` handleResumeActivity` 函数，其中`performResumeActivity` 函数中会调用 onResume
+
+```java
+if (r != null && !r.activity.mFinished) {
+    r.activity.performResume();
+}
+```
+
+ 如果此时finish，就不会执行finish()，会调用`ActivityManagerNative.getDefault().finishActivity(token, Activity.RESULT_CANCELED, null)`执行销毁
+
+[android 生命周期不同方法调用finish()，经历生命周期方法不一样，为什么？](https://github.com/android-cn/android-discuss/issues/430)
+
+[Activity的生命周期函数&finish方法](http://blog.csdn.net/hanhan1016/article/details/49991981)
+
 ## 异常情况下Activity数据的保存和恢复
 
 ### 保存和恢复数据
@@ -150,7 +197,35 @@ public void onRestoreInstanceState(Bundle savedInstanceState) {
 
 启动Activity涉及到Instrumentation,ActivityThread,ActivityManagerService(AMS)
 
-启动Activity的请求会由Instrumentation来处理，然后它通过Binder向AMS发送请求，AMS内部维护着一个ActivityStack并负责栈内的Activity的状态同步，AMS通过ActivityThread的`scheduleLaunchActivity`方法去同步Activity的状态从而完成生命周期方法的调用
+启动Activity的请求会由Instrumentation来处理，它通过Binder向AMS发送请求，AMS内部维护着一个ActivityStack并负责栈内的Activity的状态同步，AMS通过ActivityThread的`scheduleLaunchActivity`方法去同步Activity的状态从而完成生命周期方法的调用
+
+### 具体过程记录（非重点）
+
+1. **startActivity**的各种重载中最终都会调用startActivityForResult，其中调用了**mInstrumentation#execStartActivity**
+
+2. execStartActivity中调用了ActivityManagerNative.getDefault().startActivity，相当于**AMS#startActivity**
+
+   > 继承关系：ActivityManagerService->ActivityManagerNative->实现了IActivityManager的Binder
+
+3. checkStartActivity，检查启动Activity的结果，无法正确启动时抛出异常
+
+4. **AMS#startActivity**中，从ActivityStackSupervisor的startActivityMayWait开始转移，到starActivityLocked，startActivityUncheckedLocked，最终到**ActivityStack#resumeTopActivitiesLocked**
+
+5. **ActivityStack#resumeTopActivitiesLocked**，resumeTopActivityInnerLocked，ActivityStackSuperVisor#startSpecificActivityLocked，**realStartActivityLocked**，其中调用了app.thread.scheduleLaunchActivity，即**ApplicationThread#scheduleLaunchActivity**
+
+   > app.thread类型为IApplicationThread，继承自IInterface，是一个Binder接口，内部包含了大量启动停止Activity的接口，实现类为ApplicationThread
+
+![Activity启动过程](images/activity启动过程1.png)
+
+6. **ApplicationThread#scheduleLaunchActivity**发送启动消息到Handler H，调用ActivityThread#handleLaunchActivity，其中**performLaunchActivity**最终完成了：
+
+   1. 从ActivityClientRecord中获取待启动的Activity组件信息
+   2. 通过mInstrumentation的newActivity使用类加载器创建Activity对象
+   3. 通过LoadedApk的makeApplication尝试创建Application对象
+   4. 创建ContextImpl对象并通过Activity的attach完成重要数据初始化
+   5. 调用Activity的onCreate
+
+   > ContextImpl是Context的具体实现，通过Activity#attach与Activity建立联系，除此之外，attach还会建立Window并关联Activity
 
 ### Instrumentation
 
@@ -220,10 +295,10 @@ DNS劫持俗称抓包。通过对url的二次劫持，修改参数和返回值�
   ```java
   UpgradeModel  aResult = xxxx;//解析服务器返回的后数据
   if (aResult != null && aResult.getData() != null ) {
-    String url = aResult.getData().getDownUrl();
-    if (url == null || !TextUtils.equals(url, "这里是你知道的下载地址： 也可以只验证hostUrl")) {
-      // 如果符合，说明不是目标下载地址，就不去下载
-    }
+      String url = aResult.getData().getDownUrl();
+      if (url == null || !TextUtils.equals(url, "这里是你知道的下载地址： 也可以只验证hostUrl")) {
+          // 如果符合，说明不是目标下载地址，就不去下载
+      }
   }
   ```
 
@@ -233,8 +308,8 @@ DNS劫持俗称抓包。通过对url的二次劫持，修改参数和返回值�
   File file = DownUtils.getFile(url);
   // 监测是否要重新下载
   if (file.exists() && TextUtils.equals(aResult.getData().getHashCode(), EncryptUtils.Md5File(file))) {
-    && TextUtils.equals(aResult.getData().getKey(), DownLoadModel.getData()..getKey())
-      // 如果符合，就去安装 不符合重新下载 删除恶意文件
+      && TextUtils.equals(aResult.getData().getKey(), DownLoadModel.getData()..getKey())
+          // 如果符合，就去安装 不符合重新下载 删除恶意文件
   }
   ```
 
@@ -242,38 +317,76 @@ DNS劫持俗称抓包。通过对url的二次劫持，修改参数和返回值�
 
   ```java
   if (!SafetyUtils.checkFile(path + name, context)) {
-    return;
+      return;
   }
 
   if (!SafetyUtils.checkPagakgeName(context, path + name)) {
-    Toast.makeText(context, "升级包被恶意软件篡改 请重新升级下载安装", Toast.LENGTH_SHORT ).show();
-    DLUtils.deleteFile(path + name);
-    ((Activity)context).finish();
-    return;
+      Toast.makeText(context, "升级包被恶意软件篡改 请重新升级下载安装", Toast.LENGTH_SHORT ).show();
+      DLUtils.deleteFile(path + name);
+      ((Activity)context).finish();
+      return;
   }
 
   switch (SafetyUtils.checkPagakgeSign(context, path + name)) {
 
-    case SafetyUtils.SUCCESS:
-      DLUtils.openFile(path + name, context);
-      break;
+      case SafetyUtils.SUCCESS:
+          DLUtils.openFile(path + name, context);
+          break;
 
-    case SafetyUtils.SIGNATURES_INVALIDATE:
-      Toast.makeText(context, "升级包安全校验失败 请重新升级", Toast.LENGTH_SHORT ).show();
-      ((Activity)context).finish();
-      break;
+      case SafetyUtils.SIGNATURES_INVALIDATE:
+          Toast.makeText(context, "升级包安全校验失败 请重新升级", Toast.LENGTH_SHORT ).show();
+          ((Activity)context).finish();
+          break;
 
-    case SafetyUtils.VERIFY_SIGNATURES_FAIL:
-      Toast.makeText(context, "升级包为盗版应用 请重新升级", Toast.LENGTH_SHORT ).show();
-      ((Activity)context).finish();
-      break;
+      case SafetyUtils.VERIFY_SIGNATURES_FAIL:
+          Toast.makeText(context, "升级包为盗版应用 请重新升级", Toast.LENGTH_SHORT ).show();
+          ((Activity)context).finish();
+          break;
 
-    default:
-      break;
+      default:
+          break;
   }
   ```
 
 [App安全（一） Android防止升级过程被劫持和换包](http://blog.csdn.net/sk719887916/article/details/52233112)
+
+## 本地拒绝服务漏洞
+
+本地拒绝服务一般会导致正在运行的应用崩溃，首先影响用户体验，其次影响到后台的Crash统计数据，另外比较严重的后果是应用如果是系统级的软件，可能导致手机重启
+
+### 原理
+
+Android应用使用Intent机制在组件之间传递数据，如果应用在使用`getIntent()`，`getAction`，`intent.getXXXExtra()`获取到空、异常或畸形数据却没有进行异常捕获，应用就会发生Crash，从而拒绝服务。
+
+漏洞片段存在的activity的export属性必须为true才能够被外部应用调用攻击。正常情况下，该属性默认为false，如果有intent-filter属性，则其对应activity的export属性默认为true
+
+### 应用场景
+
+1. NullPointerException异常导致的拒绝服务，源于程序没有对`getAction()`等获取到的数据进行空指针判断，从而导致空指针异常而导致应用崩溃
+2. ClassCastException异常导致的拒绝服务, 源于程序没有对`getSerializableExtra()`等获取到的数据进行类型判断而进行强制类型转换，从而导致类型转换异常而导致应用崩溃
+3. IndexOutOfBoundsException异常导致的拒绝服务，源于程序没有对`getIntegerArrayListExtra()`等获取到的数据数组元素大小的判断，从而导致数组访问越界而导致应用崩溃
+4. ClassNotFoundException异常导致的拒绝服务，源于程序没有无法找到从getSerializableExtra ()获取到的序列化类对象的类定义，因此发生类未定义的异常而导致应用崩溃
+
+### 漏洞检测
+
+1. 首先我们要检测导出的组件有哪些（包含intent-filter属性的组件默认导出）
+
+2. 然后我们使用空intent去检测这些组件，针对不同组件可发送如下命令：
+
+   ```shell
+   adb shell am start -n com.example.hello/.TestActivity  
+   adb shell am startservice -n com.example.hello/.TestService  
+   adb shell am broadcast -n com.example.hello/.TestReceiver  
+   ```
+
+
+3. 解析key值，空intent导致的拒绝服务只是一部分，还有类型转换异常，数组越界等，这些我们都需要找到其关键函数，检测其是否有异常保护。自动化测试工具在这里的难点是找到关键函数的key值，action值，以及key对应的类型等来组装命令进行攻击。
+4. 通用型拒绝服务是由于应用中使用了getSerializableExtra()的API却没有进行异常保护，攻击者可以传入序列化数据，导致应用本地拒绝服务。此时不管传入的key值是否相同，都会抛出类未定义异常，相比前面需要解析key，自动化测试的通用性提高很多
+
+### 修复
+
+1. 将不必要导出的组件export属性设为false
+2. 在处理intent数据时捕获异常。
 
 # asset和resource
 
@@ -2010,6 +2123,214 @@ public class BinderPool {
 }
 ```
 
+# ListView和RecyclerView
+
+## ListView
+
+### ListView的内部点击事件
+
+在使用ListView的时候，我们通常会使用到其item的点击事件。而有些时候我们可能会用到item内部控件的点击操作，比如在item内部有个Button，当点击该Button时，删除所在的item。
+
+![itemdeleteclick](http://img.blog.csdn.net/20170129141401807?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvSlpob3dl/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+ListView布局文件
+
+```xml
+<ListView
+          android:id="@+id/listView"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          />
+```
+
+item布局文件list_item.xml中包括了一个TextView和一个Button，其中Button添加了一个属性`android:focusable="false"` ，目的是为了不让Button强制获取item的焦点，否则item的点击事件就没用了
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="horizontal">
+
+    <TextView
+              android:id="@+id/item_tv"
+              android:layout_width="0dp"
+              android:layout_height="wrap_content"
+              android:layout_weight="1"
+              android:gravity="center"
+              android:text="this is text"
+              android:textSize="24dp"/>
+
+    <Button
+            android:focusable="false"
+            android:id="@+id/item_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="删除"/>
+</LinearLayout>
+```
+
+实现Adapter时，采用接口回调，将点击item的position作为参数传出去
+
+```java
+private List<String> mList = new ArrayList<>();
+
+public MyAdapter(Context context, List<String> list) {
+    mContext = context;
+    mList = list;
+}
+
+@Override
+public View getView(final int i, View view, ViewGroup viewGroup) {
+    ViewHolder viewHolder = null;
+    if (view == null) {
+        viewHolder = new ViewHolder();
+        view = LayoutInflater.from(mContext).inflate(R.layout.list_item, null);
+        viewHolder.mTextView = (TextView) view.findViewById(R.id.item_tv);
+        viewHolder.mButton = (Button) view.findViewById(R.id.item_btn);
+        view.setTag(viewHolder);
+    } else {
+        viewHolder = (ViewHolder) view.getTag();
+    }
+    viewHolder.mTextView.setText(mList.get(i));
+    viewHolder.mButton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            mOnItemDeleteListener.onDeleteClick(i);
+        }
+    });
+    return view;
+}
+/**
+     * 删除按钮的监听接口
+     */
+public interface onItemDeleteListener {
+    void onDeleteClick(int i);
+}
+
+private onItemDeleteListener mOnItemDeleteListener;
+
+public void setOnItemDeleteClickListener(onItemDeleteListener mOnItemDeleteListener) {
+    this.mOnItemDeleteListener = mOnItemDeleteListener;
+}
+```
+
+Activity中用匿名类实现该接口
+
+```java
+List<String> mList = new ArrayList<>();
+initList();
+final MyAdapter adapter = new MyAdapter(MainActivity.this, mList);
+//ListView item 中的删除按钮的点击事件
+adapter.setOnItemDeleteClickListener(new MyAdapter.onItemDeleteListener() {
+    @Override
+    public void onDeleteClick(int i) {
+        mList.remove(i);
+        adapter.notifyDataSetChanged();
+    }
+});
+```
+
+[Android ListView：实现item内部控件的点击事件](http://blog.csdn.net/JZhowe/article/details/54767477)
+
+## RecyclerView
+
+### 使用
+
+在gradle中添加依赖
+
+```
+dependencies {
+    compile 'com.android.support:recyclerview-v7:24.2.1'
+}
+```
+
+在布局中添加RecyclerView
+
+```xml
+<android.support.v7.widget.RecyclerView
+                                        android:id="@+id/recycler_view"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="match_parent" />
+```
+
+新建Adapter
+
+```java
+public class FruitAdapter extends RecyclerView.Adapter<FruitAdapter.ViewHolder>{
+
+    private List<Fruit> mFruitList;
+
+    // 静态内部类ViewHolder
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        View fruitView;
+        ImageView fruitImage;
+        TextView fruitName;
+
+        public ViewHolder(View view) {
+            super(view);
+            fruitView = view;
+            fruitImage = (ImageView) view.findViewById(R.id.fruit_image);
+            fruitName = (TextView) view.findViewById(R.id.fruit_name);
+        }
+    }
+
+    // 初始化数据源
+    public FruitAdapter(List<Fruit> fruitList) {
+        mFruitList = fruitList;
+    }
+
+    // 创建ViewHolder实例，可以针对每个view实现点击事件
+    @Override
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.fruit_item, parent, false);
+        final ViewHolder holder = new ViewHolder(view);
+        holder.fruitView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int position = holder.getAdapterPosition();
+                Fruit fruit = mFruitList.get(position);
+                Toast.makeText(v.getContext(), "you clicked view " + fruit.getName(), Toast.LENGTH_SHORT).show();
+            }
+        });
+        holder.fruitImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int position = holder.getAdapterPosition();
+                Fruit fruit = mFruitList.get(position);
+                Toast.makeText(v.getContext(), "you clicked image " + fruit.getName(), Toast.LENGTH_SHORT).show();
+            }
+        });
+        return holder;
+    }
+
+    // 对子项数据进行赋值
+    @Override
+    public void onBindViewHolder(ViewHolder holder, int position) {
+        Fruit fruit = mFruitList.get(position);
+        holder.fruitImage.setImageResource(fruit.getImageId());
+        holder.fruitName.setText(fruit.getName());
+    }
+
+    @Override
+    public int getItemCount() {
+        return mFruitList.size();
+    }
+}
+```
+
+Activity中使用
+
+```java
+RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+LinearLayoutManager layoutManager = new LinearLayoutManager(this); // 竖直线性布局
+// layoutManager。setOrientation(LinearLayoutManager.HORIZONTAL); // 水平线性布局
+// StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL); // 3格网格布局，可以实现瀑布流布局
+recyclerView.setLayoutManager(layoutManager);
+FruitAdapter adapter = new FruitAdapter(fruitList);
+recyclerView.setAdapter(adapter);
+```
+
 # JSON
 
 ## 基础结构
@@ -2584,6 +2905,93 @@ public class MainActivity extends Activity {
 
 ![img](https://upload-images.jianshu.io/upload_images/944365-cf5c1a9d2dddaaca.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/456)
 
+## HandlerThread
+
+HandlerThread 是一个包含 Looper 的 Thread，我们可以直接使用这个 Looper 创建 Handler
+
+HandlerThread相当于Thread + Looper
+
+使用场景：**在子线程中执行耗时的、可能有多个任务的操作**。比如说多个网络请求操作，或者多文件 I/O 等等。
+
+```java
+private HandlerThread mHandlerThread;
+private Handler mThreadHandler;
+private Handler mMainHandler = new Handler();
+private TextView tvMain;
+
+@Override
+protected void onCreate(Bundle savedInstanceState)
+{
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+
+    mHandlerThread = new HandlerThread("check-message-coming");
+    mHandlerThread.start();
+
+    // 获取子线程的Looper创建Handler，可以执行耗时操作
+    mThreadHandler = new Handler(mHandlerThread.getLooper())
+    {
+        @Override
+        public void handleMessage(Message msg)
+        {
+            update();//模拟数据更新
+            if (isUpdateInfo)
+                mThreadHandler.sendEmptyMessage(MSG_UPDATE_INFO);
+        }
+    };
+}
+
+@Override
+protected void onResume()
+{
+    super.onResume();
+    //开始查询
+    isUpdateInfo = true;
+    mThreadHandler.sendEmptyMessage(MSG_UPDATE_INFO);
+}
+
+@Override
+protected void onPause()
+{
+    super.onPause();
+    //停止查询
+    //以防退出界面后Handler还在执行
+    isUpdateInfo = false;
+    mThreadHandler.removeMessages(MSG_UPDATE_INFO);
+}
+
+@Override
+protected void onDestroy()
+{
+    super.onDestroy();
+    //释放资源
+    mHandlerThread.quit();
+}
+
+private void update()
+{
+    try
+    {
+        //模拟耗时
+        Thread.sleep(2000);
+        mMainHandler.post(new Runnable() {
+            @Override
+            public void run()
+            {
+                String result = "每隔2秒更新一下数据：";
+                result += Math.random();
+                tvMain.setText(result);
+            }
+        });
+
+    } catch (InterruptedException e)
+    {
+        e.printStackTrace();
+    }
+
+}
+```
+
 ## IntentService
 
 ### 使用原因
@@ -2591,6 +2999,8 @@ public class MainActivity extends Activity {
 Android中的Service是用于后台服务的，当应用程序被挂到后台的时候，问了保证应用某些组件仍然可以工作而引入了Service这个概念，那么这里面要强调的是Service不是独立的进程，也不是独立的线程，它是依赖于应用程序的主线程的，也就是说，在更多时候不建议在Service中编写耗时的逻辑和操作，否则会引起ANR
 
 那么我们当我们编写的耗时逻辑，不得不被service来管理的时候，就需要引入IntentService，IntentService是继承Service的，那么它包含了Service的全部特性，当然也包含service的生命周期，那么与service不同的是，IntentService在执行onCreate操作的时候，内部开了一个线程，在onHandleIntent中执行耗时操作
+
+由于IntentService是服务，优先级高，不容易被系统杀死，适合执行一些高优先级的任务
 
 ### 原理
 
@@ -3393,6 +3803,151 @@ public boolean onInterceptTouchEvent(MotionEvent ev) {
 
 [Android事件冲突场景分析及一般解决思路](https://www.jianshu.com/p/c62fb2f25057)
 
+# Window
+
+即窗口，一般通过WindowManager，用于在桌面显示悬浮窗
+
+## 用法
+
+将一个Button添加到屏幕坐标为(100, 300)的位置上
+
+```java
+mFloatingButton = new Button(this);
+mFloatingButton.setText("click me");
+mLayoutParams = new WindowManager.LayoutParams(
+    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 0, 0,
+    PixelFormat.TRANSPARENT);
+mLayoutParams.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL
+                    | LayoutParams.FLAG_NOT_FOCUSABLE
+                    | LayoutParams.FLAG_SHOW_WHEN_LOCKED;
+mLayoutParams.type = LayoutParams.TYPE_SYSTEM_ERROR;
+mLayoutParams.gravity = Gravity.LEFT | Gravity.TOP;
+mLayoutParams.x = 100;
+mLayoutParams.y = 300;
+mFloatingButton.setOnTouchListener(this);
+mWindowManager.addView(mFloatingButton, mLayoutParams);
+```
+
+Flags参数，表示Window的属性，控制显示特性
+
+1. `FLAG_NOT_FOCUSABLE`：不需要获取焦点，也不需要接收各种输入事件，默认启动`FLAG_NOT_TOUCH_MODAL`，事件会传递给下层具有焦点的Window
+2. `FLAG_NOT_TOUCH_MODAL`：将当前Window区域的单击事件传给底层的Window，区域以内的自己处理
+3. `FLAG_SHOW_WHEN_LOCKED`：让Window显示在锁屏界面上
+
+type参数，表示Window的类型，控制显示层级
+
+* 默认层级：应用Window 1-99，子Window 1000-1999，系统Window 2000-2999，数字越大，层级越高，显示越靠上
+* 显示为系统层级，需要指定为`TYPE_SYSTEM_OVERLAY`或`TYPE_SYSTEM_ERROR`，同时声明权限`<use-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>`
+
+实现可以拖动的Window
+
+```java
+mFloatingButton.setOnTouchListener(this);
+
+// onTouch()
+@Override
+public boolean onTouch(View v, MotionEvent event) {
+    int rawX = (int) event.getRawX();
+    int rawY = (int) event.getRawY();
+    switch (event.getAction()) {
+        case MotionEvent.ACTION_DOWN: {
+            break;
+        }
+        case MotionEvent.ACTION_MOVE: {
+            // 获得点击事件在屏幕上的绝对坐标，然后更新LayoutParams
+            int x = (int) event.getX();
+            int y = (int) event.getY();
+            mLayoutParams.x = rawX;
+            mLayoutParams.y = rawY;
+            mWindowManager.updateViewLayout(mFloatingButton, mLayoutParams);
+            break;
+        }
+        case MotionEvent.ACTION_UP: {
+            break;
+        }
+        default:
+            break;
+    }
+
+    return false;
+}
+```
+
+## 原理
+
+每一个Window都对应一个View和一个ViewRootImpl，Window和View通过ViewRootImpl建立联系
+
+Window以View的形式存在，通过WindowManager接口提供`addView`，`updateViewLayout`和`removeView`方法
+
+WindowManager接口的实现类是WindowManagerImpl，其中又交给了WindowManagerGlobal来处理，这是典型的桥接模式。
+
+WindowManagerGlobal以工厂形式向外提供实例，这是典型的工厂模式。
+
+### Window的添加过程
+
+1. 检查参数是否合法，如果是子Window还需要调整一些布局参数
+
+2. 创建ViewRootImpl并将View添加到列表中
+
+3. 通过ViewRootImpl更新界面并完成Window的添加过程
+
+   > 该步骤通过ViewRootImpl的setView方法来完成，即View的绘制过程，其中会调用requestLayout完成异步刷新请求，scheduleTraversals正是View绘制的入口
+   >
+   > 完成绘制后会通过WindowSession完成Window的添加过程，WindowSession的实现类是Session，返回一个Binder对象，所以这是一个IPC过程，最终通过WindowManagerService实现Window的添加
+
+### Window的删除过程
+
+与添加过程类似，通过WIndowManagerImpl后再通过WindowManagerGlobal实现
+
+1. 通过findViewLocked查找待删除View的索引，调用removeViewLocked删除
+
+2. 主要使用异步删除：调用removeView，其中调用了ViewRootImpl的die方法，发送了请求删除的消息，将其加入mDyingViews中，再调用doDie->dispatchDetachedFromWindow
+
+3. dispatchDetachedFromWindow：垃圾回收
+
+   ->Session.remove（IPC）->View#onDetachedFromWindow（资源回收）
+
+   ->WindowManagerGlobal#doRemoveView（刷新数据）
+
+### Window的更新过程
+
+WindowManagerGlobal#updateViewLayout
+
+1. 更新View和ViewRootImpl的LayoutParams
+2. 调用scheduleTraversals重新布局
+3. 通过WindowSession更新Window视图
+
+## Window的创建过程
+
+### Activity的Window创建过程
+
+* Activity创建，Activity#performLaunchActivity()
+* activity#attach()
+* PolicyManager#makeNewWindow()
+* Activity#setContentView()
+
+> setContentView的步骤：
+>
+> 1. 如果没有DecorView则创建
+> 2. 将View添加到DecorView的mContentParent中
+> 3. 回调Activity的onContentChanged通知Activity视图已经发生改变
+
+### Dialog的Window创建过程
+
+1. 创建Window
+2. 初始化DecorView并将Dialog的视图添加到DecorView中
+3. 将DecorView添加到Window中并显示
+
+> 普通Dialog需要Activity的context，而不能使用Application的context，因为Dialog需要应用token，而只有Activity才有
+>
+> 系统Window比较特殊，它不需要token
+
+### Toast的Window创建过程
+
+Toast的显示和消失都需要通过NotificationManagerService（NMS）来实现，由于NMS在系统进程中，需要采用IPC方式调用
+
+NMS会跨进程调用Toast中TN中的方法，由于TN运行在Binder线程池中（TN本身就是一个Binder对象），需要通过Handler将其切换到当前进程中，所以Toast无法在没有Looper的线程中弹出。
+
 # 线程
 
 ## 线程与Looper
@@ -3405,7 +3960,11 @@ ThreadLocal实现了线程本地存储。所有线程共享同一个ThreadLocal�
 
 可以将ThreadLocal理解为一块存储区，将这一大块存储区分割为多块小的存储区，每一个线程拥有一块属于自己的存储区，那么对自己的存储区操作就不会影响其他线程。对于ThreadLocal，则每一小块存储区中就保存了与特定线程关联的Looper
 
+![这里写图片描述](http://img.blog.csdn.net/20160401173413434)
+
 当使用ThreadLocal维护变量时，ThreadLocal为每个使用该变量的线程提供独立的变量副本，所以每一个线程都可以独立地改变自己的副本，而不会影响其它线程所对应的副本
+
+[Android如何保证一个线程最多只能有一个Looper？](http://blog.csdn.net/sun927/article/details/51031268)
 
 ### Android中为什么主线程不会因为Looper.loop()方法造成阻塞
 
@@ -3469,6 +4028,41 @@ Activity的生命周期都是依靠主线程的`Looper.loop`，当收到不同Me
 [Android中为什么主线程不会因为Looper.loop()方法造成阻塞](http://blog.csdn.net/u013435893/article/details/50903082)
 
 [Android中为什么主线程不会因为Looper.loop()里的死循环卡死](https://www.zhihu.com/question/34652589)
+
+### 线程+Looper
+
+实现一个类似于HandlerThread的类，即具有Looper的Thread，同时提供管理Looper的功能
+
+```java
+class LooperThread extends Thread {
+    private Looper mLooper;
+    public LooperThread() {
+        
+    }
+    
+    @Override
+    public void run() {
+        Looper.prepare(); // 创建消息队列
+        synchronized (this) {
+            mLooper = Looper.myLooper();
+            notifyAll();
+        }
+        Looper.loop(); // 开启消息循环
+    }
+    
+    public Looper getLooper() {
+        return mLooper;
+    }
+    
+    public void stopLooper() {
+        mLooper.quitSafely();
+    }
+} 
+```
+
+quitSafely会通知消息队列退出，当消息队列被标记为退出状态时，MessageQueue的next方法就会返回null，loop方法中就会跳出循环，结束Looper
+
+quit会直接退出Looper，可能导致Handler发送的消息失效
 
 ## 线程间通信
 
@@ -3551,6 +4145,32 @@ Handler 、 Looper 、Message 这三者都与Android异步消息处理线程相�
 ### 共享内存
 
 最简单的方式就是公共变量
+
+## 线程池
+
+1. 重用线程池中的线程，避免线程创建和销毁带来的性能开销
+2. 有效控制最大并发数，避免大量线程抢占资源导致阻塞
+3. 管理线程，提供定时执行、指定间隔执行等功能
+
+### ThreadPoolExecutor
+
+```java
+ThreadPoolExecutor(int corePoolSize, // 核心线程数
+                   int maximumPoolSize, //最大线程数
+                   long keepAliveTime,  //非核心线程闲置的超时时长
+                   TimeUnit unit, // keepAliveTime的时间单位，毫秒，秒，分钟等
+                   BlockingQueue<Runnable> workQueue, // 任务队列，存储execute提交的Runnable
+                   ThreadFactory threadFactory) // 线程工厂，创建新线程
+```
+
+### 分类
+
+| 名称                 | 功能                                                         |
+| -------------------- | ------------------------------------------------------------ |
+| FixedThreadPool      | 线程数量固定，只有核心线程，空闲不回收<br>可以更快响应外界请求 |
+| CachedThreadPool     | 线程数量不定，只有非核心线程，超时60秒回收<br>执行大量耗时较少的任务 |
+| ScheduledThreadPool  | 核心线程数量固定，非核心线程数量不定，闲置立刻回收<br>执行定时任务和具有固定周期任务 |
+| SingleThreadExecutor | 只有一个核心线程<br>统一所有外界任务到一个线程中，避免同步问题 |
 
 # 性能优化
 
@@ -3855,6 +4475,59 @@ public class ViewHolder {
 采用线程池，避免程序中存在大量的Thread。
 
 线程池可以重用内部线程，从而避免了线程的创建和销毁所带来的性能开销，同时线程池还能有效地控制线程池的最大并发数，避免大量的线程因为相互抢占系统资源从而导致阻塞现象的发生
+
+## 防止内存溢出
+
+### 原因
+
+1. 资源未得到及时释放：比如Context，Cursor等资源使用后未及时释放
+2. 对象内存过大：Bitmap，xml等耗用内存较大
+3. static修饰的静态成员过多，生命周期过长
+
+### 解决
+
+1. 及时释放资源，避免加载过大资源，比如图片进行采样加载，及时使用`recycle()`释放资源
+2. 使用WeakReference代替强引用
+3. 减少static关键字使用
+4. 对于不可控的线程，尽量使用静态内部类，防止非静态内部类拥有外部类的强引用造成内存泄露
+5. 使用TraceView，heap工具，allocation tracker等工具进行筛查
+
+[Android性能优化(一)--关于内存溢出](https://blog.csdn.net/checkiming/article/details/60480773)
+
+## 防止内存抖动
+
+内存抖动是指在短时间内有大量的对象被创建或者被回收的现象
+
+### 表现
+
+* 在Memory Monitor里面查看到短时间发生了多次内存的涨跌
+* 通过Allocation Tracker来查看在短时间内，同一个栈中不断进出的相同对象
+
+### 原理
+
+核心：大量的对象被创建又在短时间内马上被释放
+
+瞬间产生大量的对象会严重占用Young Generation的内存区域，当达到阀值，剩余空间不够的时候，也会触发GC。即使每次分配的对象占用了很少的内存，但是他们叠加在一起会增加Heap的压力，从而触发更多其他类型的GC。这个操作有可能会影响到帧率，并使得用户感知到性能问题
+
+> 1. 最近刚分配的对象会放在Young Generation区域，这个区域的对象通常都是会快速被创建并且很快被销毁回收的，同时这个区域的GC操作速度也是比Old Generation区域的GC操作速度更快的
+>
+> 2. 执行GC操作的时候，任何线程的任何操作都会需要暂停，等待GC操作完成之后，其他操作才能够继续运行（所以垃圾回收运行的次数越少，对性能的影响就越少）
+>
+>    通常来说，单个的GC并不会占用太多时间，但是大量不停的GC操作则会显著占用帧间隔时间(16ms)。如果在帧间隔时间里面做了过多的GC操作，那么自然其他类似计算，渲染等操作的可用时间就变得少了
+
+### 避免
+
+1. 避免在for循环里面分配对象占用内存，需要尝试把对象的创建移到循环体之外
+2. 每次屏幕发生绘制以及动画执行过程中，onDraw方法都会被调用到，避免在onDraw方法里面执行复杂的操作，避免创建对象。
+3. 对于无法避免需要创建对象的情况，通过对象池来解决频繁创建与销毁的问题，但是这里需要注意结束使用之后，需要手动释放对象池中的对象
+
+> 通过GenericObjectPool\<T>构建对象池模型
+>
+> 对象池技术基本原理的核心有两点：缓存和共享，即对于那些被频繁使用的对象，在使用完后，不立即将它们释放，而是将它们缓存起来，以供后续的应用程序重复使用，从而减少创建对象和释放对象的次数，进而改善应用程序的性能。事实上，由于对象池技术将对象限制在一定的数量，也有效地减少了应用程序内存上的开销。
+
+[Android App解决卡顿慢之内存抖动及内存泄漏（发现和定位）](https://blog.csdn.net/huang_rong12/article/details/51628264)
+
+[Java对象池](https://blog.csdn.net/shimiso/article/details/9814917)
 
 ## 其他
 
