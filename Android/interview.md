@@ -436,6 +436,39 @@ registerReceiver(broadcast, filter);
 >
 > 静态注册是常驻型 ，也就是说当应用程序关闭后，如果有信息广播来，程序也会被系统调用自动运行
 
+## 工作原理（非重点）
+
+### 静态注册
+
+由PackageManagerService（PMS）完成
+
+### 动态注册
+
+1. registerReceiver，ContextImpl.registerReceiver，registerReceiverInternal，其中通过mPackageInfo获取IIntentReceiver（Binder）对象，跨进程向AMS发送广播注册请求
+
+   > BroadcastReceiver是Android组件，不能跨进程传递，需要通过IIntentReceiver中转，由LoadedApk.ReceiverDispatcher.InnerReceiver实现，与Service和ServiceDispatcher.InnerConnection的关系类似
+
+2. AMS#registerReceiver中，将InnerReceiver和IntentFilter存储起来，就完成了注册
+
+### 发送和接收
+
+1. sendBroadcast，ContextImpl#sendBroadcast，AMS#broadcastIntent，broadcastIntentLocked
+
+   > broadcastIntentLocked中默认不发送广播给已经停止的应用（包括手动停止的和安装后未启动过的）
+   >
+   > ```java
+   > // By default broadcasts do not go to stopped apps
+   > intent.addFlags(Intent.FLAG_EXCLUDE_STOPPED_PACKAGES);
+   > ```
+   >
+   > 如果确实确实需要发送广播给未启动的应用，只需要添加`FLAG_INCLUDE_STOPPED_PACKAGES`，以覆盖另一个标签
+
+2. broadcastLocked内，根据IntentFilter查找匹配的接收者，将接收者添加到BroadcastQueue中，再发送给接收者
+
+3. BroadcastQueue并没有立即发送广播，而是发送了一个BROADCAST_INTENT_MSG的消息，收到后调用processNextBroadcast，遍历无序广播mParallelBroadcasts，并通过deliverToRegisteredReceiverLocked，performReceiveLocked发送给接收者
+
+4. performReceiveLocked内，通过ApplicationThread#scheduleRegisteredReceiver调起应用程序，其中通过InnerReceiver#performReceive，LoadedApk.ReceiverDispatcher#performReceive实现广播接收，并调用onReceive
+
 # Bitmap加载
 
 ## 高效加载
@@ -1922,6 +1955,21 @@ Android内置的许多数据都是使用ContentProvider形式，供开发者调�
 
 自定义的ContentProvider注册时要提供authorities属性，应用需要访问的时候将属性包装成Uri.parse("content://authorities")。还可以设置permission，readPermission，writePermission来设置权限。 ContentProvider有query，delete，insert等方法，看起来貌似是一个数据库管理类，但其实可以用文件，内存数据等等一切来充当数据源，query返回的是一个Cursor，可以自定义继承AbstractCursor的类来实现
 
+#### 工作原理（非重点）
+
+> ContentProvider所在的进程启动后，ContentProvider会被同时启动并发布到AMS中，onCreate优先于Application的onCreate执行
+
+![ontentprovider启动过程](D:\Lizij\Document\LearningNotes\Android\images\contentprovider启动过程1.png)
+
+1. 应用启动时，从ActivityThread#main进入，创建ActivityThread实例并创建主线程消息队列
+2. 在attach中远程调用AMS#attachApplication并将ApplicationThread（Binder，IApplicationThread）提供给AMS
+3. 在attachApplication中调用ApplicationThread#bindApplication，通过ActivityThread的mH Handler切换到ActivityThread中执行，调用handleBindApplication
+4. ActivityThread创建Application对象，加载ContentProvider，然后执行Application#onCreate
+
+ContentProvider启动后就可以访问增删改查的四个接口，通过Binder调用。外界程序通过AMS根据Uri获取对应的Binder接口IContentProvider，再通过IContentProvider访问
+
+一般来说，`android:multiprocess`都指定为false，表示ContentProvider为单实例
+
 [Android之ContentProvider详解](http://blog.csdn.net/x605940745/article/details/16118939)
 
 ### Socket
@@ -3010,6 +3058,29 @@ IntentService在执行onCreate的方法的时候，其实开了一个线程Handl
 
 [Android中IntentService与Service的区别](http://blog.csdn.net/matrix_xu/article/details/7974393)
 
+## 启动和绑定过程
+
+### 启动
+
+1. **startService**，ContextImpl#startService，startServiceCommon，**AMS#startService**
+2. AMS通过ActiveServices#startServiceLocked，startServiceInnerLocked，bringUpServiceLocked，realStartServiceLocked，**ApplicationThread#scheduleCreateServcice**，创建Service对象并调用其onCreate，通过sendServiceArgsLocked调用其他生命周期方法
+3. 与启动Activity类似，最终由H#handleCreateService
+   1. 加载Service类并创建实例
+   2. 创建Application对象并调用onCreate
+   3. 创建ContextImpl并通过Service的attach建立联系
+   4. 调用Service的onCreate
+   5. sendServiceArgsLocked调用其他生命周期方法
+
+### 绑定
+
+1. **bindService**，ContextImpl#bindService，bindServiceCommon，**AMS#bindService**
+
+   在此过程中，客户端的ServiceConnection会转化为ServiceDispatcher.InnerConnection的Binder对象
+
+2. 与启动过程类似，最终会调用ApplicationThread#scheduleBindService，ActiveServices#requestServiceBindingLocked，**scheduleBindService**，**H#handleBindService**
+
+3. **H#handleBindService**通过AMS#publishService通知客户端已经成功连接Service，其中RunConnection#run会将ServiceConnection对象和Service对象绑定，调用Service#onBind
+
 # SurfaceView
 
 SurfaceView继承之View，但拥有独立的绘制表面，即它不与其宿主窗口共享同一个绘图表面，可以单独在一个线程进行绘制，并不会占用主线程的资源。这样，绘制就会比较高效，游戏，视频播放，还有最近热门的直播，都可以用SurfaceView
@@ -3948,25 +4019,120 @@ Toast的显示和消失都需要通过NotificationManagerService（NMS）来实�
 
 NMS会跨进程调用Toast中TN中的方法，由于TN运行在Binder线程池中（TN本身就是一个Binder对象），需要通过Handler将其切换到当前进程中，所以Toast无法在没有Looper的线程中弹出。
 
-# 线程
+# 线程和消息机制
 
-## 线程与Looper
+## 消息机制
 
-### Android系统是如何保证一个线程只有一个Looper的
+Handler运行机制及Handler附带的MessageQueue和Looper工作过程
+
+Handler的主要作用是将一个任务切换到某个指定的线程中执行
+
+> Android规定访问UI只能在主线程中进行，如果子线程访问则抛出异常。因为UI控件不是线程安全的，多线程并发访问可能会导致UI处于不可预期状态，而使用锁机制则会导致代码逻辑复杂，效率降低，所以采用单线程模型控制
+>
+> 通常在子线程中执行耗时操作，切换到主线程更新UI
+
+![](http://img.blog.csdn.net/20140805002935859?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbG1qNjIzNTY1Nzkx/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+### MessageQueue
+
+单链表结构存储
+
+`enqueueMessage`：向消息队列中插入一条消息
+
+`next`：无限循环，直到从消息队列中取出一条消息并将其从消息队列中移除
+
+### Looper
+
+### 主要函数
+
+`Looper`：构造方法，创建一个MessageQueue，并将当前线程对象保存
+
+```java
+private Looper(boolean quitAllowed) {
+    mQueue = new MessageQueue(quitAllowed);
+    mThread = Thread.currentThread();
+}
+```
+
+`prepare`：为当前线程创建一个Looper
+
+`loop`：开启消息循环
+
+```java
+public static void loop() {
+    final Looper me = myLooper();
+    final MessageQueue queue = me.mQueue();
+    // ...
+    for (;;) {
+        Message msg = queue.next();
+        if (msg == null) {
+            // 如果next返回null则跳出循环
+            return;
+        }
+        // ...
+        msg.target.dispatchMessage(msg); // target为发送这条消息的Handler
+        // ...
+    }
+}
+```
+
+`prepareMainLooper`：为主线程即ActivityThread创建Looper，本质也是通过prepare实现的
+
+`getMainLooper`：获取主线程的Looper
+
+`quit`：直接退出Looper
+
+`quitSafely`：设定退出标记，等消息队列中已有消息处理完毕后退出
+
+> 在子线程中，如果手动创建了Looper，在所有事情完成后应调用quit，否则线程会一直处于等待状态
+>
+> 退出Looper后，线程会立刻终止
+
+#### Android系统是如何保证一个线程只有一个Looper的
 
 `Looper.prepare()`使用了ThreadLocal来保证一个线程只有一个Looper
 
-ThreadLocal实现了线程本地存储。所有线程共享同一个ThreadLocal对象，但不同线程仅能访问与其线程相关联的值，一个线程修改ThreadLocal对象对其他线程没有影响
+ThreadLocal为每个线程存储当前线程的Looper，线程默认没有Looper，需要创建
 
-可以将ThreadLocal理解为一块存储区，将这一大块存储区分割为多块小的存储区，每一个线程拥有一块属于自己的存储区，那么对自己的存储区操作就不会影响其他线程。对于ThreadLocal，则每一小块存储区中就保存了与特定线程关联的Looper
-
-![这里写图片描述](http://img.blog.csdn.net/20160401173413434)
-
-当使用ThreadLocal维护变量时，ThreadLocal为每个使用该变量的线程提供独立的变量副本，所以每一个线程都可以独立地改变自己的副本，而不会影响其它线程所对应的副本
+> ThreadLocal实现了线程本地存储。所有线程共享同一个ThreadLocal对象，但不同线程仅能访问与其线程相关联的值，一个线程修改ThreadLocal对象对其他线程没有影响，而其他线程也无法获取该线程的数据
+>
+> 当使用ThreadLocal维护变量时，ThreadLocal为每个使用该变量的线程提供独立的变量副本，所以每一个线程都可以独立地改变自己的副本，而不会影响其它线程所对应的副本
+>
+> 不同线程访问同一个ThreadLocal的get方法，ThreadLocal内部会从各自的线程中取出一个数据，然后根据当前ThreadLocal的索引去查找对应的value，而不同线程的数据是不同的
+>
+> ![这里写图片描述](http://img.blog.csdn.net/20160401173413434)
+>
+> ```java
+> public void set(T value) {
+>     Thread currentThread = Thread.currentThread();
+>     Values values = values(currentThread);
+>     if (values == null) {
+>         values = initializeValues(currentThread);
+>     }
+>     values.put(this, value);
+> }
+>
+> public void get() {
+>     Thread currentThread = Thread.currentThread();
+>     Values values = values(currentThread);
+>     if (values != null) {
+>         Object[] table = values.table;
+>         int index = hash & values.mask;
+>         if (this.reference == table[index]) {
+>             return (T) table[index + 1];
+>         }
+>     } else {
+>         values = initializeValues(currentThread);
+>     }
+>     return (T) values.getAfterMiss(this);
+> }
+> ```
 
 [Android如何保证一个线程最多只能有一个Looper？](http://blog.csdn.net/sun927/article/details/51031268)
 
-### Android中为什么主线程不会因为Looper.loop()方法造成阻塞
+#### 主线程消息循环——为什么主线程不会因为Looper.loop()方法造成阻塞
+
+ActivityThread通过ApplicationThread和AMS进行进程间通信，AMS以进程间通信的方式完成ActivityThread的请求后回调ApplicationThread的Binder方法，然后ApplicationThread会向H发送消息，H收到消息后将ApplicationThread中的逻辑切换到ActivityThread中执行，即主线程
 
 Android应用程序的主线程在进入消息循环过程前，会在内部创建一个Linux管道（Pipe），这个管道的作用是使得Android应用程序主线程在消息队列为空时可以进入空闲等待状态，并且使得当应用程序的消息队列有消息需要处理时唤醒应用程序的主线程
 
@@ -4029,7 +4195,7 @@ Activity的生命周期都是依靠主线程的`Looper.loop`，当收到不同Me
 
 [Android中为什么主线程不会因为Looper.loop()里的死循环卡死](https://www.zhihu.com/question/34652589)
 
-### 线程+Looper
+#### 手动创建Looper
 
 实现一个类似于HandlerThread的类，即具有Looper的Thread，同时提供管理Looper的功能
 
@@ -4060,11 +4226,25 @@ class LooperThread extends Thread {
 } 
 ```
 
-quitSafely会通知消息队列退出，当消息队列被标记为退出状态时，MessageQueue的next方法就会返回null，loop方法中就会跳出循环，结束Looper
+### Handler
 
-quit会直接退出Looper，可能导致Handler发送的消息失效
+`Handler(Callback callback)`：使用特定Callback接口创建Handler，需要实现`handleMessage(Message msg)`
+
+`Handler(Looper looper)`：使用特定Looper创建Handler
+
+`sendMessage`：向消息队列中插入一条消息
+
+`post`：向Handler的Looper中投入一个Runnable对象等待处理
+
+`dispatchMessage`：处理消息
+
+![andler消息处理流程图](D:\Lizij\Document\LearningNotes\Android\images\Handler消息处理流程图1.png)
 
 ## 线程间通信
+
+### 共享内存
+
+公共变量
 
 ### AsyncTask
 
@@ -4108,43 +4288,16 @@ class myAsync extends AsyncTask<Params, Progress, Result> {
 
 [AsyncTask 实现Android的线程通信](http://blog.csdn.net/qq_15267341/article/details/79056947)
 
-### Handler&Message
+### Handler
 
 #### 使用
 
 1. 主线程中创建一个Handler对象，并重写`handleMessage()`方法 
-2. 当子线程需要进行UI操作时，就创建一个Message对象，并通过`handler.sendMessage()`将这条消息发送出去 
+2. 当子线程需要进行UI操作时，就创建一个Message对象，并通过`handler.sendMessage()`将这条消息发送出去 ，或者通过post方法将一个Runnable投递到Handler内部的Looper中
 3. 这条消息被添加到MessageQueue的队列中等待被处理 
-4. Looper一直尝试从MessageQueue中提出待处理消息，分发会Handler的`handleMessage()`方法中
-
-#### 原理
-
-Handler 、 Looper 、Message 这三者都与Android异步消息处理线程相关的概念。Looper负责的就是创建一个MessageQueue，然后进入一个无限循环体不断从该MessageQueue中读取Message，而消息的创建者就是一个或多个Handler 
-
-> 异步消息处理线程启动后会进入一个无限的循环体之中，每循环一次，从其内部的消息队列中取出一个消息，然后回调相应的消息处理函数，执行完成一个消息后则继续循环。若消息队列为空，线程则会阻塞等待。
-
-#### 主要过程
-
-1. 首先`Looper.prepare()`在本线程中保存一个Looper实例，然后该实例中保存一个MessageQueue对象；因为`Looper.prepare()`在一个线程中只能调用一次，所以MessageQueue在一个线程中只会存在一个。
-2. `Looper.loop()`会让当前线程进入一个无限循环，不断从MessageQueue的实例中读取消息，然后回调`msg.target.dispatchMessage(msg)`方法。
-3. Handler的构造方法，会首先得到当前线程中保存的Looper实例，进而与Looper实例中的MessageQueue相关联。
-4. Handler的`sendMessage`方法，会给msg的target赋值为handler自身，然后加入MessageQueue中。
-5. 在构造Handler实例时，我们会重写handleMessage方法，也就是`msg.target.dispatchMessage(msg)`最终调用的方法。
-
-好了，总结完成，大家可能还会问，那么在Activity中，我们并没有显示的调用Looper.prepare()和Looper.loop()方法，为啥Handler可以成功创建呢，这是因为在Activity的启动代码中，已经在当前UI线程调用了Looper.prepare()和Looper.loop()方法。
-
-![](http://img.blog.csdn.net/20140805002935859?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbG1qNjIzNTY1Nzkx/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+4. Looper一直尝试从MessageQueue中提出待处理消息，分发到Handler的`handleMessage()`方法中，这样Handler中的业务逻辑就被切换到创建Handler的线程中了
 
 [Android 异步消息处理机制 让你深入理解 Looper、Handler、Message三者关系](http://blog.csdn.net/lmj623565791/article/details/38377229)
-
-#### send和post的区别
-
-1. post和sendMessage本质上是没有区别的，只是实际用法中有一点差别
-2. post也没有独特的作用，post本质上还是用sendMessage实现的，post只是一中更方便的用法而已
-
-### 共享内存
-
-最简单的方式就是公共变量
 
 ## 线程池
 
