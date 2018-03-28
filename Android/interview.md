@@ -463,11 +463,11 @@ registerReceiver(broadcast, filter);
    >
    > 如果确实确实需要发送广播给未启动的应用，只需要添加`FLAG_INCLUDE_STOPPED_PACKAGES`，以覆盖另一个标签
 
-2. broadcastLocked内，根据IntentFilter查找匹配的接收者，将接收者添加到BroadcastQueue中，再发送给接收者
+2. `broadcastLocked`内，根据IntentFilter查找匹配的接收者，将接收者添加到BroadcastQueue中，再发送给接收者
 
-3. BroadcastQueue并没有立即发送广播，而是发送了一个BROADCAST_INTENT_MSG的消息，收到后调用processNextBroadcast，遍历无序广播mParallelBroadcasts，并通过deliverToRegisteredReceiverLocked，performReceiveLocked发送给接收者
+3. BroadcastQueue并没有立即发送广播，而是发送了一个BROADCAST_INTENT_MSG的消息，收到后调用`processNextBroadcast`，遍历无序广播mParallelBroadcasts，并通过`deliverToRegisteredReceiverLocked`，`performReceiveLocked`发送给接收者
 
-4. performReceiveLocked内，通过ApplicationThread#scheduleRegisteredReceiver调起应用程序，其中通过InnerReceiver#performReceive，LoadedApk.ReceiverDispatcher#performReceive实现广播接收，并调用onReceive
+4. `performReceiveLocked`内，通过`ApplicationThread#scheduleRegisteredReceiver`调起应用程序，其中通过`InnerReceiver#performReceive`，`LoadedApk.ReceiverDispatcher#performReceive`实现广播接收，并调用`onReceive`
 
 # Bitmap加载
 
@@ -477,7 +477,7 @@ registerReceiver(broadcast, filter);
 
 核心思想就是采用BitmapFactory.Options来加载所需尺寸的图片
 
-通过BitmapFactory.Options来缩放图片，主要用到了它的inSampleSize参数，即采样率。当其为1时不缩放，为2时，即采样后的图片其宽、高均为原图的1/2，而像素为原图的1/4，所以占的内存也为原图的1/4.（采样率小于1没效果）
+通过BitmapFactory.Options来缩放图片，主要用到了它的inSampleSize参数，即采样率。当其为1时不缩放，为2时，即采样后的图片其宽、高均为原图的1/2，而像素为原图的1/4，所以占的内存也为原图的1/4.（采样率小于1没效果，相当于1）
 
 inSampleSize的取值应该总是为2的指数，如果不为2的指数，系统会向下取整并选择一个最近的2的指数来代替。比如3，系统会使用2来代替
 
@@ -497,6 +497,40 @@ inSampleSize的取值应该总是为2的指数，如果不为2的指数，系统
 很多时候为了提高应用的用户体验，往往还会把图片在内存中也缓存一份，这样当应用打算从网络上请求一张图片时，程序会首先从内存中取获取，然后再从存储中获取，如果都没有最后才从网络下载。这样既提高了程序的效率又节约了不必要的流量开销。
 
 在使用缓存时，要为其指定一个最大容量。当容量满了以后，采用LRU(Least Recently Used)近期最少使用算法来移除缓存内容
+
+#### LruCache
+
+内部采用LinkedHashMap以强引用的方式存储外界缓存对象，提供get和put方法完成缓存的获取和添加，缓存满时移除较早使用的缓存对象
+
+创建时需要提供缓存的总容量大小并重写`sizeOf`，`sizeOf`用于计算缓存对象的大小，单位需要与总容量单位一致
+
+```java
+int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+int cacheSize = maxMemory / 8;
+mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
+    @Override
+    protected int sizeOf(String key, Bitmap bitmap) {
+        return bitmap.getRowBytes() * bitmap.getHeight() / 1024;
+    }
+};
+```
+
+### DiskLruCache
+
+[源码](https://link.jianshu.com/?t=https://android.googlesource.com/platform/libcore/+/android-4.1.1_r1/luni/src/main/java/libcore/io/DiskLruCache.java)
+
+| 方法                                                         | 备注                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| DiskLruCache open(File directory, int appVersion, int valueCount, long maxSize) | 打开一个缓存目录，如果没有则首先创建它，**directory：**指定数据缓存地址 **appVersion：**APP版本号，当版本号改变时，缓存数据会被清除 **valueCount：**同一个key可以对应多少文件 **maxSize：**最大可以缓存的数据量 |
+| Editor edit(String key)                                      | 通过key可以获得一个DiskLruCache.Editor，通过Editor可以得到一个输出流，进而缓存到本地存储上 |
+| void flush()                                                 | 强制缓冲文件保存到文件系统                                   |
+| Snapshot get(String key)                                     | 通过key值来获得一个Snapshot，如果Snapshot存在，则移动到LRU队列的头部来，通过Snapshot可以得到一个输入流InputStream |
+| long size()                                                  | 缓存数据的大小，单位是byte                                   |
+| boolean remove(String key)                                   | 根据key值来删除对应的数据，如果该数据正在被编辑，则不能删除  |
+| void delete()                                                | 关闭缓存并且删除目录下所有的缓存数据，即使有的数据不是由DiskLruCache 缓存到本目录的 |
+| void close()                                                 | 关闭DiskLruCache，缓存数据会保留在外存中                     |
+| boolean isClosed()                                           | 判断DiskLruCache是否关闭，返回true表示已关闭                 |
+| File getDirectory()                                          | 缓存数据的目录                                               |
 
 ## 优化列表卡顿
 
@@ -528,6 +562,7 @@ public class ImageResizer {
     }
 
     public Bitmap decodeSampledBitmapFromResource(Resources res, int resId, int reqWidth, int reqHeight) {
+        // 根据Resource加载bitmap
         // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -541,6 +576,7 @@ public class ImageResizer {
     }
 
     public Bitmap decodeSampledBitmapFromFileDescriptor(FileDescriptor fd, int reqWidth, int reqHeight) {
+        // 根据文件描述符加载bitmap
     }
 }
 ```
@@ -589,6 +625,8 @@ private Bitmap getBitmapFromMemCache(String key) {
 
 缓存添加和获取
 
+* 通过DiskLruCache.Snapshot获得磁盘缓存对象对应的FileInputStream，但FileInputStream无法便捷地压缩，所以通过FileDescriptor加载压缩后图片
+
 ```java
 private Bitmap loadBitmapFromHttp(String url, int reqWidth, int reqHeight) throws IOException {
     if (Looper.myLooper() == Looper.getMainLooper()) {
@@ -601,7 +639,7 @@ private Bitmap loadBitmapFromHttp(String url, int reqWidth, int reqHeight) throw
     String key = hashKeyFormUrl(url);
     DiskLruCache.Editor editor = mDiskLruCache.edit(key);
     if (editor != null) {
-        OutputStream outputStream = editor.newOutputStream(DISK_CACHE_INDEX);
+        OutputStream outputStream = editor.newOutputStream(DISK_CACHE_INDEX); // 默认为0
         if (downloadUrlToStream(url, outputStream)) {
             editor.commit();
         } else {
@@ -640,6 +678,10 @@ private Bitmap loadBitmapFromDiskCache(String url, int reqWidth,
 
 同步加载
 
+* 从内存加载
+* 从磁盘缓存加载
+* 从网络拉取
+
 ```java
 public Bitmap loadBitmap(String uri, int reqWidth, int reqHeight) {
     Bitmap bitmap = loadBitmapFromMemCache(uri);
@@ -670,6 +712,9 @@ public Bitmap loadBitmap(String uri, int reqWidth, int reqHeight) {
 ```
 
 异步加载
+
+* 从内存缓存读取图片
+* 从线程池中调用loadBitmap，加载成功则返回LoaderResult对象，通过handler发送到主线程进行更新
 
 ```java
 public void bindBitmap(final String uri, final ImageView imageView) {
@@ -734,6 +779,52 @@ private Handler mMainHandler = new Handler(Looper.getMainLooper()) {
 >
 > 通过检查url是否改变，如果改变则不设置图片，解决列表错位问题
 
+使用
+
+```java
+public class MainActivity extends Activity implements OnScrollListener {
+    private class ImageAdapter extends BaseAdapter {
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder = null;
+            if (convertView == null) {
+                convertView = mInflater.inflate(R.layout.image_list_item,parent, false);
+                holder = new ViewHolder();
+                holder.imageView = (ImageView) convertView.findViewById(R.id.image);
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+            ImageView imageView = holder.imageView;
+            final String tag = (String) imageView.getTag();
+            final String uri = getItem(position);
+            if (!uri.equals(tag)) {
+                // url和tag不对应时加载默认图片
+                imageView.setImageDrawable(mDefaultBitmapDrawable);
+            }
+            if (mIsGridViewIdle && mCanGetBitmapFromNetWork) {
+                // 列表不滚动时设置tag，异步加载图片
+                imageView.setTag(uri);
+                mImageLoader.bindBitmap(uri, imageView, mImageWidth, mImageWidth);
+            }
+            return convertView;
+        }
+    }
+
+    @Override
+    public void onScrollStateChanged(AbsListView view, int scrollState) {
+        if (scrollState == OnScrollListener.SCROLL_STATE_IDLE) {
+            mIsGridViewIdle = true;
+            mImageAdapter.notifyDataSetChanged();
+        } else {
+            mIsGridViewIdle = false;
+        }
+    }
+}
+```
+
+
+
 # Binder
 
 ## 运行机制
@@ -756,6 +847,81 @@ Server进程向Service Manager进程注册服务（可访问的方法接口）�
 一个进程的Binder线程数默认最大是16，超过的请求会被阻塞等待空闲的Binder线程。理解这一点的话，你做进程间通信时处理并发问题就会有一个底，比如使用ContentProvider时（又一个使用Binder机制的组件），你就很清楚它的CRUD（创建、检索、更新和删除）方法只能同时有16个线程在跑
 
 [Android面试一天一题（Day 35：神秘的Binder机制）](https://www.jianshu.com/p/c7bcb4c96b38)
+
+# Crash
+
+crash发生时，系统会回调`UncaughtExceptionHandler#uncaughtException`，其中可以获得异常信息，可以选择将异常信息存到本地或上传，通过对话框告知用户
+
+```java
+public class CrashHandler implements UncaughtExceptionHandler {
+    private static CrashHandler sInstance = new CrashHandler();
+    private UncaughtExceptionHandler mDefaultCrashHandler;
+    private Context mContext;
+
+    private CrashHandler() {
+    }
+
+    public static CrashHandler getInstance() {
+        return sInstance;
+    }
+
+    public void init(Context context) {
+        mDefaultCrashHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(this);
+        mContext = context.getApplicationContext();
+    }
+
+    /**
+     * 这个是最关键的函数，当程序中有未被捕获的异常，系统将会自动调用#uncaughtException方法
+     * thread为出现未捕获异常的线程，ex为未捕获的异常，有了这个ex，我们就可以得到异常信息。
+     */
+    @Override
+    public void uncaughtException(Thread thread, Throwable ex) {
+        try {
+            //导出异常信息到SD卡中
+            dumpExceptionToSDCard(ex);
+            uploadExceptionToServer();
+            //这里可以通过网络上传异常信息到服务器，便于开发人员分析日志从而解决bug
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        ex.printStackTrace();
+
+        //如果系统提供了默认的异常处理器，则交给系统去结束我们的程序，否则就由我们自己结束自己
+        if (mDefaultCrashHandler != null) {
+            mDefaultCrashHandler.uncaughtException(thread, ex);
+        } else {
+            Process.killProcess(Process.myPid());
+        }
+
+    }
+
+    private void dumpExceptionToSDCard(Throwable ex) throws IOException {
+        //如果SD卡不存在或无法使用，则无法把异常信息写入SD卡
+    }
+
+    private void uploadExceptionToServer() {
+        //TODO Upload Exception Message To Your Web Server
+    }
+
+}
+```
+
+在Application初始化时使用
+
+```java
+public class TestApp extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        //在这里为应用设置异常处理程序，然后我们的程序才能捕获未处理的异常
+        CrashHandler crashHandler = CrashHandler.getInstance();
+        crashHandler.init(this);
+    }
+}
+```
 
 # Drawable
 
@@ -1752,7 +1918,7 @@ AIDL通过定义服务端暴露的接口，以提供给客户端来调用，AIDL
 * 实现了Parcelable的对象（需要新建一个同名的AIDL文件，并声明为Parcelable类型）
 * 其他AIDL接口
 
-> 除了基本数据类型，其他类型的参数上必须标上方向：in，out或inout
+> Parcelable对象类型的参数上必须标上方向：in，out或inout
 >
 > 自定义的Parcelable对象或AIDL对象一定要显式地import进来，不管和当前AIDL文件在不在同一个包内
 
@@ -1870,7 +2036,7 @@ public class RemoteService extends Service {
                         Log.i(TAG, "receive msg from client:" + msg.getData().getString("msg"));
 
                         // 回复消息
-                        Messager client = msg.replyTo;
+                        Messenger client = msg.replyTo;
                         Message replyMessage = Message.obtain(null, Constants.MSG_FROM_SERVICE);
                         Bundle data = new Bundle();
                         data.putString("reply", "reply message");
@@ -2416,21 +2582,27 @@ NDK(Native Development Kit)是Android所提供的一个工具集合，通过NDL�
 
 ## 一般步骤
 
+下载并配置NDK
+
 在Java代码中中声明一个native方法
 
 ```java
+static {
+    System.loadLibrary("hello"); // 加载hello库，文件名需要和Android.mk文件中的LOCAL_MODULE属性指定的值相同
+}
 public native String sayHello();
 ```
 
 使用javah命令生成带有native方法的头文件
 
 ```shell
+javac com/xxx/TestHelloActivity.java
 javah com.xxx.TestHelloActivity
 ```
 
 > JDK1.7 需要在工程的src目录下执行上面的命令，JDK1.6 需要在工程的bin/classes目录下执行以上命令
 
-创建JNI目录，并在jni目录中创建一个Hello.c文件，根据头文件实现C代码。写C代码时，结构体JNIEnv*对象对个别object对象很重要，在实现的C代码的方法中必须传入这两个参数
+创建`jni`目录，并在`jni`目录中创建一个Hello.c文件，根据头文件实现C代码。写C代码时，结构体JNIEnv*对象对个别object对象很重要，在实现的C代码的方法中必须传入这两个参数
 
 ```c
 jstring Java_com_xxx_TestHelloActivity_sayHello(JNIEnv* env,jobject obj){
@@ -2439,9 +2611,10 @@ jstring Java_com_xxx_TestHelloActivity_sayHello(JNIEnv* env,jobject obj){
 }
 ```
 
-在JNI的目录下创建一个Android.mk文件,并根据需要编写里面的内容
+在JNI的目录下创建Android.mk和Application.mk,并根据需要编写里面的内容
 
 ```makefile
+# Android.mk
 #LOCAL_PATH是所编译的C文件的根目录，右边的赋值代表根目录即为Android.mk所在的目录
 LOCAL_PATH:=$(call my-dir)
 #在使用NDK编译工具时对编译环境中所用到的全局变量清零
@@ -2452,15 +2625,63 @@ LOCAL_MODULE:=hello
 LOCAL_SRC_FILES:=Hello.c
 #NDK编译时会生成一些共享库
 include $(BUILD_SHARED_LIBRARY)
+
+# Application.mk
+# 常见架构有armeabi，x86和mips，默认编译all，即所有平台
+APP_ABI := armeabi
 ```
 
-在工程的根目录下执行ndk_build命令，编译.so文件
+在工程的根目录下执行`ndk_build`命令，编译.so文件
 
-在调用Native()方法前，加载.so的库文件
+这是会创建一个`jni`目录平级的目录libs，libs下放的就是so库的目录
 
-```java
-System.loadLibrary("hello");
-// 文件名个Android.mk文件中的LOCAL_MODULE属性指定的值相同
+在`app/src/main`下创建`jniLibs`目录，将so库拷贝到`jniLibs`中，通过AndroidStudio编译运行即可。如果想用其他目录，则在gradle中配置
+
+```
+android {
+    ...
+    sourceSets.main {
+        jniLibs.srcDir 'src/main/jni_libs'
+    }
+}
+```
+
+还可以在defaultConfig中添加NDK选项，让AndroidStudio可以自动编译JNI代码。将JNI代码放在`app/src/main/jni`中，或者手动指定`jni.srcDirs`
+
+```
+android {
+    ...
+    defaultConfig {
+        ...
+        ndk {
+            moduleName 'jni-test'
+        }
+        
+        sourceSets.main {
+            jni.srcDirs 'src/main/jni_src'
+        }
+    }
+}
+```
+
+AndroidStudio默认会将所有CPU平台的so库打包到apk中，可以在gradle中指定只需要打包armeabi的so库，然后在Build Variants面板中选择armDebug选项进行编辑
+
+```
+android {
+    ...
+    productFlavors {
+        arm {
+            ndk {
+                abiFilter "armeabi"
+            }
+        }
+        x86 {
+            ndk {
+                abiFilter "x86"
+            }
+        }
+    }
+}
 ```
 
 ## 方法注册
@@ -2526,13 +2747,19 @@ extern "C" {
 #endif
 ```
 
-native_init方法被声明为注释1处的方法，格式为`Java_包名_类名_方法名`
+`native_init`方法被声明为注释1处的方法，格式为`Java_包名_类名_方法名`
 
-JNIEnv * 是一个指向全部JNI方法的指针，该指针只在创建它的线程有效，不能跨线程传递。 
+`extern "C"`表示内部的函数采用C语言命名风格编译
 
-jclass是JNI的数据类型，对应Java的java.lang.Class实例。jobject同样也是JNI的数据类型，对应于Java的Object。
+`JNIEnv *` 是一个指向全部JNI方法的指针，该指针只在创建它的线程有效，不能跨线程传递。 
 
-当我们在Java中调用native_init方法时，就会从JNI中寻找Java_com_example_MediaRecorder_native_1init方法，如果没有就会报错，如果找到就会为native_init和Java_com_example_MediaRecorder_native_1init建立关联，其实是保存JNI的方法指针，这样再次调用native_init方法时就会直接使用这个方法指针就可以了。 
+`jclass`是JNI的数据类型，对应Java的java.lang.Class实例
+
+`jobject`同样也是JNI的数据类型，对应于Java对象中的this
+
+`JNIEXPORT`和`JNICALL`是JNI中定义的宏
+
+当我们在Java中调用`native_init`方法时，就会从JNI中寻找`Java_com_example_MediaRecorder_native_1init`方法，如果没有就会报错，如果找到就会为`native_init`和`Java_com_example_MediaRecorder_native_1init`建立关联，其实是保存JNI的方法指针，这样再次调用native_init方法时就会直接使用这个方法指针就可以了。 
 静态注册就是根据方法名，将Java方法和JNI方法建立关联，但是它有一些缺点：
 
 * JNI层的方法名称过长。
@@ -2641,36 +2868,77 @@ extern "C" int jniRegisterNativeMethods(
 
 所以我们只需要在`JNI_Onload`中调用`RegisterNatives` 注册即可
 
-## JNIEnv
+## JNI数据类型和类型签名
 
 ![img](https://upload-images.jianshu.io/upload_images/1952665-50f914b8ae912780.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/538)
 
 JNIEnv是指向可用JNI函数表的接口指针，原生代码通过JNIEnv接口指针提供的各种函数来使用虚拟机的功能。JNIEnv是一个指向线程-局部数据的指针，而线程-局部数据中包含指向线程表的指针。实现原生方法的函数将JNIEnv接口指针作为它们的第一个参数。
 
-## 数据类型转换
+### 数据类型转换
 
 基本类型
 
-| Java类型  | 别名       | C++本地类型        | 字节           |
-| ------- | -------- | -------------- | ------------ |
-| boolean | jboolean | unsigned char  | 8, unsigned  |
-| byte    | jbyte    | signed char    | 8            |
-| char    | jchar    | unsigned short | 16, unsigned |
-| short   | jshort   | short          | 16           |
-| int     | jint     | long           | 32           |
-| long    | jlong    | __int64        | 64           |
-| float   | jfloat   | float          | 32           |
-| double  | jdouble  | double         | 64           |
+| Java类型 | 别名     | C++本地类型    | 字节         | 签名 |
+| -------- | -------- | -------------- | ------------ | ---- |
+| boolean  | jboolean | unsigned char  | 8, unsigned  | Z    |
+| byte     | jbyte    | signed char    | 8            | B    |
+| char     | jchar    | unsigned short | 16, unsigned | C    |
+| short    | jshort   | short          | 16           | S    |
+| int      | jint     | long           | 32           | I    |
+| long     | jlong    | __int64        | 64           | J    |
+| float    | jfloat   | float          | 32           | F    |
+| double   | jdouble  | double         | 64           | D    |
+| void     | void     | void           |              | V    |
 
 引用类型
 
 ![img](https://upload-images.jianshu.io/upload_images/1952665-29614d7760b5f164.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
+
+类的签名：`L+包名+类名+；`，例如`Ljava/lang/String`
+
+数组签名：`[+类型签名`，可以多级嵌套，例如`[java/lang/String`
+
+方法签名：`(参数类型签名)+返回值类型签名`，例如`boolean fun1(int a , String b, int[]c)`的签名为`(ILjava/lang/String;[I)Z`
 
 [Android面试题：对JNI和NDK的理解](http://blog.csdn.net/yyg_2015/article/details/72229892)
 
 [Android深入理解JNI（一）JNI原理与静态、动态注册](http://blog.csdn.net/itachi85/article/details/73459880)
 
 [JNIEnv结构体解析](https://www.jianshu.com/p/453b0463a84c)
+
+### jni调用java
+
+`FindClass`：根据类名找到类
+
+`methodCalledByJni`：根据方法名和方法签名，找到方法
+
+`env->CallStaticVoidMethod`：调用方法
+
+```java
+public static void methodCalledByJni(String msgFromJni) {
+    Log.d(TAG, "methodCalledByJni, msg: " + msgFromJni);
+}
+```
+
+
+
+```c
+void callJavaMethod(JNIEnv *env, jobject thiz) {
+    jclass clazz = env->FindClass("com/ryg/JniTestApp/MainActivity");
+    if (clazz == NULL) {
+        printf("find class MainActivity error!");
+        return;
+    }
+    jmethodID id = env->GetStaticMethodID(clazz, "methodCalledByJni", "(Ljava/lang/String;)V");
+    if (id == NULL) {
+        printf("find method methodCalledByJni error!");
+    }
+    jstring msg = env->NewStringUTF("msg send by callJavaMethod in test.cpp.");
+    env->CallStaticVoidMethod(clazz, id, msg);
+}
+```
+
+
 
 # MVC和MVP
 
@@ -2682,13 +2950,15 @@ MVC是一个架构模式，它分离了表现与交互。它被分为三个核�
 
 ![img](http://img0.tuicool.com/zAnI3q.jpg!web)
 
-* 逻辑模型（M）：负责建立数据结构和相应的行为操作处理。
-* 视图模型（V）：负责在屏幕上渲染出相应的图形信息展示给用户看。
-* 控制器（C）：负责截获用户的按键和屏幕触摸等事件，协调Model对象和View对象
+* 逻辑模型（M）：负责定义封装信息的数据结构。
+* 视图模型（V）：负责将Model中的信息展示给用户。
+* 控制器（C）：用于控制Model中信息在View中的展示方式
 
-用户与视图交互，视图接受并反馈用户的动作；视图把用户的请求传给相应的控制器，由控制器决定调用哪个模型，然后由模型调用相应的业务逻辑对用户请求进行加工处理，如果需要返回数据，模型会把相应的数据返回给控制器，由控制器调用相应的视图，最终由视图格式化和渲染返回的数据，对于返回的数据完全可以增加用户体验效果展现给用户
+**Android中最典型MVC是ListView**
 
-**Android中最典型MVC是ListView，要显示的数据是Model，界面中的ListView是View，控制数据怎样在ListView中显示是Controller，即Adapter**
+* Model：封装的信息，例如array
+* View：ListView，
+* Controller：Adapter控制数据怎样在ListView中显示
 
 ### 优势
 
@@ -2703,23 +2973,29 @@ MVC是一个架构模式，它分离了表现与交互。它被分为三个核�
 
 ## MVP
 
-在MVP里，Presenter完全把Model和View进行了分离，主要的程序逻辑在Presenter里实现。而且，Presenter与具体的View是没有直接关联的，而是通过定义好的接口进行交互，从而使得在变更View时候可以保持Presenter的不变，即重用！
+在MVP里，Presenter完全把Model和View进行了分离，主要的程序逻辑在Presenter里实现。而且，Presenter与具体的View是没有直接关联的，而是通过定义好的接口进行交互，从而使得在变更View时候可以保持Presenter的不变
+
+* Model：数据源
+* View：Activity或Fragment等
+* Presenter：业务处理层，能调用View也能调用Model，纯Java类不涉及Android API
+
+调用顺序：View->Presenter->Model，不可反向调用
 
 ![MVP架构调用关系](http://www.jcodecraeer.com/uploads/userup/13953/1G020140036-F40-0.png)
 
 作为一种新的模式，MVP与MVC有着一个重大的区别：在MVP中View并不直接使用Model，它们之间的通信是通过Presenter (MVC中的Controller)来进行的，所有的交互都发生在Presenter内部，而在MVC中View会直接从Model中读取数据而不是通过 Controller。
 
-在MVC里，View是可以直接访问Model的！从而，View里会包含Model信息，不可避免的还要包括一些业务逻辑。 在MVC模型里，更关注的Model的不变，而同时有多个对Model的不同显示，即View。所以，在MVC模型里，Model不依赖于View，但是View是依赖于Model的。不仅如此，因为有一些业务逻辑在View里实现了，导致要更改View也是比较困难的，至少那些业务逻辑是无法重用的。
-
-虽然 MVC 中的 View的确“可以”访问Model，但是我们不建议在 View 中依赖Model，而是要求尽可能把所有业务逻辑都放在 Controller 中处理，而 View 只和 Controller 交互
-
-日常开发中的Activity，Fragment和XML界面就相当于是一个 MVC 的架构模式，Activity中不仅要处理各种 UI 操作还要请求数据以及解析。
-
-这种开发方式的缺点就是业务量大的时候一个Activity 文件分分钟飙到上千行代码，想要改一处业务逻辑光是去找就要费半天劲，而且有点地方逻辑处理是一样的无奈是不同的 Activity 就没办法很好的写成通用方法
-
 MVP 模式将Activity 中的业务逻辑全部分离出来，让Activity 只做 UI 逻辑的处理，所有跟Android API无关的业务逻辑由 Presenter 层来完成。
 
 将业务处理分离出来后最明显的好处就是管理方便，但是缺点就是增加了代码量
+
+> 在MVC里，View是可以直接访问Model的！从而，View里会包含Model信息，不可避免的还要包括一些业务逻辑。 在MVC模型里，更关注的Model的不变，而同时有多个对Model的不同显示，即View。所以，在MVC模型里，Model不依赖于View，但是View是依赖于Model的。不仅如此，因为有一些业务逻辑在View里实现了，导致要更改View也是比较困难的，至少那些业务逻辑是无法重用的。
+>
+> 虽然 MVC 中的 View的确“可以”访问Model，但是我们不建议在 View 中依赖Model，而是要求尽可能把所有业务逻辑都放在 Controller 中处理，而 View 只和 Controller 交互
+>
+> 日常开发中的Activity，Fragment和XML界面就相当于是一个 MVC 的架构模式，Activity中不仅要处理各种 UI 操作还要请求数据以及解析。
+>
+> 这种开发方式的缺点就是业务量大的时候一个Activity 文件分分钟飙到上千行代码，想要改一处业务逻辑光是去找就要费半天劲，而且有点地方逻辑处理是一样的无奈是不同的 Activity 就没办法很好的写成通用方法
 
 [Android MVP架构搭建](http://www.jcodecraeer.com/a/anzhuokaifa/2017/1020/8625.html?1508484926)
 
@@ -2733,6 +3009,68 @@ MVP 模式将Activity 中的业务逻辑全部分离出来，让Activity 只做 
 [MVC面试问题与答案](http://www.cnblogs.com/Hackson/p/7055695.html)
 
 [每日一面试题--MVC思想是什么？](http://blog.csdn.net/qq_34986769/article/details/52594804)
+
+# multidex
+
+## 使用场景
+
+Android中单个dex所能包含的最大方法数为65536：
+
+* 如果方法数超过65536，编译器就会无法完成编译工作，抛出`DexIndexOverflowException`异常
+* 有时方法数较多但未超过65536，在应用安装时，方法数超过了低版本Android的dexopt的缓冲区，会导致安装失败
+
+## 使用
+
+### 修改gradle
+
+```gradle
+android {
+    ...
+    defaultConfig {
+        ...
+        multiDexEnabled true
+    }
+}
+
+dependencies {
+    compile 'com.android.support:multidex:1.0.0'
+}
+```
+
+### 修改代码
+
+有3种方案可选
+
+* 修改manifest
+
+  ```xml
+  <application
+               android:name="android.support.multidex.MultiDexApplication"
+               ...
+  />
+  ```
+
+* 修改Application继承MultiDexApplication
+
+  ```java
+  public class TestApplication extends MultiDexApplication
+  ```
+
+* 修改Application的`attachBaseContext`，此方法先于`onCreate`执行
+
+  ```java
+  public class TestApplication extends Application {
+
+      @Override
+      protected void attachBaseContext(Context base) {
+          super.attachBaseContext(base);
+          MultiDex.install(this);
+      }
+
+  }
+  ```
+
+  ​
 
 # okhttp
 
@@ -2957,9 +3295,30 @@ public class MainActivity extends Activity {
 
 HandlerThread 是一个包含 Looper 的 Thread，我们可以直接使用这个 Looper 创建 Handler
 
-HandlerThread相当于Thread + Looper
+HandlerThread相当于Thread + Looper，要停止的话需要先停止Looper，Looper停止后线程会自动结束
 
-使用场景：**在子线程中执行耗时的、可能有多个任务的操作**。比如说多个网络请求操作，或者多文件 I/O 等等。
+使用场景：**在子线程中执行耗时的、可能有多个任务的操作**。比如说多个网络请求操作，或者多文件 I/O 等等
+
+### 原理
+
+```java
+public void run() {
+    mTid = Process.myTid();
+    Looper.prepare();
+    synchronized (this) {
+        mLooper = Looper.myLooper();
+        notifyAll();
+    }
+    Process.setThreadPriority(mPriority);
+    onLooperPrepared(); // 可以设置的回调接口，用于在loop前进行自定义设置
+    Looper.loop();
+    mTid = -1;
+}
+```
+
+
+
+### 使用
 
 ```java
 private HandlerThread mHandlerThread;
@@ -3042,7 +3401,7 @@ private void update()
 
 ## IntentService
 
-### 使用原因
+### 使用场景
 
 Android中的Service是用于后台服务的，当应用程序被挂到后台的时候，问了保证应用某些组件仍然可以工作而引入了Service这个概念，那么这里面要强调的是Service不是独立的进程，也不是独立的线程，它是依赖于应用程序的主线程的，也就是说，在更多时候不建议在Service中编写耗时的逻辑和操作，否则会引起ANR
 
@@ -3050,11 +3409,38 @@ Android中的Service是用于后台服务的，当应用程序被挂到后台的
 
 由于IntentService是服务，优先级高，不容易被系统杀死，适合执行一些高优先级的任务
 
+### 使用
+
+```java
+public class MyIntentService extends IntentService {
+    public MyIntentService() {
+        // 获取当前类名传入super
+        // 类似的可以用getMethodName获取当前方法名
+        super(Thread.currentThread().getStackTrace()[1].getClassName);
+    }
+    
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        // ...
+    }
+}
+
+Intent service = new Intent(this, MyIntentService.class);
+service.putExtra("args", "args1");
+startService(service); // 可以多次运行，每次都会调用onHandleIntent
+```
+
 ### 原理
 
 IntentService在执行onCreate的方法的时候，其实开了一个线程HandlerThread,并获得了当前线程队列管理的looper，并且在onStart的时候，把消息置入了消息队列
 
 在消息被handler接受并且回调的时候，执行了onHandlerIntent方法，该方法的实现是子类去做的
+
+由于每启动一个后台任务就必须启动一次IntentService，而IntentService内部通过消息方式向HandlerThread请求执行任务，Handler的Looper是顺序处理消息的，所以IntentService也是顺序执行后台任务的，按照外界发起的顺序
+
+`stopSelf()`会立刻停止服务
+
+`stopSelf(int statId)`在尝试停止服务之前会判断最近启动服务的次数是否和statId相等，如果相等则停止服务，否则不停止
 
 [Android中IntentService与Service的区别](http://blog.csdn.net/matrix_xu/article/details/7974393)
 
@@ -3620,9 +4006,12 @@ public class AutoLinefeedLayout extends ViewGroup {
 
 ### 坐标
 
-* left，top：View左上角的坐标
+相对父容器的坐标
 
+* left，top：View左上角的坐标
 * right，bottom：View右下角坐标
+
+其他坐标
 
 * translationX，translationY是View左上角相对于父容器的偏移量，默认值为0，提供了get/set方法
 
@@ -3745,7 +4134,7 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
   * ViewGroup 和View的这些方法的默认实现就是会让整个事件安装U型完整走完，所以` return super.xxxxxx() `就会让事件依照U型的方向的完整走完整个事件流动路径）
 * `dispatchTouchEvent`，`onTouchEvent`的返回值
   * true：终结事件传递
-  * false：回溯到父View的onTouchEvent方法
+  * false：回溯到父View的`onTouchEvent`方法
 * 拦截器`onInterceptTouchEvent`
    * ViewGroup 把事件分发给自己的`onTouchEvent`，需要拦截器`onInterceptTouchEvent`方法return true 把事件拦截下来。
    * ViewGroup 的拦截器`onInterceptTouchEvent `默认不拦截，即return false；
@@ -3757,7 +4146,7 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
     * 没有被消耗：同一事件序列的其他事件都不会再交给该View
   * View的`onTouchEvent`默认都会消耗事件，除非clickable和longClickable同时为false，enable属性不影响
   * View可以通过`requestDisallowInterceptTouchEvent`干预父元素的事件分发，但是ACTION_DOWN除外
-* `onTouchListene`r的优先级比``onTouchEvent`要高，其中会调用`onTouch`方法，并屏蔽`onTouchEvent`
+* `onTouchListene`r的优先级比`onTouchEvent`要高，其中会调用`onTouch`方法，并屏蔽`onTouchEvent`
 
 [图解 Android 事件分发机制](https://www.jianshu.com/p/e99b5e8bd67b)
 
@@ -3992,10 +4381,10 @@ WindowManagerGlobal#updateViewLayout
 
 ### Activity的Window创建过程
 
-* Activity创建，Activity#performLaunchActivity()
-* activity#attach()
-* PolicyManager#makeNewWindow()
-* Activity#setContentView()
+* Activity创建，`Activity#performLaunchActivity()`
+* `activity#attach()`
+* `PolicyManager#makeNewWindow()`
+* `Activity#setContentView()`
 
 > setContentView的步骤：
 >
@@ -4248,13 +4637,15 @@ class LooperThread extends Thread {
 
 ### AsyncTask
 
-Android提供的轻量级异步类，可以直接继承。其实现原理也是基于异步消息处理机制的
+Android提供的轻量级异步类，可以直接继承，封装了线程池和Handler，方便开发者在子线程中更新UI
 
 AsyncTask定义了三种泛型类型*Params，Progress和Result*
 
 * **Params**：在执行AsyncTask时需要传入的参数，可用于在后台任务中使用（`doInBackground`方法的参数类型）如HTTP请求的URL
 * **Progress**：后台任务执行时，如果需要在界面上显示当前的进度，则指定进度类型
 * **Result**：后台任务的返回结果类型
+
+#### 使用
 
 ```java
 class myAsync extends AsyncTask<Params, Progress, Result> {
@@ -4274,7 +4665,7 @@ class myAsync extends AsyncTask<Params, Progress, Result> {
 
     //下面这个方法在主线程中执行，用于显示子线程任务执行的进度
     @Override
-    protected void onProgressUpdate(Progress values) {
+    protected void onProgressUpdate(Progress... values) {
         super.onProgressUpdate(values);
     }
 
@@ -4288,9 +4679,31 @@ class myAsync extends AsyncTask<Params, Progress, Result> {
 
 [AsyncTask 实现Android的线程通信](http://blog.csdn.net/qq_15267341/article/details/79056947)
 
-### Handler
+#### 限制
 
-#### 使用
+1. AsyncTask的类必须在主线程中加载
+2. AsyncTask的对象必须在主线程中创建
+3. `execute`方法必须在UI线程中调用
+4. 不要直接调用`onPreExecute`，`onPostExecute`，`doInBackground`和`onProgressUpdate`
+5. 一个AsyncTask对象只能执行一次`execute`，否则会报异常
+6. AsyncTask默认采用串行执行任务，可以通过`executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, "")`并行执行任务
+
+#### 原理（非重点）
+
+1. `execute`，`executeOnExecutor`中，一个线程中所有的AsyncTask都在sDefaultExecutor串行线程池中执行
+
+2. 排队执行过程
+
+   1. AsyncTask的Params封装为FutureTask，是一个并发类，充当Runnable
+   2. SerialExecutor的`execute`将FutureTask插入任务队列mTasks，如果当前没有正在活动的AsyncTask，则调用SerialExecutor的`scheduleNext`执行下一个AsyncTask任务，直到所有任务都被执行
+
+3. SerialExecutor：串行线程池，用于任务排队
+
+   THREAD_POOL_EXECUTOR：并行线程池，用于执行任务
+
+   InternalHandler：用于将执行环境从线程池切换到主线程
+
+### Handler
 
 1. 主线程中创建一个Handler对象，并重写`handleMessage()`方法 
 2. 当子线程需要进行UI操作时，就创建一个Message对象，并通过`handler.sendMessage()`将这条消息发送出去 ，或者通过post方法将一个Runnable投递到Handler内部的Looper中
@@ -4315,6 +4728,24 @@ ThreadPoolExecutor(int corePoolSize, // 核心线程数
                    BlockingQueue<Runnable> workQueue, // 任务队列，存储execute提交的Runnable
                    ThreadFactory threadFactory) // 线程工厂，创建新线程
 ```
+
+### 执行规则
+
+1. 未达到核心线程数，启动核心线程执行任务
+2. 达到核心线程数，插入等待队列
+3. 如果2中无法插入等待队列（一般是因为队列已满），且线程数量未达到最大线程数，则启动非核心线程执行任务
+4. 如果3中线程数量已经达到最大值，则拒绝执行，并调用`RejectedExecutionHandler#rejectedExecution`通知调用者
+
+> 默认情况下，核心线程会在线程池中一直存货，即使处于闲置状态，也可以设定超时终止
+>
+> 非核心线程运行结束或超时后就会被回收
+>
+> AsyncTask的THREAD_POOL_EXECUTOR线程池配置：
+>
+> * 核心线程数：CPU核心数+1
+> * 最大线程数：CPU核心数x2+1
+> * 核心线程无超时，非核心线程闲置超时为1秒
+> * 任务队列容量128
 
 ### 分类
 
@@ -4629,7 +5060,7 @@ public class ViewHolder {
 
 线程池可以重用内部线程，从而避免了线程的创建和销毁所带来的性能开销，同时线程池还能有效地控制线程池的最大并发数，避免大量的线程因为相互抢占系统资源从而导致阻塞现象的发生
 
-## 防止内存溢出
+## 防止内存溢出（OOM）
 
 ### 原因
 

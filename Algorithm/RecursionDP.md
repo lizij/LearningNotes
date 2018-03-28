@@ -336,66 +336,42 @@ boolean targetSubsequenceSum(int[] arr, int target) {
 
 > Compute the max value of Knapsack
 >
-> In Knapsack problem, we have a limited-size bag, some things with their weight and value. We need to make use of this bag to hold as more valuable things as possible
+> In Knapsack problem, we have a limited-size `bag`, some things with their weight`c[]` and value`p[]`. We need to make use of this bag to hold as more valuable things as possible
 
 Recursion
 
 ```java
-int maxValue(int[] weight, int[] values, int i, int curWeight, int bag) {
-    if (cur > bag) return Integer.MIN_VALUE;
-    if (i == weight.length) return 0;
-    return Math.max(
-        maxValue(weight, value, i + 1, curWeight, bag), 
-        values[i] + maxValue(weight, values, i + 1, curWeight + weight[i], bag)
-    );
-}
-```
-
-Recursion with cache
-
-```java
-int maxValue(int[] weight, int[] values, int bag) {
-    int[][] cache = new [weight.length + 1][bag + 1];
-    return maxValue(weight, values, 0, 0, bag, cache);
-}
-
-int maxValue(int[] weight, int[] values, int i, int curWeight, int bag, int[][] cache) {
-    if (curWeight > bag) {
+public static int maxValue(int[] c, int[] p, int i, int cost, int bag) {
+    if (cost > bag) {
         return Integer.MIN_VALUE;
     }
-    if (i == weight.length) {
+    if (i == c.length) {
         return 0;
     }
-    if (cache[i][curWeight] > 0) {
-        return cache[i][curWeight];
-    }
-    cache[i][curWeight] = Math.max(
-        maxValue(weight, value, i + 1, curWeight, bag), 
-        values[i] + maxValue(weight, values, i + 1, curWeight + weight[i], bag)
+    return Math.max(
+        process1(c, p, i + 1, cost, bag), 
+        p[i] + process1(c, p, i + 1, cost + c[i], bag)
     );
-    return cache[i][curWeight];
 }
 ```
 
 DP
 
-dp\[i]\[j] : the result for weight\[i...] if bag is j
+dp\[i]\[j] : the result for c\[i...] if bag is j
 
-* If j + weight\[i] <= bag, dp\[i]\[j] = max( dp\[i + 1]\[j], values\[i] + dp\[i + 1]\[j + weight\[i]] ), use weight[i] or not
-* else dp\[i]\[j] = dp\[i + 1]\[j], don't use weight[i]
+* If j + c\[i] <= bag, dp\[i]\[j] = max( dp\[i + 1]\[j], p\[i] + dp\[i + 1]\[j + c\[i]] ), use c[i] or not
+* else dp\[i]\[j] = dp\[i + 1]\[j], don't use c[i]
 
 ```java
-int maxValue(int[] weight, int[] values, int bag) {
-    int[][] dp = new int[weight.length + 1][bag + 1];
-    for (int i = weight.length - 1; i >= 0; i--) {
+int maxValue(int[] c, int[] p, int bag) {
+    int[][] dp = new int[c.length + 1][bag + 1];
+    for (int i = c.length - 1; i >= 0; i--) {
         for (int j = bag; j >= 0; j--) {
-            // not use i
-            dp[i][j] = dp[i + 1][j];
-            // if i is usable, compare using it with no-using it
-            if (j + weight[i] <= bag) {
+            dp[i][j] = dp[i + 1][j]; // don't use c[i]
+            if (j + c[i] <= bag) { // don't exceed bag's size
                 dp[i][j] = Math.max(
-                    dp[i][j], 
-                    values[i] + dp[i + 1][j + weight[i]]
+                    dp[i][j], // don't use c[i]
+                    p[i] + dp[i + 1][j + c[i]] // use c[i]
                 );
             }
         }

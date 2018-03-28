@@ -170,7 +170,10 @@ void morris(Node head) {
         if (cur.left != null) {
             // cur.left != null, find mostright in cur.left tree
             mostright = cur.left;
-            while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
+            while (mostright.right != null && mostright.right != cur) {
+                mostright = mostright.right;
+            }
+            
             if (mostright.right == null) {
                 // set link to cur and move to cur.left
                 mostright.right = cur;
@@ -254,55 +257,55 @@ post-order morris
 
 ```java
 void morris(Node head) {
-  if (head == null) return;
-  Node cur = head;
-  Node mostright = null;
-  while (cur != null) {
-    if (cur.left != null) {
-      // cur.left != null, find mostright in cur.left tree
-      mostright = cur.left;
-      while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
-      if (mostright.right == null) {
-        // set link to cur and move to cur.left
-        mostright.right = cur;
-        cur = cur.left;
-      } else {
-        // reset mostright.right to null
-        mostright.right = null;
-        cur = cur.right;
-        // print cur.right and cur after print cur.left
-        printEdge(cur.right);
-      }
-    } else {
-      // print cur.right and cur since cur.left == null, then move to cur.right
-      printEdge(cur.right);
-      cur = cur.right;
+    if (head == null) return;
+    Node cur = head;
+    Node mostright = null;
+    while (cur != null) {
+        if (cur.left != null) {
+            // cur.left != null, find mostright in cur.left tree
+            mostright = cur.left;
+            while (mostright.right != null && mostright.right != cur) mostright = mostright.right;
+            if (mostright.right == null) {
+                // set link to cur and move to cur.left
+                mostright.right = cur;
+                cur = cur.left;
+            } else {
+                // reset mostright.right to null
+                mostright.right = null;
+                cur = cur.right;
+                // print cur.right and cur after print cur.left
+                printEdge(cur.right);
+            }
+        } else {
+            // print cur.right and cur since cur.left == null, then move to cur.right
+            printEdge(cur.right);
+            cur = cur.right;
+        }
     }
-  }
-  printEdge(head);
+    printEdge(head);
 }
 
 void printEdge(Node head) {
-  // print the right border from head reversely
-  Node tail = reverseEdge(head);
-  Node cur = tail;
-  while (cur != null) {
-    // print cur.value
-    cur = cur.right;
-  }
-  reverseEdge(tail);
+    // print the right border from head reversely
+    Node tail = reverseEdge(head);
+    Node cur = tail;
+    while (cur != null) {
+        // print cur.value
+        cur = cur.right;
+    }
+    reverseEdge(tail);
 }
 
 public static Node reverseEdge(Node from) {
-  Node pre = null;
-  Node next = null;
-  while (from != null) {
-    next = from.right;
-    from.right = pre;
-    pre = from;
-    from = next;
-  }
-  return pre;
+    Node pre = null;
+    Node next = null;
+    while (from != null) {
+        next = from.right;
+        from.right = pre;
+        pre = from;
+        from = next;
+    }
+    return pre;
 }
 ```
 
@@ -469,6 +472,39 @@ class SkipList {
     }
 }
 ```
+
+## B-tree
+
+In computer science, a B-tree is a self-balancing tree data structure that keeps data sorted and allows searches, sequential access, insertions, and deletions in logarithmic time. The B-tree is a generalization of a binary search tree in that a node can have more than two children.[1] Unlike self-balancing binary search trees, the B-tree is optimized for systems that read and write large blocks of data. B-trees are a good example of a data structure for external memory. It is commonly used in databases and filesystems.
+
+A B-tree of order 5
+
+![img](https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/B-tree.svg/400px-B-tree.svg.png)
+
+### Rules
+
+A B-tree of order m:
+
+1. Every node has m children at most
+2. Root has at least 2 subtrees
+3. Every node except root has at least m/2 subtrees
+4. All leaves nodes are at the same level
+5. A node with k subtrees has k-1 sorted keys
+6. The number of keys is in [ceil(m/2)-1, m-1]
+
+### Insertion and Deletion
+
+Insertion: add and split
+
+![img](http://odwv9d2u8.bkt.clouddn.com/17-6-14/18477315.jpg)
+
+Deletion: remove
+
+![img](http://odwv9d2u8.bkt.clouddn.com/17-6-14/26426104.jpg)
+
+[B-tree](https://en.wikipedia.org/wiki/B-tree)
+
+[B树和B+树的总结](https://www.cnblogs.com/George1994/p/7008732.html)
 
 ## Tips
 
