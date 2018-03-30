@@ -42,6 +42,38 @@
 
 ClassLoader使用的是双亲委托模型来搜索类的，每个ClassLoader实例都有一个父类加载器的引用（不是继承的关系，是一个包含的关系），虚拟机内置的类加载器（Bootstrap ClassLoader）本身没有父类加载器，但可以用作其它ClassLoader实例的的父类加载器。当一个ClassLoader实例需要加载某个类时，它会试图亲自搜索某个类之前，先把这个任务委托给它的父类加载器，这个过程是由上至下依次检查的，首先由最顶层的类加载器Bootstrap ClassLoader试图加载，如果没加载到，则把任务转交给Extension ClassLoader试图加载，如果也没加载到，则转交给App ClassLoader 进行加载，如果它也没有加载得到的话，则返回给委托的发起者，由它到指定的文件系统或网络等URL中加载该类。如果它们都没有加载到这个类时，则抛出ClassNotFoundException异常。否则将这个找到的类生成一个类的定义，并将它加载到内存当中，最后返回这个类在内存中的Class实例对象
 
+```java
+protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+    // First, check if the class has already been loaded
+    Class c = findLoadedClass(name);
+    if (c == null) {
+        long t0 = System.nanoTime();
+        try {
+            if (parent != null) {
+                c = parent.loadClass(name, false);
+            } else {
+                c = findBootstrapClassOrNull(name);
+            }
+        } catch (ClassNotFoundException e) {
+            // ClassNotFoundException thrown if class not found
+            // from the non-null parent class loader
+        }
+
+        if (c == null) {
+            // If still not found, then invoke findClass in order
+            // to find the class.
+            long t1 = System.nanoTime();
+            c = findClass(name);
+
+            // this is the defining class loader; record the stats
+        }
+    }
+    return c;
+}
+```
+
+
+
 ### 使用双亲委托的原因
 
 因为这样可以避免重复加载，当父亲已经加载了该类的时候，就没有必要子ClassLoader再加载一次。考虑到安全因素，我们试想一下，如果不使用这种委托模式，那我们就可以随时使用自定义的String来动态替代java核心api中定义的类型，这样会存在非常大的安全隐患，而双亲委托的方式，就可以避免这种情况，因为String已经在启动时就被引导类加载器（Bootstrcp ClassLoader）加载，所以用户自定义的ClassLoader永远也无法加载一个自己写的String，除非你改变JDK中ClassLoader搜索类的默认算法
@@ -54,6 +86,56 @@ ClassLoader使用的是双亲委托模型来搜索类的，每个ClassLoader实�
 只有两者同时满足的情况下，JVM才认为这两个class是相同的。就算两个class是同一份class字节码，如果被两个不同的ClassLoader实例所加载，JVM也会认为它们是两个不同class。
 
 比如网络上的一个Java类org.classloader.simple.NetClassLoaderSimple，javac编译之后生成字节码文件NetClassLoaderSimple.class，ClassLoaderA和ClassLoaderB这两个类加载器并读取了NetClassLoaderSimple.class文件，并分别定义出了java.lang.Class实例来表示这个类，对于JVM来说，它们是两个不同的实例对象，但它们确实是同一份字节码文件，如果试图将这个Class实例生成具体的对象进行转换时，就会抛运行时异常java.lang.ClassCaseException，提示这是两个不同的类型
+
+## 常用函数
+
+| 方法                                                   | 说明                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| `getParent()`                                          | 返回该类加载器的父类加载器。                                 |
+| `loadClass(String name)`                               | 加载名称为 `name`的类，返回的结果是 `java.lang.Class`类的实例。 |
+| `findClass(String name)`                               | 查找名称为 `name`的类，返回的结果是 `java.lang.Class`类的实例。 |
+| `findLoadedClass(String name)`                         | 查找名称为 `name`的已经被加载过的类，返回的结果是 `java.lang.Class`类的实例。 |
+| `defineClass(String name, byte[] b, int off, int len)` | 把字节数组 `b`中的内容转换成 Java 类，返回的结果是 `java.lang.Class`类的实例。这个方法被声明为 `final`的。 |
+| `resolveClass(Class<?> c)`                             | 链接指定的 Java 类。                                         |
+
+## 自定义Classloader
+
+自定义的classloader
+
+```java
+public class WebClassLoader extends ClassLoader {
+
+    private byte[] bclazz;
+
+    public WebClassLoader(ClassLoader parent, byte[] bclazz){
+        super(parent);
+        this.bclazz = bclazz;
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        return defineClass(name, bclazz, 0, bclazz.length);
+    }
+}
+```
+
+使用反射或接口调用class中的方法
+
+```java
+WebClassLoader loader = new WebClassLoader(MyApplication.getContext().getClassLoader(), module);
+Class clazz = loader.loadClass("com.example.TestClass");
+
+// 使用接口调用方法
+TestInterface ti = clazz.newInstance();
+ti.test();
+
+// 或者使用反射调用方法
+Object o = clazz.newInstance();
+Method m = clazz.getDeclaredMethod("test");
+result = (String) m.invoke(o);
+```
+
+CLassLoader类中loadClass的具体实现
 
 # 对象
 
@@ -112,6 +194,62 @@ Java程序通过栈上的reference数据来操作堆上的具体对象。主要�
    ![Java内存区域详解](http://ww3.sinaimg.cn/mw690/b254dc71gw1eumzdyjnawg20if08hglw.gif)
 
 两个方式各有优点，使用句柄最大的好处是引用中存储的是稳定的句柄地址，对象被移动时只会改变句柄中实例的地址，引用不需要修改、使用直接指针访问的好处是速度更快，它节省了一次指针定位的时间开销。
+
+# 反射
+
+## Class
+
+Class保存着运行时信息的类，通过Class可以获取类中的值
+
+### 常用函数
+
+`类名.getClass()`：一般通过这个方法获取某个类的Class对象实例
+
+`Class.forName(String className)`：通过类全名获取某个类的Class对象实例
+
+`类名.class`：获取某个类的Class实例
+
+`newInstance()`：调用无参构造函数创建一个实例
+
+```java
+// 调用无参的私有构造函数
+Constructor c1 = Class.forName("java.lang.String")
+        .getDeclaredConstructor();
+c1.setAccessible(true);
+String str1 = (String) c1.newInstance();
+
+// 调用有参的私有构造函数
+Constructor c2 = Class.forName("java.lang.String")
+        .getDeclaredConstructor(new Class[] { String.class });
+c2.setAccessible(true);
+String str2 = (String) c2.newInstance("hello");
+```
+
+`getName`：获取类名+包名，例如`java.lang.String`
+
+`getSimpleName`：获取类名，例如String
+
+`getComponentType`：获取数组的Class对象
+
+`getConstructors`：获取构造器数组，包括超类的共有成员
+
+`getMethods`：返回方法数组，包括超类的公有成员
+
+`getFields`：返回域数组，包括超类的公有成员
+
+`getDeclaredConstructors`：返回全部构造器数组,无论是public/private还是protected,不包括超类的成员
+
+`getDeclaredFields`：返回全部域数组,无论是public/private还是protected,不包括超类的成员
+
+`getDeclaredMethods`：返回全部方法数组,无论是public/private还是protected,不包括超类的成员
+
+`getModifiers`：获取类前的修饰符
+
+## 类名.this
+
+类名.this会返回类的实例
+
+一般在一个类的内部类中，想要调用外部类的方法或者成员域时，就需要使用`外部名.this.成员域`
 
 # 泛型
 
@@ -730,7 +868,7 @@ synchronized关键字可以作为函数的修饰符，也可作为函数内的�
 
 #### 关键点
 
-1. 无论synchronized关键字加在方法上还是对象上，它取得的锁都是对象，而不是把一段代码或函数当作锁――而且同步方法很可能还会被其他线程的对象访问。
+1. 无论synchronized关键字加在方法上还是对象上，它**取得的锁都是对象，而不是把一段代码或函数当作锁**，而且同步方法很可能还会被其他线程的对象访问。
 2. 每个对象只有一个锁（lock）与之相关联。
 3. 实现同步是要很大的系统开销作为代价的，甚至可能造成死锁，所以尽量避免无谓的同步控制
 
@@ -775,7 +913,7 @@ synchronized关键字可以作为函数的修饰符，也可作为函数内的�
    } 
    ```
 
-3. 用于static：锁定类本身的实例对象
+3. 用于static：锁定类字面量
 
    ```java
    class Foo  
@@ -790,6 +928,17 @@ synchronized关键字可以作为函数的修饰符，也可作为函数内的�
        }  
    }  
    ```
+
+#### synchronized，ReentrantLock和Atomic的区别
+
+* synchronized：
+  在资源竞争不是很激烈的情况下，偶尔会有同步的情形下，synchronized是很合适的。原因在于，编译程序通常会尽可能的进行优化synchronize，另外可读性非常好，不管用没用过5.0多线程包的程序员都能理解。
+* ReentrantLock:
+  ReentrantLock提供了多样化的同步，比如有时间限制的同步，可以被Interrupt的同步（synchronized的同步是不能Interrupt的）等。在资源竞争不激烈的情形下，性能稍微比synchronized差点点。但是当同步非常激烈的时候，synchronized的性能一下子能下降好几十倍。而ReentrantLock确还能维持常态。
+* Atomic:
+  和上面的类似，不激烈情况下，性能比synchronized略逊，而激烈的时候，也能维持常态。激烈的时候，Atomic的性能会优于ReentrantLock一倍左右。但是其有一个缺点，就是只能同步一个值，一段代码中只能出现一个Atomic的变量，多于一个同步无效。因为他不能在多个Atomic之间同步。
+
+所以，我们写同步的时候，优先考虑synchronized，如果有特殊需要，再进一步优化。ReentrantLock和Atomic如果用的不好，不仅不能提高性能，还可能带来灾难。
 
 ### volatile
 
@@ -1229,9 +1378,11 @@ class A {
 
 ## protected void finalize()
 
-finalize()方法可以被子类对象所覆盖，然后作为一个终结者，当GC被调用的时候完成最后的清理工作（例如释放系统资源之类）。这就是终止。默认的finalize()方法什么也不做，当被调用时直接返回
+Runtime 类里有一个 runFinalizersOnExit 方法，可以让程序在退出时执行所有对象的未被自动调用 finalize 方法，即使该对象仍被引用。但是从官方文档可以看出，该方法已经废弃，不建议使用
 
-应该尽量避免使用finalize()。相对于其他JVM实现，终结器被调用的情况较少——可能是因为终结器线程的优先级别较低的原因。如果你依靠终结器来关闭文件或者其他系统资源，可能会将资源耗尽，当程序试图打开一个新的文件或者新的系统资源的时候可能会崩溃，就因为这个缓慢的终结器
+1. 对象的 `finalize` 方法不一定会被调用，即使是进程退出前。
+2. 发生 GC 时一个对象的内存是否释放取决于是否存在该对象的引用，如果该对象包含对象成员，那对象成员也遵循本条。
+3. 对象里包含的对象成员按声明顺序进行释放。
 
 ## Class< > getClass()
 
@@ -2140,5 +2291,157 @@ Exception in thread "main" java.lang.reflect.InvocationTargetException
 
 [深入理解java异常处理机制](http://blog.csdn.net/hguisu/article/details/6155636)
 
+# 注解
+
+Java注解是附加在代码中的一些元信息，用于一些工具在编译、运行时进行解析和使用，起到说明、配置的功能
+注解不会也不能影响代码的实际逻辑，仅仅起到辅助性的作用。包含在 java.lang.annotation 包中。
+
+## 分类
+
+### 按运行机制划分
+
+* 源码注解：只在源码中存在，编译成.class文件就不存在了
+* 编译时注解：在源码和.class文件中都存在。像前面的`@Override`、`@Deprecated`、`@SuppressWarnings`，他们都属于编译时注解
+* 运行时注解：在运行阶段还起作用，甚至会影响运行逻辑的注解。像`@Autowired`自动注入的这样一种注解就属于运行时注解，它会在程序运行的时候把你的成员变量自动的注入进来
+
+### 按来源划分
+
+* JDK注解
+  * `@Override`：告诉用户和编译器该方法覆盖了父类中的同一个方法
+  * `@Deprecated`：表明这个方法已经过时了，会发出警告
+  * `@Suppvisewarnings("xxx")`：表示忽略了xxx的警告
+
+* 第三方注解
+
+  例如Spring的`@Autowired`，`@Service`，Mybatis的`@InsertProvider`，`@Options`等
+
+* 自定义注解
+
+### 元注解
+
+元注解是给注解进行注解，可以理解为注解的注解就是元注解
+
+## 自定义注解
+
+使用`@interface`关键字定义一个注解
+
+```java
+// 元注解部分
+@Target({ElementType.METHOD,ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@Documented
+
+// 注解部分
+public @interface Description {
+    String desc();
+    String author();
+    int age() default 18;
+}
+```
+
+其中定义的“方法”在注解里只是一个成员变量，可以用`default`指定默认值
+
+* 成员类型是受限制的，合法的类型包括基本的数据类型以及String，Class，Annotation,Enumeration等。
+* 如果注解只有一个成员，则成员名必须取名为`value()`，在使用时可以忽略成员名和赋值号（=）。
+* 注解类可以没有成员，没有成员的注解称为标识注解。
+
+元注解部分说明：
+
+* `@Target`：作用域列表，格式为`ElementType.xxx`，中间用逗号分隔
+
+  * `METHOD`：方法声明
 
 
+  * `CONSTRUCTOR`：构造方法声明
+  * `FIELD`：字段声明
+  * `LOCAL VARIABLE`：局部变量声明
+  * `METHOD`：方法声明
+  * `PACKAGE`：包声明
+  * `PARAMETER`：参数声明
+  * `TYPE`：类接口
+
+* `@Retention`：生命周期
+
+  * `RUNTIME`在运行时存在，可以通过反射读取
+
+
+  * `SOURCE`：只在源码显示，编译时丢弃
+  * `CLASS`：编译时记录到class中，运行时忽略
+
+* `@Inherited`是一个标识性的元注解，它允许子注解继承它。
+
+* `@Documented`，生成javadoc时会包含注解
+
+使用自定义注解：`@<注解名>(<成员名1>=<成员值1>,<成员名1>=<成员值1>,…)`
+
+```java
+@Description(desc="i am Color",author="boy",age=18)
+public String Color() {
+    return "red";
+}
+```
+
+## 解析注解
+
+通过反射获取类 、函数或成员上的**运行时注解信息**，从而实现动态控制程序运行的逻辑。
+
+```java
+@Target({ElementType.METHOD,ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@Documented
+public @interface Description {
+    String value();
+}
+
+@Description("Class Annotation")
+public class Child {
+    @Override
+    @Description("Method Annotation")
+    public String name() {
+        return null;
+    }
+}
+
+public static void main(String[] args) {
+    try {
+        // 使用类加载器加载类
+        Class c = Class.forName("com.test.Child");
+        // 找到类上面的注解
+        boolean isExist = c.isAnnotationPresent(Description.class);
+        // 上面的这个方法是用这个类来判断这个类是否存在Description这样的一个注解
+        if (isExist) {
+            // 拿到注解实例，解析类上面的注解
+            Description d = (Description) c.getAnnotation(Description.class);
+            System.out.println(d.value());
+        }
+
+        //获取所有的方法
+        Method[] ms = c.getMethods();
+        for (Method m : ms) {
+            //拿到方法上的所有的注解
+            Annotation[] as = m.getAnnotations();
+            for (Annotation a : as) {
+                //用二元操作符判断a是否是Description的实例
+                if (a instanceof Description) {
+                    Description d = (Description) a;
+                    System.out.println(d.value());
+                }
+
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+```
+
+输出
+
+```shell
+Class Annotation
+Method Annotation
+```
+
+[框架开发之Java注解的妙用](https://www.jianshu.com/p/b560b30726d4)

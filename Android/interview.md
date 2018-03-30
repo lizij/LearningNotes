@@ -163,15 +163,15 @@ if (r != null && !r.activity.mFinished) {
 ```java
 @Override
 public void onSaveInstanceState(Bundle outState) {
-  super.onSaveInstanceState(outState, outPersistentState);
-  outState.putString("editText",myEdit.getText().toString());
+    super.onSaveInstanceState(outState, outPersistentState);
+    outState.putString("editText",myEdit.getText().toString());
 }
 
 @Override
 public void onRestoreInstanceState(Bundle savedInstanceState) {
-  super.onRestoreInstanceState(savedInstanceState, persistentState);
-  String str = savedInstanceState.getString("editText");
-  myEdit.setText(str);
+    super.onRestoreInstanceState(savedInstanceState, persistentState);
+    String str = savedInstanceState.getString("editText");
+    myEdit.setText(str);
 }
 ```
 
@@ -1126,6 +1126,269 @@ public class CustomDrawable extends Drawable {
 
 }
 ```
+
+# 动态加载
+
+## 基础性问题
+
+### 资源访问
+
+插件中以R开头的资源都不能访问，因为宿主程序中没有插件的资源
+
+解决方法：
+
+Activity通过ContextImpl管理，而Context中通过`getAssets`和`getResources`两个方法获取资源，只要覆写这两个方法就可以解决资源问题
+
+```java
+/** Return an AssetManager instance for your application's package. */
+public abstract AssetManager getAssets();
+/** Return a Resources instance for your application's package. */
+public abstract Resources getResources();
+```
+
+```java
+protected void loadResources() {  
+    try {  
+        AssetManager assetManager = AssetManager.class.newInstance();  
+        Method addAssetPath = assetManager.getClass().getMethod("addAssetPath", String.class);  
+        addAssetPath.invoke(assetManager, mDexPath);  
+        mAssetManager = assetManager;  
+    } catch (Exception e) {  
+        e.printStackTrace();  
+    }  
+    Resources superRes = super.getResources();  
+    mResources = new Resources(mAssetManager, superRes.getDisplayMetrics(),  
+                               superRes.getConfiguration());  
+    mTheme = mResources.newTheme();  
+    mTheme.setTo(super.getTheme());  
+}
+```
+
+```java
+@Override  
+public AssetManager getAssets() {  
+    return mAssetManager == null ? super.getAssets() : mAssetManager;  
+}  
+
+@Override  
+public Resources getResources() {  
+    return mResources == null ? super.getResources() : mResources;  
+}
+```
+
+> 加载的方法是通过反射，通过调用AssetManager中的addAssetPath方法，我们可以将一个apk中的资源加载到Resources中，由于addAssetPath是隐藏api我们无法直接调用，所以只能通过反射，下面是它的声明，通过注释我们可以看出，传递的路径可以是zip文件也可以是一个资源目录，而apk就是一个zip，所以直接将apk的路径传给它，资源就加载到AssetManager中了，然后再通过AssetManager来创建一个新的Resources对象，这个对象就是我们可以使用的apk中的资源了，这样我们的问题就解决了
+>
+> ```java
+> /** 
+>  * Add an additional set of assets to the asset manager.  This can be 
+>  * either a directory or ZIP file.  Not for use by applications.  Returns 
+>  * the cookie of the added asset, or 0 on failure. 
+>  * {@hide} 
+>  */  
+> public final int addAssetPath(String path) {  
+>     int res = addAssetPathNative(path);  
+>     return res;  
+> }
+> ```
+
+### Activity生命周期管理
+
+#### 反射方式
+
+获取Activity的各种生命周期方法，然后在代理Activity中调用插件Activity的生命周期方法
+
+1. 代码复杂
+2. 性能开销大
+3. 由于apk中的activity不是真正意义上的activity（没有在宿主程序中注册且没有完全初始化），所以onCreate，onStart等这几个生命周期的方法系统就不会去自动调用了
+
+> Fragment既有类似于Activity的生命周期，又有类似于View的界面，将Fragment加入到Activity中，activity会自动管理Fragment的生命周期，apk中的activity是通过宿主程序中的代理activity启动的，将Fragment加入到代理activity内部，其生命周期将完全由代理activity来管理，但是采用这种方法，就要求apk尽量采用Fragment来实现，还有就是在做页面跳转的时候有点麻烦
+
+#### 接口方式
+
+将activity的大部分生命周期方法提取出来作为一个接口（DLPlugin），然后通过代理activity（DLProxyActivity）去调用插件activity实现的生命周期方法，这样就完成了插件activity的生命周期管理，并且没有采用反射，当我们想增加一个新的生命周期方法的时候，只需要在接口中声明一下同时在代理activity中实现一下即可
+
+```java
+public interface DLPlugin {
+    public void onStart();
+    public void onRestart();
+    public void onActivityResult(int requestCode, int resultCode, Intent data);
+    public void onResume();
+    public void onPause();
+    public void onStop();
+    public void onDestroy();
+    public void onCreate(Bundle savedInstanceState);
+    public void setProxy(Activity proxyActivity, String dexPath);
+    public void onSaveInstanceState(Bundle outState);
+    public void onNewIntent(Intent intent);
+    public void onRestoreInstanceState(Bundle savedInstanceState);
+    public boolean onTouchEvent(MotionEvent event);
+    public boolean onKeyUp(int keyCode, KeyEvent event);
+    public void onWindowAttributesChanged(LayoutParams params);
+    public void onWindowFocusChanged(boolean hasFocus);
+    public void onBackPressed();
+    //...
+}
+```
+
+```java
+//...
+@Override
+protected void onStart() {
+    mRemoteActivity.onStart();
+    super.onStart();
+}
+
+@Override
+protected void onRestart() {
+    mRemoteActivity.onRestart();
+    super.onRestart();
+}
+
+@Override
+protected void onResume() {
+    mRemoteActivity.onResume();
+    super.onResume();
+}
+
+@Override
+protected void onPause() {
+    mRemoteActivity.onPause();
+    super.onPause();
+}
+
+@Override
+protected void onStop() {
+    mRemoteActivity.onStop();
+    super.onStop();
+}
+//...
+```
+
+### ClassLoader管理
+
+将不同插件的ClassLoader存储在一个HashMap中，可以保证不同插件中的类彼此互不干扰，避免了多个ClassLoader加载同一个类时引起的类型转换问题
+
+```java
+public class DLClassLoader extends DexClassLoader {
+
+    private static final String TAG = DLClassLoader.class.getSimpleName();
+
+    private static final Map<String, DLClassLoader> mPluginClassLoaders = new ConcurrentHashMap<String, DLClassLoader>();
+
+    protected DLClassLoader(String dexPath, String optimizedDirectory, String libraryPath, ClassLoader parent) {
+        super(dexPath, optimizedDirectory, libraryPath, parent);
+    }
+
+    public static DLClassLoader getClassLoader(String dexPath, Context context, ClassLoader parentLoader) {
+        Log.d(TAG, "DLClassLoader.getClassLoader(), dexPath=" + dexPath);
+        DLClassLoader dLClassLoader = mPluginClassLoaders.get(dexPath);
+        if (dLClassLoader != null) return dLClassLoader;
+
+        File dexOutputDir = context.getDir("dex", Context.MODE_PRIVATE);
+        if (dexOutputDir == null || !dexOutputDir.exists()) {
+            return null;
+        }
+        final String dexOutputPath = dexOutputDir.getAbsolutePath();
+        dLClassLoader = new DLClassLoader(dexPath, dexOutputPath, null, parentLoader);
+        mPluginClassLoaders.put(dexPath, dLClassLoader);
+
+        return dLClassLoader;
+    }
+}
+```
+
+
+
+[DL : Apk动态加载框架](https://github.com/singwhatiwanna/dynamic-load-apk)
+
+## 示例
+
+实际项目中碰到的场景，需要远程下载class文件并使用自定义classloader加载
+
+定义接口或抽象类，例如TestInterface
+
+```java
+public interface TestInterface {
+    String test();
+}
+```
+
+实现TestClass类并实现TestInterface，并编译成TestClass.class文件
+
+```java
+package com.example;
+class TestClass implements TestInterface {
+    @Override
+    public String test() {
+        return "test"
+    }
+}
+```
+
+```shell
+javac com/example/TestClass.java # 生成TestClass.class
+```
+
+自定义的classloader
+
+```java
+public class WebClassLoader extends ClassLoader {
+
+    private byte[] bclazz;
+
+    public WebClassLoader(ClassLoader parent, byte[] bclazz){
+        super(parent);
+        this.bclazz = bclazz;
+    }
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        return defineClass(name, bclazz, 0, bclazz.length);
+    }
+}
+```
+
+通过网络下载class文件后，直接读取字节流并保存为`byte[]`
+
+```java
+protected byte[] module = null;
+public synchronized int getModule(String url){
+    try {
+        if (module == null) {
+            module = httpsRequest.doGet(url);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+        return -1;
+    }
+    return 0;
+}
+```
+
+使用反射或接口调用class中的方法
+
+```java
+WebClassLoader loader = new WebClassLoader(MyApplication.getContext().getClassLoader(), module);
+Class clazz = loader.loadClass("com.example.TestClass");
+
+// 使用接口调用方法
+TestInterface ti = clazz.newInstance();
+ti.test();
+
+// 或者使用反射调用方法
+Object o = clazz.newInstance();
+Method m = clazz.getDeclaredMethod("test");
+result = (String) m.invoke(o);
+```
+
+CLassLoader类中loadClass的具体实现
+
+1. 查看请求的类装载器是否已经被装载进这个类装载器的命名空间。如果确实如此，返回这个已经装载的Class实例。
+2. 否则调用委托机制，如果父类加载成功，则返回这个Class实例。
+3. 否则，调用findClass()，findClass会试图寻找或生成一个字节数组。如果成功，findClass()把字节数组传递给defineClass，后者试着导入这个类型，返回一个Class实例。如果findClass返回了一个Class实例，loadClass()把这个实例返回。
+4. 否则，findClass抛出某些异常，loadClass返回同样异常
+
+[在运行时刻从文件中调入Class(defineClass 的使用)](https://blog.csdn.net/u013344397/article/details/53002240)
 
 # 动画
 
@@ -2562,6 +2825,22 @@ recyclerView.setAdapter(adapter);
 ]}
 ```
 
+## fromJSON原理
+
+```java
+Gson gson = new Gson();
+Object obj = gson.fromJson(String, Object.class);
+```
+
+Gson反序列化的过程本质上是一个递归过程。当对其中一个字段进行解析时，其值如果是花括号保存的对象，则递归解析该对象；其值如果是数组，则处理数组后递归解析数组中的各个值。递归的终止条件是反序列的字段类型是java的基本类型信息
+
+1. 解析对象类型，缓存对象字段信息 
+2. 解析json，获得json中的键值对信息 
+3. 根据json中的键名寻找对象中对应的字段 
+4. 如果字段是非基本类型，则回到流程1处理该字段信息和json中的值，否则继续5 
+5. 字段是基本类型，则把值信息转化为基本类型返回 
+6. 反射赋值：所以需要Class对象
+
 # JNI和NDK
 
 ## 定义
@@ -2780,93 +3059,43 @@ typedef struct{
 } JNINativeMethod  
 ```
 
-以MediaRecorder进行分析，首先定义一个JNINativeMethod数据，里面填写好了Java函数名和对应的输入输出和对应JNI的函数名，例如
+定义JNINativeMethod数组，依次为方法名，函数签名和函数指针
 
-```java
-static const JNINativeMethod gMethods[] = {
-    // start是Java层的Native方法，它对应的JNI层的方法为android_media_MediaRecorder_start。
-    // "()V"是start方法的签名信息
-    {"start", "()V", (void *)android_media_MediaRecorder_start},
-    {"stop",  "()V", (void *)android_media_MediaRecorder_stop}
+```c
+JNINativeMethod nativeMethod[] = {
+    {"dynamicRegFromJni", "()Ljava/lang/String;", (void*)nativeDynamicRegFromJni}
 };
 ```
 
-只定义JNINativeMethod 类型的数组是没有用的，还需要注册它，注册的方法为`register_android_media_MediaRecorder`
-
-JNI_OnLoad方法会在System.loadLibrary方法后调用，尝试进行调用跟踪
+在`JNI_Onload`方法中注册
 
 ```c
-// frameworks/base/media/jni/android_media_MediaRecorder.cpp
-jint JNI_OnLoad(JavaVM* vm, void* /* reserved */)
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *reserved)
 {
-    JNIEnv* env = NULL;
-    jint result = -1;
-    if (vm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK) {
-        ALOGE("ERROR: GetEnv failed\n");
-        goto *bail;
+    JNIEnv *env;
+    if ((*jvm) -> GetEnv(jvm, (void**) &env, JNI_VERSION_1_4) != JNI_OK)
+    {
+        return -1;
     }
-    assert(env != NULL);
-    //...
-    if (register_android_media_MediaPlayer(env) < 0) {
-        ALOGE("ERROR: MediaPlayer native registration failed\n");
-        goto *bail;
-    }
-    if (register_android_media_MediaRecorder(env) < 0) {
-        ALOGE("ERROR: MediaRecorder native registration failed\n");
-        goto *bail;
-    }
-    //...
-    result = JNI_VERSION_1_4;
-    bail:
-    return result;
-}
 
-int register_android_media_MediaRecorder(JNIEnv *env)
-{
-    return AndroidRuntime::registerNativeMethods(
-        env,
-        "android/media/MediaRecorder",
-        gMethods, 
-        NELEM(gMethods));
+    jclass clz = (*env) -> FindClass(env, "github/jp1017/hellojni/MainActivity");
+
+    (*env) -> RegisterNatives(env, clz, nativeMethod, sizeof(nativeMethod) / sizeof(nativeMethod[0]));
+
+    return JNI_VERSION_1_4;
 }
 ```
 
-`register_android_media_MediaRecorder`方法中return了AndroidRuntime的`registerNativeMethods`方法
+> `JNI_OnLoad()`作用：
+>
+> 1. 指定 jni 版本：告诉 JVM 该组件使用哪一个 jni 版本(若未提供`JNI_OnLoad()`函数，JVM 会默认该使用最老的 JNI 1.1版本)，如果要使用新版本的JNI，例如JNI 1.4版，则必须由 `JNI_OnLoad()` 函数返回常量 JNI_VERSION_1_4 (该常量定义在 jni.h 中) 来告知 JVM 
+> 2. 一系列初始化操作，当 JVM 执行到 System.loadLibrary() 函数时，会立即调用` JNI_OnLoad() `方法，因此在该方法中进行各种资源的初始化操作最为恰当
 
-```c
-// frameworks/base/core/jni/AndroidRuntime.cpp
-/*static*/ int AndroidRuntime::registerNativeMethods(
-    JNIEnv* env,
-    const char* className, 
-    const JNINativeMethod* gMethods, 
-    int numMethods) {
-    return jniRegisterNativeMethods(env, className, gMethods, numMethods);
-}
-```
+> ` jint RegisterNatives(JNIEnv *env, jclass clazz, const JNINativeMethod *methods, jint nMethods)`
+>
+> 向 clazz 参数指定的类注册本地方法。methods 参数将指定 JNINativeMethod 结构的数组，其中包含本地方法的名称、签名和函数指针。nMethods 参数将指定数组中的本地方法数
 
-`registerNativeMethods方法中`又return了`jniRegisterNativeMethods`方法，最终调用的JNIEnv的`RegisterNatives`方法
-
-```c
-// external/conscrypt/src/openjdk/native/JNIHelp.cpp
-extern "C" int jniRegisterNativeMethods(
-    JNIEnv* env, 
-    const char* className,
-    const JNINativeMethod* gMethods, 
-    int numMethods)
-{
-    //...
-    if (env->RegisterNatives(c.get(), gMethods, numMethods) < 0) {//1
-        char* msg;
-        (void)asprintf(&msg, 
-                       "RegisterNatives failed for '%s'; aborting...", 
-                       className);
-        env->FatalError(msg);
-    }
-    return 0;
-}
-```
-
-所以我们只需要在`JNI_Onload`中调用`RegisterNatives` 注册即可
+[安卓jni开发之native方法的动态注册](https://www.jianshu.com/p/67019062774b)
 
 ## JNI数据类型和类型签名
 
@@ -2906,21 +3135,64 @@ JNIEnv是指向可用JNI函数表的接口指针，原生代码通过JNIEnv接�
 
 [JNIEnv结构体解析](https://www.jianshu.com/p/453b0463a84c)
 
-### jni调用java
+## jni调用java
 
-`FindClass`：根据类名找到类
+### 一般步骤
 
-`methodCalledByJni`：根据方法名和方法签名，找到方法
+在本地方法中调用Java对象的方法的步骤：
 
-`env->CallStaticVoidMethod`：调用方法
+1. 获取你需要访问的Java对象的类
+
+   * FindClass通过传java中完整的类名来查找java的class
+   * GetObjectClass通过传入jni中的一个java的引用来获取该引用的类型。
+
+   > 前者要求你必须知道完整的类名，后者要求在Jni有一个类的引用。
+
+2. 获取MethodID,调用方法
+
+   * GetMethodID 得到一个实例的方法的ID 
+   * GetStaticMethodID 得到一个静态方法的ID 
+
+3. 获取对象的属性
+
+   * GetFieldID 得到一个实例的域的ID 
+   * GetStaticFieldID 得到一个静态的域的ID
+
+   > JNI通过ID识别域和方法，一个域或方法的ID是任何处理域和方法的函数的必须参数。
+
+### 常用函数
+
+* `jclass FindClass (JNIEnv *env, const char *name)`
+
+  该函数用于加载本地定义的类。它将搜索由CLASSPATH 环境变量为具有指定名称的类所指定的目录和 zip文件
+
+* `jobject NewObject (JNIEnv *env ,  jclass clazz,  jmethodID methodID, ...)`
+
+  构造新 Java 对象。方法 ID指示应调用的构造函数方法。该 ID 必须通过调用 GetMethodID() 获得，且调用时的方法名必须为 \<init>，而返回类型必须为 void (V)
+
+* `jfieldID   GetFieldID(JNIEnv *env, jclass clazz, const char *name, const char *sig)`
+
+  返回类的实例（非静态）域的域 ID。该域由其名称及签名指定。访问器函数的Get\<type>Field 及 Set\<type>Field 系列使用域 ID 检索对象域
+
+* `jmethodID GetMethodID(JNIEnv *env, jclass clazz,    const char *name, const char *sig)`
+
+  返回类或接口实例（非静态）方法的方法 ID。方法可在某个 clazz 的超类中定义，也可从 clazz 继承。该方法由其名称和签名决定。 GetMethodID() 可使未初始化的类初始化。要获得构造函数的方法 ID，应将 \<init> 作为方法名，同时将void (V) 作为返回类型
+
+* `NativeType Call<type>Method (JNIEnv*en v, jobject obj, jmethodID methodID, ...)`
+
+  根据所指定的方法 ID 调用 Java 对象的实例非静态方法，参数附加在函数后面
+
+* `NativeType Call<type>StaticMethod (JNIEnv*env, jclass classzz, ...)`
+
+  根据所指定的方法 ID 调用 Java 对象的实例静态方法，参数附加在函数后面
+
+### 示例
 
 ```java
 public static void methodCalledByJni(String msgFromJni) {
     Log.d(TAG, "methodCalledByJni, msg: " + msgFromJni);
 }
 ```
-
-
 
 ```c
 void callJavaMethod(JNIEnv *env, jobject thiz) {
@@ -2938,7 +3210,265 @@ void callJavaMethod(JNIEnv *env, jobject thiz) {
 }
 ```
 
+### 常见问题
 
+#### JNIEnv和jobject多线程共享问题
+
+JNIEnv是一个线程相关的变量， 对于每个 thread 而言是唯一的 ，所以`*env`指针不可以为多个线程共用
+
+不能直接保存一个线程中的jobject指针到全局变量中,然后在另外一个线程中使用它
+
+**解决办法：**
+
+java虚拟机的JavaVM指针是整个jvm公用的，我们可以通过JavaVM来得到当前线程的JNIEnv指针
+
+用env->NewGlobalRef创建一个全局变量，将传入的obj(局部变量)保存到全局变量中,其他线程可以使用这个全局变量来操纵这个java对象
+
+> 若不是一个 jobject，则不需要这么做。如：
+>
+> jclass 是由 jobject public 继承而来的子类，所以它当然是一个 jobject，需要创建一个 global reference 以便日后使用。
+>
+> 而 jmethodID/jfieldID 与 jobject 没有继承关系，它不是一个 jobject，只是个整数，所以不存在被释放与否的问题，可保存后直接使用
+
+```c
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<pthread.h>
+#include<jni.h>
+#include<android/log.h>
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "native-activity", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "native-activity", __VA_ARGS__))
+#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "native-activity", __VA_ARGS__))
+static JavaVM *gs_jvm = NULL; // 保存起来  
+static jobject gs_object = NULL; // 保存起来  
+
+JNIEXPORT jint JNICALL Java_com_example_testjni_Hunter_test(JNIEnv *env, jclass obj) {  
+    // 注意了，在第一次进来的时候，我就保存他们了，要快！！！！  
+    env->GetJavaVM(&gs_jvm); //保存到全局变量中JVM     
+    gs_object = env->NewGlobalRef(obj); //直接赋值obj到全局变量是不行的,应该调用以下函数: 
+    return 0;  
+}  
+
+/* 服务器发送过来的消息到达了 */  
+int frecvMsg_callback() {  
+    // 注意！！我要调用了  
+    JNIEnv *env;  
+    // 获取当前线程的 env   
+    //Attach主线程
+    if((*gs_jvm)->AttachCurrentThread(gs_jvm, &env, NULL) != JNI_OK)
+    {
+        LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+        return NULL;
+    }
+    // 这个class默认是初始化gs_object时所调用的Java 类  
+    jclass cls;
+    //找到对应的类
+    cls = (*env)->GetObjectClass(env,gs_obj);
+    if(cls == NULL)
+    {
+        LOGE("FindClass() Error.....");
+        goto error;
+    }
+    //再获得类中的方法
+    mid = (*env)->GetMethodID(env, cls, "fromJNI", "(I)V");
+    if (mid == NULL)
+    {
+        LOGE("GetMethodID() Error.....");
+        goto error; 
+    }
+    //最后调用java中的方法
+    (*env)->CallVoidMethod(env, cls, mid ,(int)arg);
+
+    // 用完之后一定要  DetachCurrentThread 取消关联，要不然程序退出会有异常  
+    error:   
+    //Detach主线程
+    if((*gs_jvm)->DetachCurrentThread(gs_jvm) != JNI_OK)
+    {
+        LOGE("%s: DetachCurrentThread() failed", __FUNCTION__);
+    }
+
+    return 0;  
+}
+
+//由java调用以创建子线程
+JNIEXPORT void Java_com_test_JniThreadTestActivity_mainThread( JNIEnv* env, jobject obj, jint threadNum)
+{
+    int i;
+    pthread_t* pt;
+    pt = (pthread_t*) malloc(threadNum * sizeof(pthread_t));
+    for (i = 0; i < threadNum; i++){
+        //创建子线程
+        pthread_create(&pt[i], NULL, &thread_fun, (void *)i);
+    }
+
+    for (i = 0; i < threadNum; i++){
+        pthread_join(pt[i], NULL);
+    }
+    LOGE("main thread exit.....");
+}
+
+//当动态库被加载时这个函数被系统调用
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
+{
+    JNIEnv* env = NULL;
+    jint result = -1;   
+
+    //获取JNI版本
+    if ((*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_4) != JNI_OK)
+    {
+        LOGE("GetEnv failed!");
+        return result;
+    }
+
+    return JNI_VERSION_1_4;
+}
+```
+
+[深入了解android平台的jni---本地多线程调用java代码](http://www.cnblogs.com/aiguozhe/p/5355226.html)
+
+[JNI方法整理](https://blog.csdn.net/autumn20080101/article/details/8646431)
+
+# MarsDaemon
+
+MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的系统中拥有出色的保活能力
+
+[源码地址]([https://github.com/Marswin/MarsDaemon](https://link.jianshu.com/?t=https://github.com/Marswin/MarsDaemon))
+
+## 配置
+
+1. 从github导入项目，并修改gradle
+
+   ```
+   dependencies {
+       compile fileTree(include: ['*.jar'], dir: 'libs')
+       testCompile 'junit:junit:4.12'
+       compile project(':LibMarsdaemon')
+   }
+   ```
+
+   ​
+
+   ![img](https://upload-images.jianshu.io/upload_images/3610640-4141b27edb6813fb.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/276)
+
+2. ​
+
+
+1. 明确自己需要常驻的进程service，创建一个和他同进程的receiver，然后在另外一个进程中创建一个service和一个receiver，并写在Manifest中。进程名可以自定义
+
+   ```xml
+   <service android:name=".Service1" android:process=":process1"/>
+   <receiver android:name=".Receiver1" android:process=":process1"/>
+   <service android:name=".Service2" android:process=":process2"/>
+   <receiver android:name=".Receiver2" android:process=":process2"/>
+   ```
+
+   service1是应用中有业务逻辑的需要常驻进程的service，其他三个组件都是额外创建的，里面不要做任何事情，都是空实现就好了
+
+2. 用你的Application继承`DaemonApplication`，然后在回调方法`getDaemonConfigurations`中返回一个配置，将刚才注册的进程名，service类名，receiver类名传进来
+
+   ```java
+   public class MyApplication1 extends DaemonApplication {
+
+       /**
+        * you can override this method instead of {@link android.app.Application attachBaseContext}
+        * @param base
+        */
+       @Override
+       public void attachBaseContextByDaemon(Context base) {
+           super.attachBaseContextByDaemon(base);
+       }
+   ```
+
+
+       /**
+        * give the configuration to lib in this callback
+        * @return
+        */
+       @Override
+       protected DaemonConfigurations getDaemonConfigurations() {
+           DaemonConfigurations.DaemonConfiguration configuration1 = new DaemonConfigurations.DaemonConfiguration(
+               "com.marswin89.marsdaemon.demo:process1",
+               Service1.class.getCanonicalName(),
+               Receiver1.class.getCanonicalName());
+    
+           DaemonConfigurations.DaemonConfiguration configuration2 = new DaemonConfigurations.DaemonConfiguration(
+               "com.marswin89.marsdaemon.demo:process2",
+               Service2.class.getCanonicalName(),
+               Receiver2.class.getCanonicalName());
+    
+           DaemonConfigurations.DaemonListener listener = new MyDaemonListener();
+           //return new DaemonConfigurations(configuration1, configuration2);//listener can be null
+           return new DaemonConfigurations(configuration1, configuration2, listener);
+       }
+    
+    
+       class MyDaemonListener implements DaemonConfigurations.DaemonListener{
+           @Override
+           public void onPersistentStart(Context context) {
+           }
+    
+           @Override
+           public void onDaemonAssistantStart(Context context) {
+           }
+    
+           @Override
+           public void onWatchDaemonDaed() {
+           }
+       }
+   }
+   ```
+
+   此时如果你想在自己的application里面复写`attachBaseContext`方法的话，发现他已经被写为final，因为我们需要抢时间，所以必须保证进程进入先加载Marsdaemon，如果你想在`attchBaseContext`中做一些事情的话，可以复写`attachBaseContextByDaemon`方法
+
+3. 如果你的Application已经继承了其他的Application类，那么可以参考Appliation2，在Application的`attachBaseContex`t的时候初始化一个`DaemonClient`，然后调用他的`onAttachBaseContext`同样可以实现，当然了，他同样需要一个配置来告诉他我们刚才在manifest中配的信息
+
+   ```java
+   public class MyApplication2 extends Application {
+
+       private DaemonClient mDaemonClient;
+
+       @Override
+       protected void attachBaseContext(Context base) {
+           super.attachBaseContext(base);
+           mDaemonClient = new DaemonClient(createDaemonConfigurations());
+           mDaemonClient.onAttachBaseContext(base);
+       }
+
+
+
+       private DaemonConfigurations createDaemonConfigurations(){
+           DaemonConfigurations.DaemonConfiguration configuration1 = new DaemonConfigurations.DaemonConfiguration(
+               "com.marswin89.marsdaemon.demo:process1",
+               Service1.class.getCanonicalName(),
+               Receiver1.class.getCanonicalName());
+           DaemonConfigurations.DaemonConfiguration configuration2 = new DaemonConfigurations.DaemonConfiguration(
+               "com.marswin89.marsdaemon.demo:process2",
+               Service2.class.getCanonicalName(),
+               Receiver2.class.getCanonicalName());
+           DaemonConfigurations.DaemonListener listener = new MyDaemonListener();
+           //return new DaemonConfigurations(configuration1, configuration2);//listener can be null
+           return new DaemonConfigurations(configuration1, configuration2, listener);
+       }
+
+
+       class MyDaemonListener implements DaemonConfigurations.DaemonListener{
+           @Override
+           public void onPersistentStart(Context context) {
+           }
+
+           @Override
+           public void onDaemonAssistantStart(Context context) {
+           }
+
+           @Override
+           public void onWatchDaemonDaed() {
+           }
+       }
+   }
+   ```
+
+[Android 使用MarsDaemon进程常驻](https://www.jianshu.com/p/70d45a79456a)
 
 # MVC和MVP
 
@@ -4243,6 +4773,26 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
 }
 ```
 
+或
+
+```java
+public boolean onTouch(View v, MotionEvent event) {
+    switch (event.getAction()) {
+        case MotionEvent.ACTION_MOVE:
+            pager.requestDisallowInterceptTouchEvent(true);
+            break;
+        case MotionEvent.ACTION_UP:
+        case MotionEvent.ACTION_CANCEL:
+            pager.requestDisallowInterceptTouchEvent(false);
+            break;
+    }
+}
+```
+
+> 例如：ViewPager来实现左右滑动切换tab，如果tab的某一项中嵌入了水平可滑动的View就会让你有些不爽，比如想滑动tab项中的可水平滑动的控件，却导致tab切换。
+>
+> 因为Android事件机制是从父View传向子View的，可以去检测你当前子View是不是在有可滑动控件等，决定事件是否拦截，但是这个比较麻烦，而且并不能解决所有的问题（必须检测触摸点是否在这个控件上面），其实有比较简单的方法，在你嵌套的控件中注入ViewPager实例（调用控件的getParent()方法），然后在onTouchEvent，onInterceptTouchEvent，dispatchTouchEvent里面告诉父View，也就是ViewPager不要拦截该控件上的触摸事件
+
 父ViewGroup
 
 ```java
@@ -4262,6 +4812,8 @@ public boolean onInterceptTouchEvent(MotionEvent ev) {
 [View滑动冲突处理方法（外部拦截法、内部拦截法）](http://blog.csdn.net/z_l_p/article/details/53488085)
 
 [Android事件冲突场景分析及一般解决思路](https://www.jianshu.com/p/c62fb2f25057)
+
+[用requestDisallowInterceptTouchEvent()方法防止viewpager和子view冲突](http://www.jcodecraeer.com/a/anzhuokaifa/androidkaifa/2013/0803/1500.html)
 
 # Window
 
@@ -4617,6 +5169,8 @@ class LooperThread extends Thread {
 
 ### Handler
 
+#### 常用函数
+
 `Handler(Callback callback)`：使用特定Callback接口创建Handler，需要实现`handleMessage(Message msg)`
 
 `Handler(Looper looper)`：使用特定Looper创建Handler
@@ -4625,9 +5179,29 @@ class LooperThread extends Thread {
 
 `post`：向Handler的Looper中投入一个Runnable对象等待处理
 
+`postDelayed`：向Handler的Looper中投入一个Runnable对象并在指定时延后处理
+
 `dispatchMessage`：处理消息
 
 ![andler消息处理流程图](D:\Lizij\Document\LearningNotes\Android\images\Handler消息处理流程图1.png)
+
+#### postDelayed的原理
+
+##### 精确计时的
+
+在`MessageQueue.next()`中，如果头部的这个Message是有延迟而且延迟时间没到的（now < msg.when），会计算一下时间（保存为变量`nextPollTimeoutMillis`），然后在循环开始的时候判断如果这个Message有延迟，就调用`nativePollOnce(ptr, nextPollTimeoutMillis)`进行阻塞。`nativePollOnce()`的作用类似与`object.wait()`，只不过是使用了Native的方法对这个线程精确时间的唤醒
+
+##### 多个带有时延Runnable的执行顺序
+
+如果Message会阻塞MessageQueue的话，那么先postDelay10秒一个Runnable A，消息队列会一直阻塞，然后我再post一个Runnable B，B并不会等A执行完了再执行
+
+调用过程如下：
+
+1. `postDelay()`一个10秒钟的Runnable A、消息进队，MessageQueue调用`nativePollOnce()`阻塞，Looper阻塞；
+2. 紧接着`post()`一个Runnable B、消息进队，判断现在A时间还没到、正在阻塞，把B插入消息队列的头部（A的前面），然后调用`nativeWake()`方法唤醒线程；
+3. `MessageQueue.next()`方法被唤醒后，重新开始读取消息链表，第一个消息B无延时，直接返回给Looper；
+4. Looper处理完这个消息再次调用`next()`方法，MessageQueue继续读取消息链表，第二个消息A还没到时间，计算一下剩余时间（假如还剩9秒）继续调用`nativePollOnce()`阻塞；
+5. 直到阻塞时间到或者下一次有Message进队；
 
 ## 线程间通信
 
