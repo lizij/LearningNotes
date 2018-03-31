@@ -536,7 +536,7 @@ mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
 
 核心思想：不要在主线程中做太耗时的操作即可。
 
-1. 不要再getView中执行耗时操作。必须使用异步的方式来处理。
+1. 不要在getView中执行耗时操作。必须使用异步的方式来处理。
 2. 控制异步任务的执行频率。以照片墙为例，如果用户频繁的上下滑动，必定带来大量UI更新，所以解决思路就是：在滑动时停止加载图片，等列表停下来以后再加载图片。
 3. 通过开启硬件加速解决卡顿。
 
@@ -665,6 +665,7 @@ private Bitmap loadBitmapFromDiskCache(String url, int reqWidth,
     if (snapShot != null) {
         FileInputStream fileInputStream = (FileInputStream)snapShot.getInputStream(DISK_CACHE_INDEX);
         FileDescriptor fileDescriptor = fileInputStream.getFD();
+        // 默认DiskLruCache中存储的是文件数据不能直接通过Bitmap加载，可以利用Snapshot转换为字节流，再转换为文件描述符加载
         bitmap = mImageResizer.decodeSampledBitmapFromFileDescriptor(fileDescriptor,
                                                                      reqWidth, reqHeight);
         if (bitmap != null) {
@@ -822,8 +823,6 @@ public class MainActivity extends Activity implements OnScrollListener {
     }
 }
 ```
-
-
 
 # Binder
 
@@ -1297,8 +1296,6 @@ public class DLClassLoader extends DexClassLoader {
 }
 ```
 
-
-
 [DL : Apk动态加载框架](https://github.com/singwhatiwanna/dynamic-load-apk)
 
 ## 示例
@@ -1317,7 +1314,7 @@ public interface TestInterface {
 
 ```java
 package com.example;
-class TestClass implements TestInterface {
+public class TestClass implements TestInterface {
     @Override
     public String test() {
         return "test"
@@ -3143,20 +3140,20 @@ JNIEnv是指向可用JNI函数表的接口指针，原生代码通过JNIEnv接�
 
 1. 获取你需要访问的Java对象的类
 
-   * FindClass通过传java中完整的类名来查找java的class
-   * GetObjectClass通过传入jni中的一个java的引用来获取该引用的类型。
+   * `FindClass`通过传java中完整的类名来查找java的class
+   * `GetObjectClass`通过传入jni中的一个java的引用来获取该引用的类型。
 
    > 前者要求你必须知道完整的类名，后者要求在Jni有一个类的引用。
 
 2. 获取MethodID,调用方法
 
-   * GetMethodID 得到一个实例的方法的ID 
-   * GetStaticMethodID 得到一个静态方法的ID 
+   * `GetMethodID` 得到一个实例的方法的ID 
+   * `GetStaticMethodID` 得到一个静态方法的ID 
 
 3. 获取对象的属性
 
-   * GetFieldID 得到一个实例的域的ID 
-   * GetStaticFieldID 得到一个静态的域的ID
+   * `GetFieldID `得到一个实例的域的ID 
+   * `GetStaticFieldID` 得到一个静态的域的ID
 
    > JNI通过ID识别域和方法，一个域或方法的ID是任何处理域和方法的函数的必须参数。
 
@@ -3351,10 +3348,9 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
 
    ![img](https://upload-images.jianshu.io/upload_images/3610640-4141b27edb6813fb.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/276)
 
-2. ​
+   ​
 
-
-1. 明确自己需要常驻的进程service，创建一个和他同进程的receiver，然后在另外一个进程中创建一个service和一个receiver，并写在Manifest中。进程名可以自定义
+2. 明确自己需要常驻的进程service，创建一个和他同进程的receiver，然后在另外一个进程中创建一个service和一个receiver，并写在Manifest中。进程名可以自定义
 
    ```xml
    <service android:name=".Service1" android:process=":process1"/>
@@ -3365,7 +3361,9 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
 
    service1是应用中有业务逻辑的需要常驻进程的service，其他三个组件都是额外创建的，里面不要做任何事情，都是空实现就好了
 
-2. 用你的Application继承`DaemonApplication`，然后在回调方法`getDaemonConfigurations`中返回一个配置，将刚才注册的进程名，service类名，receiver类名传进来
+   ​
+
+3. 用你的Application继承`DaemonApplication`，然后在回调方法`getDaemonConfigurations`中返回一个配置，将刚才注册的进程名，service类名，receiver类名传进来
 
    ```java
    public class MyApplication1 extends DaemonApplication {
@@ -3378,50 +3376,48 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
        public void attachBaseContextByDaemon(Context base) {
            super.attachBaseContextByDaemon(base);
        }
+          * give the configuration to lib in this callback
+       * @return
+       */
+      @Override
+      protected DaemonConfigurations getDaemonConfigurations() {
+          DaemonConfigurations.DaemonConfiguration configuration1 = new DaemonConfigurations.DaemonConfiguration(
+              "com.marswin89.marsdaemon.demo:process1",
+              Service1.class.getCanonicalName(),
+              Receiver1.class.getCanonicalName());
+
+          DaemonConfigurations.DaemonConfiguration configuration2 = new DaemonConfigurations.DaemonConfiguration(
+              "com.marswin89.marsdaemon.demo:process2",
+              Service2.class.getCanonicalName(),
+              Receiver2.class.getCanonicalName());
+
+          DaemonConfigurations.DaemonListener listener = new MyDaemonListener();
+          //return new DaemonConfigurations(configuration1, configuration2);//listener can be null
+          return new DaemonConfigurations(configuration1, configuration2, listener);
+      }
    ```
 
 
-       /**
-        * give the configuration to lib in this callback
-        * @return
-        */
-       @Override
-       protected DaemonConfigurations getDaemonConfigurations() {
-           DaemonConfigurations.DaemonConfiguration configuration1 = new DaemonConfigurations.DaemonConfiguration(
-               "com.marswin89.marsdaemon.demo:process1",
-               Service1.class.getCanonicalName(),
-               Receiver1.class.getCanonicalName());
+      class MyDaemonListener implements DaemonConfigurations.DaemonListener{
+          @Override
+          public void onPersistentStart(Context context) {
+          }
     
-           DaemonConfigurations.DaemonConfiguration configuration2 = new DaemonConfigurations.DaemonConfiguration(
-               "com.marswin89.marsdaemon.demo:process2",
-               Service2.class.getCanonicalName(),
-               Receiver2.class.getCanonicalName());
+          @Override
+          public void onDaemonAssistantStart(Context context) {
+          }
     
-           DaemonConfigurations.DaemonListener listener = new MyDaemonListener();
-           //return new DaemonConfigurations(configuration1, configuration2);//listener can be null
-           return new DaemonConfigurations(configuration1, configuration2, listener);
-       }
-    
-    
-       class MyDaemonListener implements DaemonConfigurations.DaemonListener{
-           @Override
-           public void onPersistentStart(Context context) {
-           }
-    
-           @Override
-           public void onDaemonAssistantStart(Context context) {
-           }
-    
-           @Override
-           public void onWatchDaemonDaed() {
-           }
-       }
-   }
+          @Override
+          public void onWatchDaemonDaed() {
+          }
+      }
    ```
 
    此时如果你想在自己的application里面复写`attachBaseContext`方法的话，发现他已经被写为final，因为我们需要抢时间，所以必须保证进程进入先加载Marsdaemon，如果你想在`attchBaseContext`中做一些事情的话，可以复写`attachBaseContextByDaemon`方法
 
-3. 如果你的Application已经继承了其他的Application类，那么可以参考Appliation2，在Application的`attachBaseContex`t的时候初始化一个`DaemonClient`，然后调用他的`onAttachBaseContext`同样可以实现，当然了，他同样需要一个配置来告诉他我们刚才在manifest中配的信息
+   ​
+
+4. 如果你的Application已经继承了其他的Application类，那么可以参考Appliation2，在Application的`attachBaseContex`t的时候初始化一个`DaemonClient`，然后调用他的`onAttachBaseContext`同样可以实现，当然了，他同样需要一个配置来告诉他我们刚才在manifest中配的信息
 
    ```java
    public class MyApplication2 extends Application {
@@ -3467,6 +3463,9 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
        }
    }
    ```
+
+
+
 
 [Android 使用MarsDaemon进程常驻](https://www.jianshu.com/p/70d45a79456a)
 
@@ -3999,7 +3998,7 @@ IntentService在执行onCreate的方法的时候，其实开了一个线程Handl
 
 # SurfaceView
 
-SurfaceView继承之View，但拥有独立的绘制表面，即它不与其宿主窗口共享同一个绘图表面，可以单独在一个线程进行绘制，并不会占用主线程的资源。这样，绘制就会比较高效，游戏，视频播放，还有最近热门的直播，都可以用SurfaceView
+SurfaceView继承之View，但拥有**独立的绘制表面**，即它**不与其宿主窗口共享同一个绘图表面**，可以**单独在一个线程进行绘制，并不会占用主线程的资源**。这样，绘制就会比较高效，游戏，视频播放，还有最近热门的直播，都可以用SurfaceView
 
 ## 和View的区别
 
@@ -4530,6 +4529,30 @@ public class AutoLinefeedLayout extends ViewGroup {
 
 [Android最简洁的自动换行布局组件](http://blog.csdn.net/u011192530/article/details/53019212)
 
+## 常见函数
+
+一般来说，如果View确定自身不再适合当前区域，比如说它的LayoutParams发生了改变，需要父布局对其进行重新测量、布局、绘制这三个流程，往往使用requestLayout。而invalidate则是刷新当前View，使当前View进行重绘，不会进行测量、布局流程，因此如果View只需要重绘而不需要测量，布局的时候，使用invalidate方法往往比requestLayout方法更高效
+
+### requestLayout() 
+
+子View调用requestLayout方法，会标记当前View及父容器，同时逐层向上提交，直到ViewRootImpl处理该事件，ViewRootImpl会调用三大流程，从measure开始，对于每一个含有标记位的view及其子View都会进行测量、布局、绘制
+
+在requestLayout方法中，首先先判断当前View树是否正在布局流程，接着为当前子View设置标记位，该标记位的作用就是标记了当前的View是需要进行重新布局的，接着调用mParent.requestLayout方法，这个十分重要，因为这里是向父容器请求布局，即调用父容器的requestLayout方法，为父容器添加PFLAG_FORCE_LAYOUT标记位，而父容器又会调用它的父容器的requestLayout方法，即requestLayout事件层层向上传递，直到DecorView，即根View，而根View又会传递给ViewRootImpl，也即是说子View的requestLayout事件，最终会被ViewRootImpl接收并得到处理。纵观这个向上传递的流程，其实是采用了责任链模式，即不断向上传递该事件，直到找到能处理该事件的上级，在这里，只有ViewRootImpl能够处理requestLayout事件
+
+在这里，调用了scheduleTraversals方法，这个方法是一个异步方法，最终会调用到**ViewRootImpl#performTraversals**方法，这也是View工作流程的核心方法，在这个方法内部，分别调用measure、layout、draw方法来进行View的三大工作流程
+
+### invalidate()
+
+当子View调用了invalidate方法后，会为该View添加一个标记位，同时不断向父容器请求刷新，父容器通过计算得出自身需要重绘的区域，直到传递到ViewRootImpl中，最终触发performTraversals方法，进行开始View树重绘流程(只绘制需要重绘的视图)
+
+### postInvalidate()
+
+这个方法与invalidate方法的作用是一样的，都是使View树重绘，但两者的使用条件不同，postInvalidate是在非UI线程中调用，invalidate则是在UI线程中调用。
+
+![requestlayout and invalidate.jpg](http://upload-images.jianshu.io/upload_images/1734948-b4493f7b0234dd69.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+[Android View 深度分析requestLayout、invalidate与postInvalidate](https://blog.csdn.net/a553181867/article/details/51583060)
+
 # View事件体系
 
 ## 基础概念
@@ -4827,8 +4850,8 @@ public boolean onInterceptTouchEvent(MotionEvent ev) {
 mFloatingButton = new Button(this);
 mFloatingButton.setText("click me");
 mLayoutParams = new WindowManager.LayoutParams(
-    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 0, 0,
-    PixelFormat.TRANSPARENT);
+    LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 
+    0, 0, PixelFormat.TRANSPARENT);
 mLayoutParams.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL
                     | LayoutParams.FLAG_NOT_FOCUSABLE
                     | LayoutParams.FLAG_SHOW_WHEN_LOCKED;
@@ -4972,8 +4995,6 @@ Handler的主要作用是将一个任务切换到某个指定的线程中执行
 >
 > 通常在子线程中执行耗时操作，切换到主线程更新UI
 
-![](http://img.blog.csdn.net/20140805002935859?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbG1qNjIzNTY1Nzkx/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
-
 ### MessageQueue
 
 单链表结构存储
@@ -5012,10 +5033,13 @@ public static void loop() {
         }
         // ...
         msg.target.dispatchMessage(msg); // target为发送这条消息的Handler
+        msg.recycle();
         // ...
     }
 }
 ```
+
+> 由于**msg.target指向的就是发送这个消息的Handler**，所以一个线程中只有一个Looper，因为Looper只有一个，MessageQueue也只有一个，但是**可以使用多个Handler，每个Handler会分别处理自己的消息**
 
 `prepareMainLooper`：为主线程即ActivityThread创建Looper，本质也是通过prepare实现的
 
@@ -5082,17 +5106,17 @@ Android应用程序的主线程在进入消息循环过程前，会在内部创�
 ```java
 public static void main(String[] args) {
 
-  //创建Looper和MessageQueue对象，用于处理主线程的消息
-  Looper.prepareMainLooper();
+    //创建Looper和MessageQueue对象，用于处理主线程的消息
+    Looper.prepareMainLooper();
 
-  //创建ActivityThread对象
-  ActivityThread thread = new ActivityThread(); 
+    //创建ActivityThread对象
+    ActivityThread thread = new ActivityThread(); 
 
-  //建立Binder通道 (创建新线程)
-  thread.attach(false);
+    //建立Binder通道 (创建新线程)
+    thread.attach(false);
 
-  Looper.loop(); //消息循环运行
-  throw new RuntimeException("Main thread loop unexpectedly exited");
+    Looper.loop(); //消息循环运行
+    throw new RuntimeException("Main thread loop unexpectedly exited");
 }
 ```
 
@@ -5168,6 +5192,10 @@ class LooperThread extends Thread {
 ```
 
 ### Handler
+
+![](http://img.blog.csdn.net/20140805002935859?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvbG1qNjIzNTY1Nzkx/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+
 
 #### 常用函数
 
@@ -5305,12 +5333,19 @@ ThreadPoolExecutor(int corePoolSize, // 核心线程数
 
 ### 执行规则
 
-1. 未达到核心线程数，启动核心线程执行任务
-2. 达到核心线程数，插入等待队列
-3. 如果2中无法插入等待队列（一般是因为队列已满），且线程数量未达到最大线程数，则启动非核心线程执行任务
-4. 如果3中线程数量已经达到最大值，则拒绝执行，并调用`RejectedExecutionHandler#rejectedExecution`通知调用者
+线程池的线程执行规则跟任务队列有很大的关系。
 
-> 默认情况下，核心线程会在线程池中一直存货，即使处于闲置状态，也可以设定超时终止
+* 下面都假设任务队列没有大小限制：
+  1. 如果线程数量<=核心线程数量，那么直接启动一个核心线程来执行任务，不会放入队列中。
+  2. 如果线程数量>核心线程数，但<=最大线程数，并且任务队列是LinkedBlockingDeque的时候，超过核心线程数量的任务会放在任务队列中排队。
+  3. 如果线程数量>核心线程数，但<=最大线程数，并且任务队列是SynchronousQueue的时候，线程池会创建新线程执行任务，这些任务也不会被放在任务队列中。这些线程属于非核心线程，在任务完成后，闲置时间达到了超时时间就会被清除。
+  4. 如果线程数量>核心线程数，并且>最大线程数，当任务队列是LinkedBlockingDeque，会将超过核心线程的任务放在任务队列中排队。也就是当任务队列是LinkedBlockingDeque并且没有大小限制时，线程池的最大线程数设置是无效的，他的线程数最多不会超过核心线程数。
+  5. 如果线程数量>核心线程数，并且>最大线程数，当任务队列是SynchronousQueue的时候，会因为线程池拒绝添加任务而抛出异常。
+* 任务队列大小有限时
+  1. 当LinkedBlockingDeque塞满时，新增的任务会直接创建新线程来执行，当创建的线程数量超过最大线程数量时会抛异常。
+  2. SynchronousQueue没有数量限制。因为他根本不保持这些任务，而是直接交给线程池去执行。当任务数量超过最大线程数时会直接抛异常。
+
+> 默认情况下，核心线程会在线程池中一直存活，即使处于闲置状态，也可以设定超时终止
 >
 > 非核心线程运行结束或超时后就会被回收
 >
@@ -5329,6 +5364,10 @@ ThreadPoolExecutor(int corePoolSize, // 核心线程数
 | CachedThreadPool     | 线程数量不定，只有非核心线程，超时60秒回收<br>执行大量耗时较少的任务 |
 | ScheduledThreadPool  | 核心线程数量固定，非核心线程数量不定，闲置立刻回收<br>执行定时任务和具有固定周期任务 |
 | SingleThreadExecutor | 只有一个核心线程<br>统一所有外界任务到一个线程中，避免同步问题 |
+
+[Java多线程-线程池ThreadPoolExecutor构造方法和规则](https://blog.csdn.net/qq_25806863/article/details/71126867)
+
+[深入理解java线程池—ThreadPoolExecutor](https://www.jianshu.com/p/ade771d2c9c0)
 
 # 性能优化
 

@@ -40,7 +40,9 @@
 
 ### 双亲委托模式
 
-ClassLoader使用的是双亲委托模型来搜索类的，每个ClassLoader实例都有一个父类加载器的引用（不是继承的关系，是一个包含的关系），虚拟机内置的类加载器（Bootstrap ClassLoader）本身没有父类加载器，但可以用作其它ClassLoader实例的的父类加载器。当一个ClassLoader实例需要加载某个类时，它会试图亲自搜索某个类之前，先把这个任务委托给它的父类加载器，这个过程是由上至下依次检查的，首先由最顶层的类加载器Bootstrap ClassLoader试图加载，如果没加载到，则把任务转交给Extension ClassLoader试图加载，如果也没加载到，则转交给App ClassLoader 进行加载，如果它也没有加载得到的话，则返回给委托的发起者，由它到指定的文件系统或网络等URL中加载该类。如果它们都没有加载到这个类时，则抛出ClassNotFoundException异常。否则将这个找到的类生成一个类的定义，并将它加载到内存当中，最后返回这个类在内存中的Class实例对象
+ClassLoader使用的是双亲委托模型来搜索类的，每个ClassLoader实例都有一个父类加载器的引用（不是继承的关系，是一个包含的关系），虚拟机内置的类加载器（Bootstrap ClassLoader）本身没有父类加载器，但可以用作其它ClassLoader实例的父类加载器。
+
+当一个ClassLoader实例需要加载某个类时，它会试图亲自搜索某个类之前，先把这个任务委托给它的父类加载器，这个过程是由上至下依次检查的，首先由最顶层的类加载器Bootstrap ClassLoader试图加载，如果没加载到，则把任务转交给Extension ClassLoader试图加载，如果也没加载到，则转交给App ClassLoader 进行加载，如果它也没有加载得到的话，则返回给委托的发起者，由它到指定的文件系统或网络等URL中加载该类。如果它们都没有加载到这个类时，则抛出ClassNotFoundException异常。否则将这个找到的类生成一个类的定义，并将它加载到内存当中，最后返回这个类在内存中的Class实例对象
 
 ```java
 protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
@@ -175,7 +177,10 @@ CLassLoader类中loadClass的具体实现
 
 在HotSpot虚拟机中，对象在内存中存储的布局可分为三个部分： 对象头、实例数据和对齐填充。
 
-对象头包括两个部分：第一部分用于存储对象自身的运行时数据，如哈希码、GC分代年龄、线程所持有的锁等。官方称之为“Mark Word”。第二个部分为是类型指针，即对象指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是哪个类的实例。
+对象头包括两个部分：
+
+1. 存储对象自身的运行时数据，如哈希码、GC分代年龄、线程所持有的锁等。官方称之为“Mark Word”。
+2. 类型指针，即对象指向它的类元数据的指针，虚拟机通过这个指针来确定这个对象是哪个类的实例。
 
 实例数据是对象真正存储的有效信息，也是程序代码中所定义的各种类型的字段内容。
 
@@ -207,20 +212,18 @@ Class保存着运行时信息的类，通过Class可以获取类中的值
 
 `Class.forName(String className)`：通过类全名获取某个类的Class对象实例
 
-`类名.class`：获取某个类的Class实例
+`类名.class`：获取某个类的Class实例，基本类型也可以通过这种方式调用，例如`int.class`
 
 `newInstance()`：调用无参构造函数创建一个实例
 
 ```java
 // 调用无参的私有构造函数
-Constructor c1 = Class.forName("java.lang.String")
-        .getDeclaredConstructor();
+Constructor c1 = Class.forName("java.lang.String").getDeclaredConstructor();
 c1.setAccessible(true);
 String str1 = (String) c1.newInstance();
 
 // 调用有参的私有构造函数
-Constructor c2 = Class.forName("java.lang.String")
-        .getDeclaredConstructor(new Class[] { String.class });
+Constructor c2 = Class.forName("java.lang.String").getDeclaredConstructor(new Class[] { String.class });
 c2.setAccessible(true);
 String str2 = (String) c2.newInstance("hello");
 ```
@@ -245,9 +248,9 @@ String str2 = (String) c2.newInstance("hello");
 
 `getModifiers`：获取类前的修饰符
 
-## 类名.this
+## this
 
-类名.this会返回类的实例
+`类名.this`会返回类的实例
 
 一般在一个类的内部类中，想要调用外部类的方法或者成员域时，就需要使用`外部名.this.成员域`
 
@@ -385,9 +388,9 @@ HashMap基于hashing原理，我们通过`put()`和`get()`方法储存和获取�
 
 3. 是否提供contains方法
 
-   Hashtable保留了contains，containsValue和containsKey三个方法，其中contains和containsValue功能相同
+   Hashtable保留了`contains`，`containsValue`和`containsKey`三个方法，其中`contains`和`containsValue`功能相同
 
-   HashMap把Hashtable的contains方法去掉了，改成containsValue和containsKey，因为contains方法容易让人引起误解
+   HashMap把Hashtable的`contains`方法去掉了，改成`containsValue`和`containsKey`，因为`contains`方法容易让人引起误解
 
 4. key和value是否允许null值
 
@@ -545,7 +548,9 @@ class MyThread extends Thread {
 
 1. 退出标志：采用设置一个条件变量的方式，run方法中的while循环会不断的检测flag的值，在想要结束线程的地方将flag的值设置为false就可以
 
-> 不使用stop的原因：因为它在终止一个线程时会强制中断线程的执行，不管run方法是否执行完了，并且还会释放这个线程所持有的所有的锁对象。这一现象会被其它因为请求锁而阻塞的线程看到，使他们继续向下执行。这就会造成数据的不一致
+2. stop
+
+   不使用stop的原因：因为它在终止一个线程时会强制中断线程的执行，不管run方法是否执行完了，并且还会释放这个线程所持有的所有的锁对象。这一现象会被其它因为请求锁而阻塞的线程看到，使他们继续向下执行。这就会造成数据的不一致
 
 2. `interrupt`方法可以用来请求终止线程
 
@@ -584,7 +589,7 @@ public void run() {
 
 2. 在静态方法上使用同步时会发生什么
 
-   同步静态方法时会获取该类的“Class”对象，所以当一个线程进入同步的静态方法中时，线程监视器获取类本身的对象锁，其它线程不能进入这个类的任何静态同步方法。它不像实例方法，因为多个线程可以同时访问不同实例同步实例方法
+   同步静态方法时会获取该类的Class对象，所以当一个线程进入同步的静态方法中时，线程监视器获取类本身的对象锁，其它线程不能进入这个类的任何静态同步方法。它不像实例方法，因为多个线程可以同时访问不同实例同步实例方法
 
 3. 当一个同步方法已经执行，线程能够调用对象上的非同步实例方法吗
 
@@ -597,6 +602,10 @@ public void run() {
 5. 什么是死锁
 
    死锁就是两个或两个以上的线程被无限的阻塞，线程之间相互等待所需资源。这种情况可能发生在当两个线程尝试获取其它资源的锁，而每个线程又陷入无限等待其它资源锁的释放，除非一个用户进程被终止
+
+   四个必要条件：互斥、请求与保持、不可剥夺、环路等待
+
+   四个解决方法：预防、避免、检测、解除
 
 6. 现在有T1、T2、T3三个线程，你怎样保证T2在T1执行完后执行，T3在T2执行完后执行
 
@@ -733,7 +742,7 @@ public final void acquire(int arg) {
 >
 > * 任何进程在读取的时候，都会清空本进程里面持有的共享变量的值，强制从主存里面获取
 > * 任何进程在写入完毕的时候，都会强制将共享变量的值写会主存。 
-> * volatile 会干预指令重排。 
+> * volatile 会干预指令重排
 > * volatile 实现了JMM规范的 happen-before 原则
 >
 > CAS是CPU提供的一门技术：
@@ -1114,10 +1123,10 @@ JVM的GC采用根搜索算法，设立若干种根对象，当任何一个根对
 
 根一般有4种：
 
-1. 栈（栈帧中的本地变量表）中引用的对象。
-2. 方法区中的静态成员。
-3. 方法区中的常量引用的对象（全局变量）
-4. 本地方法栈中JNI（一般说的Native方法）引用的对象。
+1. 虚拟机栈（栈帧中的本地变量表）中引用的对象
+2. 本地方法栈中JNI（一般说的Native方法）引用的对象
+2. 方法区中的静态成员
+4. 方法区中的常量引用的对象（全局变量）
 
 ### 内存回收准则
 
@@ -2352,22 +2361,20 @@ public @interface Description {
 
   * `METHOD`：方法声明
 
-
-  * `CONSTRUCTOR`：构造方法声明
-  * `FIELD`：字段声明
-  * `LOCAL VARIABLE`：局部变量声明
-  * `METHOD`：方法声明
-  * `PACKAGE`：包声明
-  * `PARAMETER`：参数声明
-  * `TYPE`：类接口
+    * `CONSTRUCTOR`：构造方法声明
+    * `FIELD`：字段声明
+    * `LOCAL VARIABLE`：局部变量声明
+    * `METHOD`：方法声明
+    * `PACKAGE`：包声明
+    * `PARAMETER`：参数声明
+    * `TYPE`：类接口
 
 * `@Retention`：生命周期
 
   * `RUNTIME`在运行时存在，可以通过反射读取
 
-
-  * `SOURCE`：只在源码显示，编译时丢弃
-  * `CLASS`：编译时记录到class中，运行时忽略
+    * `SOURCE`：只在源码显示，编译时丢弃
+    * `CLASS`：编译时记录到class中，运行时忽略
 
 * `@Inherited`是一个标识性的元注解，它允许子注解继承它。
 
