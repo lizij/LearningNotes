@@ -1,6 +1,337 @@
 # Android开发面试题
 
 [TOC]
+<!-- TOC -->
+
+- [Android开发面试题](#android%E5%BC%80%E5%8F%91%E9%9D%A2%E8%AF%95%E9%A2%98)
+- [Activity](#activity)
+    - [启动模式](#%E5%90%AF%E5%8A%A8%E6%A8%A1%E5%BC%8F)
+        - [standard](#standard)
+        - [singleTop](#singletop)
+        - [singleTask](#singletask)
+            - [taskAffinity](#taskaffinity)
+            - [指定方式](#%E6%8C%87%E5%AE%9A%E6%96%B9%E5%BC%8F)
+            - [作用](#%E4%BD%9C%E7%94%A8)
+        - [singleInstance](#singleinstance)
+    - [生命周期](#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+        - [一个Activity的生命周期](#%E4%B8%80%E4%B8%AAactivity%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+        - [一个Activity调用另一个Activity的生命周期](#%E4%B8%80%E4%B8%AAactivity%E8%B0%83%E7%94%A8%E5%8F%A6%E4%B8%80%E4%B8%AAactivity%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+        - [不同位置调用finish()的结果](#%E4%B8%8D%E5%90%8C%E4%BD%8D%E7%BD%AE%E8%B0%83%E7%94%A8finish%E7%9A%84%E7%BB%93%E6%9E%9C)
+            - [表现](#%E8%A1%A8%E7%8E%B0)
+            - [原理](#%E5%8E%9F%E7%90%86)
+    - [异常情况下Activity数据的保存和恢复](#%E5%BC%82%E5%B8%B8%E6%83%85%E5%86%B5%E4%B8%8Bactivity%E6%95%B0%E6%8D%AE%E7%9A%84%E4%BF%9D%E5%AD%98%E5%92%8C%E6%81%A2%E5%A4%8D)
+        - [保存和恢复数据](#%E4%BF%9D%E5%AD%98%E5%92%8C%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE)
+        - [防止Activity重建](#%E9%98%B2%E6%AD%A2activity%E9%87%8D%E5%BB%BA)
+    - [启动过程](#%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B)
+        - [具体过程记录（非重点）](#%E5%85%B7%E4%BD%93%E8%BF%87%E7%A8%8B%E8%AE%B0%E5%BD%95%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
+        - [Instrumentation](#instrumentation)
+    - [IntentFilter匹配规则](#intentfilter%E5%8C%B9%E9%85%8D%E8%A7%84%E5%88%99)
+- [安全](#%E5%AE%89%E5%85%A8)
+    - [Webview 远程执行JS漏洞](#webview-%E8%BF%9C%E7%A8%8B%E6%89%A7%E8%A1%8Cjs%E6%BC%8F%E6%B4%9E)
+    - [DNS劫持](#dns%E5%8A%AB%E6%8C%81)
+    - [APP升级过程防劫持](#app%E5%8D%87%E7%BA%A7%E8%BF%87%E7%A8%8B%E9%98%B2%E5%8A%AB%E6%8C%81)
+        - [问题概述](#%E9%97%AE%E9%A2%98%E6%A6%82%E8%BF%B0)
+        - [解决方案](#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88)
+    - [本地拒绝服务漏洞](#%E6%9C%AC%E5%9C%B0%E6%8B%92%E7%BB%9D%E6%9C%8D%E5%8A%A1%E6%BC%8F%E6%B4%9E)
+        - [原理](#%E5%8E%9F%E7%90%86)
+        - [应用场景](#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF)
+        - [漏洞检测](#%E6%BC%8F%E6%B4%9E%E6%A3%80%E6%B5%8B)
+        - [修复](#%E4%BF%AE%E5%A4%8D)
+- [asset和resource](#asset%E5%92%8Cresource)
+- [BroadcastReceiver](#broadcastreceiver)
+    - [注册方式](#%E6%B3%A8%E5%86%8C%E6%96%B9%E5%BC%8F)
+    - [工作原理（非重点）](#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
+        - [静态注册](#%E9%9D%99%E6%80%81%E6%B3%A8%E5%86%8C)
+        - [动态注册](#%E5%8A%A8%E6%80%81%E6%B3%A8%E5%86%8C)
+        - [发送和接收](#%E5%8F%91%E9%80%81%E5%92%8C%E6%8E%A5%E6%94%B6)
+- [Bitmap加载](#bitmap%E5%8A%A0%E8%BD%BD)
+    - [高效加载](#%E9%AB%98%E6%95%88%E5%8A%A0%E8%BD%BD)
+    - [缓存策略](#%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5)
+        - [LruCache](#lrucache)
+        - [DiskLruCache](#disklrucache)
+    - [优化列表卡顿](#%E4%BC%98%E5%8C%96%E5%88%97%E8%A1%A8%E5%8D%A1%E9%A1%BF)
+    - [ImageLoader设计](#imageloader%E8%AE%BE%E8%AE%A1)
+        - [基本功能](#%E5%9F%BA%E6%9C%AC%E5%8A%9F%E8%83%BD)
+        - [代码设计](#%E4%BB%A3%E7%A0%81%E8%AE%BE%E8%AE%A1)
+- [Binder](#binder)
+    - [运行机制](#%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6)
+    - [线程管理](#%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86)
+- [Crash](#crash)
+- [Drawable](#drawable)
+    - [分类](#%E5%88%86%E7%B1%BB)
+        - [BitmapDrawable](#bitmapdrawable)
+        - [ShapeDrawable](#shapedrawable)
+        - [LayerDrawable](#layerdrawable)
+        - [StateListDrawable](#statelistdrawable)
+        - [LevelListDrawable](#levellistdrawable)
+        - [TransitionDrawable](#transitiondrawable)
+        - [InsetDrawable](#insetdrawable)
+        - [ScaleDrawable](#scaledrawable)
+        - [ClipDrawable](#clipdrawable)
+    - [自定义Drawable](#%E8%87%AA%E5%AE%9A%E4%B9%89drawable)
+- [动态加载](#%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD)
+    - [基础性问题](#%E5%9F%BA%E7%A1%80%E6%80%A7%E9%97%AE%E9%A2%98)
+        - [资源访问](#%E8%B5%84%E6%BA%90%E8%AE%BF%E9%97%AE)
+        - [Activity生命周期管理](#activity%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E7%AE%A1%E7%90%86)
+            - [反射方式](#%E5%8F%8D%E5%B0%84%E6%96%B9%E5%BC%8F)
+            - [接口方式](#%E6%8E%A5%E5%8F%A3%E6%96%B9%E5%BC%8F)
+        - [ClassLoader管理](#classloader%E7%AE%A1%E7%90%86)
+    - [示例](#%E7%A4%BA%E4%BE%8B)
+- [动画](#%E5%8A%A8%E7%94%BB)
+    - [View动画](#view%E5%8A%A8%E7%94%BB)
+        - [种类](#%E7%A7%8D%E7%B1%BB)
+        - [使用](#%E4%BD%BF%E7%94%A8)
+            - [使用xml定义](#%E4%BD%BF%E7%94%A8xml%E5%AE%9A%E4%B9%89)
+            - [使用代码定义](#%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%A0%81%E5%AE%9A%E4%B9%89)
+        - [自定义View动画](#%E8%87%AA%E5%AE%9A%E4%B9%89view%E5%8A%A8%E7%94%BB)
+        - [其他场景](#%E5%85%B6%E4%BB%96%E5%9C%BA%E6%99%AF)
+            - [LayoutAnimation](#layoutanimation)
+            - [修改Activity切换效果](#%E4%BF%AE%E6%94%B9activity%E5%88%87%E6%8D%A2%E6%95%88%E6%9E%9C)
+    - [帧动画](#%E5%B8%A7%E5%8A%A8%E7%94%BB)
+    - [属性动画](#%E5%B1%9E%E6%80%A7%E5%8A%A8%E7%94%BB)
+        - [原理](#%E5%8E%9F%E7%90%86)
+        - [使用](#%E4%BD%BF%E7%94%A8)
+            - [使用代码定义](#%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%A0%81%E5%AE%9A%E4%B9%89)
+            - [使用XML定义](#%E4%BD%BF%E7%94%A8xml%E5%AE%9A%E4%B9%89)
+        - [监听器](#%E7%9B%91%E5%90%AC%E5%99%A8)
+        - [对任意属性做动画](#%E5%AF%B9%E4%BB%BB%E6%84%8F%E5%B1%9E%E6%80%A7%E5%81%9A%E5%8A%A8%E7%94%BB)
+    - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+- [断点续传](#%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0)
+    - [关键点](#%E5%85%B3%E9%94%AE%E7%82%B9)
+    - [原理](#%E5%8E%9F%E7%90%86)
+    - [实现](#%E5%AE%9E%E7%8E%B0)
+- [EventBus](#eventbus)
+    - [概述](#%E6%A6%82%E8%BF%B0)
+        - [使用场景](#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF)
+        - [三要素](#%E4%B8%89%E8%A6%81%E7%B4%A0)
+        - [四种线程模型](#%E5%9B%9B%E7%A7%8D%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B)
+        - [原理](#%E5%8E%9F%E7%90%86)
+    - [使用](#%E4%BD%BF%E7%94%A8)
+        - [添加依赖](#%E6%B7%BB%E5%8A%A0%E4%BE%9D%E8%B5%96)
+        - [定义消息事件类](#%E5%AE%9A%E4%B9%89%E6%B6%88%E6%81%AF%E4%BA%8B%E4%BB%B6%E7%B1%BB)
+        - [注册和解除注册](#%E6%B3%A8%E5%86%8C%E5%92%8C%E8%A7%A3%E9%99%A4%E6%B3%A8%E5%86%8C)
+        - [事件处理](#%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86)
+        - [效果](#%E6%95%88%E6%9E%9C)
+        - [粘性事件](#%E7%B2%98%E6%80%A7%E4%BA%8B%E4%BB%B6)
+            - [订阅粘性事件](#%E8%AE%A2%E9%98%85%E7%B2%98%E6%80%A7%E4%BA%8B%E4%BB%B6)
+            - [订阅者处理粘性事件](#%E8%AE%A2%E9%98%85%E8%80%85%E5%A4%84%E7%90%86%E7%B2%98%E6%80%A7%E4%BA%8B%E4%BB%B6)
+            - [发送黏性事件](#%E5%8F%91%E9%80%81%E9%BB%8F%E6%80%A7%E4%BA%8B%E4%BB%B6)
+    - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+        - [设置订阅者的优先级](#%E8%AE%BE%E7%BD%AE%E8%AE%A2%E9%98%85%E8%80%85%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7)
+        - [停止事件传递](#%E5%81%9C%E6%AD%A2%E4%BA%8B%E4%BB%B6%E4%BC%A0%E9%80%92)
+- [Fragment](#fragment)
+    - [加载方式](#%E5%8A%A0%E8%BD%BD%E6%96%B9%E5%BC%8F)
+    - [生命周期](#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+    - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+- [Glide图片加载](#glide%E5%9B%BE%E7%89%87%E5%8A%A0%E8%BD%BD)
+    - [准备](#%E5%87%86%E5%A4%87)
+    - [使用](#%E4%BD%BF%E7%94%A8)
+        - [基本用法](#%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95)
+        - [缓存](#%E7%BC%93%E5%AD%98)
+        - [占位图](#%E5%8D%A0%E4%BD%8D%E5%9B%BE)
+        - [指定图片格式和大小](#%E6%8C%87%E5%AE%9A%E5%9B%BE%E7%89%87%E6%A0%BC%E5%BC%8F%E5%92%8C%E5%A4%A7%E5%B0%8F)
+    - [原理](#%E5%8E%9F%E7%90%86)
+        - [资源获取组件](#%E8%B5%84%E6%BA%90%E8%8E%B7%E5%8F%96%E7%BB%84%E4%BB%B6)
+        - [资源复用](#%E8%B5%84%E6%BA%90%E5%A4%8D%E7%94%A8)
+        - [图片池](#%E5%9B%BE%E7%89%87%E6%B1%A0)
+        - [加载流程](#%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B)
+        - [资源加载](#%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD)
+- [进程](#%E8%BF%9B%E7%A8%8B)
+    - [进程和线程的区别](#%E8%BF%9B%E7%A8%8B%E5%92%8C%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%8C%BA%E5%88%AB)
+        - [宏观认识](#%E5%AE%8F%E8%A7%82%E8%AE%A4%E8%AF%86)
+        - [区别](#%E5%8C%BA%E5%88%AB)
+        - [Android中的进程与线程](#android%E4%B8%AD%E7%9A%84%E8%BF%9B%E7%A8%8B%E4%B8%8E%E7%BA%BF%E7%A8%8B)
+    - [进程间通信方法（IPC）](#%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E6%B3%95%EF%BC%88ipc%EF%BC%89)
+        - [必要性](#%E5%BF%85%E8%A6%81%E6%80%A7)
+        - [序列化](#%E5%BA%8F%E5%88%97%E5%8C%96)
+            - [原因](#%E5%8E%9F%E5%9B%A0)
+            - [Serializable](#serializable)
+            - [Parcelable](#parcelable)
+            - [Serializable和Parcelable的区别](#serializable%E5%92%8Cparcelable%E7%9A%84%E5%8C%BA%E5%88%AB)
+        - [文件共享](#%E6%96%87%E4%BB%B6%E5%85%B1%E4%BA%AB)
+        - [Bundle](#bundle)
+        - [AIDL](#aidl)
+        - [Messenger](#messenger)
+        - [ContentProvider](#contentprovider)
+            - [工作原理（非重点）](#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
+        - [Socket](#socket)
+        - [Binder连接池](#binder%E8%BF%9E%E6%8E%A5%E6%B1%A0)
+            - [适用场景](#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF)
+            - [原理](#%E5%8E%9F%E7%90%86)
+            - [实现](#%E5%AE%9E%E7%8E%B0)
+- [ListView和RecyclerView](#listview%E5%92%8Crecyclerview)
+    - [ListView](#listview)
+        - [ListView的内部点击事件](#listview%E7%9A%84%E5%86%85%E9%83%A8%E7%82%B9%E5%87%BB%E4%BA%8B%E4%BB%B6)
+    - [RecyclerView](#recyclerview)
+        - [使用](#%E4%BD%BF%E7%94%A8)
+- [JSON](#json)
+    - [基础结构](#%E5%9F%BA%E7%A1%80%E7%BB%93%E6%9E%84)
+    - [fromJSON原理](#fromjson%E5%8E%9F%E7%90%86)
+- [JNI和NDK](#jni%E5%92%8Cndk)
+    - [定义](#%E5%AE%9A%E4%B9%89)
+    - [原理](#%E5%8E%9F%E7%90%86)
+    - [应用](#%E5%BA%94%E7%94%A8)
+    - [一般步骤](#%E4%B8%80%E8%88%AC%E6%AD%A5%E9%AA%A4)
+    - [方法注册](#%E6%96%B9%E6%B3%95%E6%B3%A8%E5%86%8C)
+        - [静态注册](#%E9%9D%99%E6%80%81%E6%B3%A8%E5%86%8C)
+        - [动态注册](#%E5%8A%A8%E6%80%81%E6%B3%A8%E5%86%8C)
+    - [JNI数据类型和类型签名](#jni%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%92%8C%E7%B1%BB%E5%9E%8B%E7%AD%BE%E5%90%8D)
+        - [数据类型转换](#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2)
+    - [jni调用java](#jni%E8%B0%83%E7%94%A8java)
+        - [一般步骤](#%E4%B8%80%E8%88%AC%E6%AD%A5%E9%AA%A4)
+        - [常用函数](#%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0)
+        - [示例](#%E7%A4%BA%E4%BE%8B)
+        - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+            - [JNIEnv和jobject多线程共享问题](#jnienv%E5%92%8Cjobject%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%85%B1%E4%BA%AB%E9%97%AE%E9%A2%98)
+- [MarsDaemon](#marsdaemon)
+    - [配置](#%E9%85%8D%E7%BD%AE)
+- [MVC和MVP](#mvc%E5%92%8Cmvp)
+    - [MVC](#mvc)
+        - [定义](#%E5%AE%9A%E4%B9%89)
+        - [优势](#%E4%BC%98%E5%8A%BF)
+        - [控制流程](#%E6%8E%A7%E5%88%B6%E6%B5%81%E7%A8%8B)
+    - [MVP](#mvp)
+        - [优势](#%E4%BC%98%E5%8A%BF)
+- [multidex](#multidex)
+    - [使用场景](#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF)
+    - [使用](#%E4%BD%BF%E7%94%A8)
+        - [修改gradle](#%E4%BF%AE%E6%94%B9gradle)
+- [okhttp](#okhttp)
+    - [功能](#%E5%8A%9F%E8%83%BD)
+    - [优势](#%E4%BC%98%E5%8A%BF)
+    - [示例](#%E7%A4%BA%E4%BE%8B)
+- [PendingIntent](#pendingintent)
+    - [用途](#%E7%94%A8%E9%80%94)
+        - [主要方法](#%E4%B8%BB%E8%A6%81%E6%96%B9%E6%B3%95)
+        - [匹配规则](#%E5%8C%B9%E9%85%8D%E8%A7%84%E5%88%99)
+        - [参数解析](#%E5%8F%82%E6%95%B0%E8%A7%A3%E6%9E%90)
+- [RemoteViews](#remoteviews)
+    - [原理](#%E5%8E%9F%E7%90%86)
+- [Service](#service)
+    - [startService和bindService](#startservice%E5%92%8Cbindservice)
+        - [startService](#startservice)
+        - [bindService](#bindservice)
+    - [生命周期](#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
+    - [HandlerThread](#handlerthread)
+        - [原理](#%E5%8E%9F%E7%90%86)
+        - [使用](#%E4%BD%BF%E7%94%A8)
+    - [IntentService](#intentservice)
+        - [使用场景](#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF)
+        - [使用](#%E4%BD%BF%E7%94%A8)
+        - [原理](#%E5%8E%9F%E7%90%86)
+    - [启动和绑定过程](#%E5%90%AF%E5%8A%A8%E5%92%8C%E7%BB%91%E5%AE%9A%E8%BF%87%E7%A8%8B)
+        - [启动](#%E5%90%AF%E5%8A%A8)
+        - [绑定](#%E7%BB%91%E5%AE%9A)
+- [SurfaceView](#surfaceview)
+    - [和View的区别](#%E5%92%8Cview%E7%9A%84%E5%8C%BA%E5%88%AB)
+    - [创建和初始化SurfaceView](#%E5%88%9B%E5%BB%BA%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96surfaceview)
+    - [使用SurfaceView](#%E4%BD%BF%E7%94%A8surfaceview)
+    - [画图板示例](#%E7%94%BB%E5%9B%BE%E6%9D%BF%E7%A4%BA%E4%BE%8B)
+- [View工作原理](#view%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86)
+    - [DecorView和ViewRoot](#decorview%E5%92%8Cviewroot)
+        - [DecorView](#decorview)
+        - [ViewRoot](#viewroot)
+    - [MeasureSpec和LayoutParams](#measurespec%E5%92%8Clayoutparams)
+        - [概念](#%E6%A6%82%E5%BF%B5)
+        - [MeasureSpec和LayoutParams的关系](#measurespec%E5%92%8Clayoutparams%E7%9A%84%E5%85%B3%E7%B3%BB)
+        - [普通View的MeasureSpec创建规则](#%E6%99%AE%E9%80%9Aview%E7%9A%84measurespec%E5%88%9B%E5%BB%BA%E8%A7%84%E5%88%99)
+    - [View的绘制过程](#view%E7%9A%84%E7%BB%98%E5%88%B6%E8%BF%87%E7%A8%8B)
+        - [measure](#measure)
+            - [View的measure过程](#view%E7%9A%84measure%E8%BF%87%E7%A8%8B)
+            - [ViewGroup的measure过程](#viewgroup%E7%9A%84measure%E8%BF%87%E7%A8%8B)
+            - [Activity实时获取View的宽高](#activity%E5%AE%9E%E6%97%B6%E8%8E%B7%E5%8F%96view%E7%9A%84%E5%AE%BD%E9%AB%98)
+        - [layout](#layout)
+        - [draw](#draw)
+    - [自定义View](#%E8%87%AA%E5%AE%9A%E4%B9%89view)
+        - [通常情况](#%E9%80%9A%E5%B8%B8%E6%83%85%E5%86%B5)
+        - [自定义属性](#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B1%9E%E6%80%A7)
+    - [实例：实现自动换行的ViewGroup](#%E5%AE%9E%E4%BE%8B%EF%BC%9A%E5%AE%9E%E7%8E%B0%E8%87%AA%E5%8A%A8%E6%8D%A2%E8%A1%8C%E7%9A%84viewgroup)
+    - [常见函数](#%E5%B8%B8%E8%A7%81%E5%87%BD%E6%95%B0)
+        - [requestLayout()](#requestlayout)
+        - [invalidate()](#invalidate)
+        - [postInvalidate()](#postinvalidate)
+- [View事件体系](#view%E4%BA%8B%E4%BB%B6%E4%BD%93%E7%B3%BB)
+    - [基础概念](#%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5)
+        - [坐标](#%E5%9D%90%E6%A0%87)
+        - [事件类型](#%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B)
+        - [TouchSlop](#touchslop)
+    - [View的滑动](#view%E7%9A%84%E6%BB%91%E5%8A%A8)
+        - [使用scrollTo/scrollBy](#%E4%BD%BF%E7%94%A8scrolltoscrollby)
+        - [使用动画](#%E4%BD%BF%E7%94%A8%E5%8A%A8%E7%94%BB)
+        - [改变布局参数](#%E6%94%B9%E5%8F%98%E5%B8%83%E5%B1%80%E5%8F%82%E6%95%B0)
+        - [弹性滑动](#%E5%BC%B9%E6%80%A7%E6%BB%91%E5%8A%A8)
+    - [事件分发机制](#%E4%BA%8B%E4%BB%B6%E5%88%86%E5%8F%91%E6%9C%BA%E5%88%B6)
+        - [核心方法](#%E6%A0%B8%E5%BF%83%E6%96%B9%E6%B3%95)
+        - [原理](#%E5%8E%9F%E7%90%86)
+        - [关键点](#%E5%85%B3%E9%94%AE%E7%82%B9)
+    - [滑动冲突处理](#%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E5%A4%84%E7%90%86)
+        - [常见场景](#%E5%B8%B8%E8%A7%81%E5%9C%BA%E6%99%AF)
+        - [外部拦截](#%E5%A4%96%E9%83%A8%E6%8B%A6%E6%88%AA)
+        - [内部拦截](#%E5%86%85%E9%83%A8%E6%8B%A6%E6%88%AA)
+- [Window](#window)
+    - [用法](#%E7%94%A8%E6%B3%95)
+    - [原理](#%E5%8E%9F%E7%90%86)
+        - [Window的添加过程](#window%E7%9A%84%E6%B7%BB%E5%8A%A0%E8%BF%87%E7%A8%8B)
+        - [Window的删除过程](#window%E7%9A%84%E5%88%A0%E9%99%A4%E8%BF%87%E7%A8%8B)
+        - [Window的更新过程](#window%E7%9A%84%E6%9B%B4%E6%96%B0%E8%BF%87%E7%A8%8B)
+    - [Window的创建过程](#window%E7%9A%84%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
+        - [Activity的Window创建过程](#activity%E7%9A%84window%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
+        - [Dialog的Window创建过程](#dialog%E7%9A%84window%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
+        - [Toast的Window创建过程](#toast%E7%9A%84window%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
+- [线程和消息机制](#%E7%BA%BF%E7%A8%8B%E5%92%8C%E6%B6%88%E6%81%AF%E6%9C%BA%E5%88%B6)
+    - [消息机制](#%E6%B6%88%E6%81%AF%E6%9C%BA%E5%88%B6)
+        - [MessageQueue](#messagequeue)
+        - [Looper](#looper)
+        - [主要函数](#%E4%B8%BB%E8%A6%81%E5%87%BD%E6%95%B0)
+            - [Android系统是如何保证一个线程只有一个Looper的](#android%E7%B3%BB%E7%BB%9F%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%80%E4%B8%AA%E7%BA%BF%E7%A8%8B%E5%8F%AA%E6%9C%89%E4%B8%80%E4%B8%AAlooper%E7%9A%84)
+            - [主线程消息循环——为什么主线程不会因为Looper.loop()方法造成阻塞](#%E4%B8%BB%E7%BA%BF%E7%A8%8B%E6%B6%88%E6%81%AF%E5%BE%AA%E7%8E%AF%E2%80%94%E2%80%94%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%BB%E7%BA%BF%E7%A8%8B%E4%B8%8D%E4%BC%9A%E5%9B%A0%E4%B8%BAlooperloop%E6%96%B9%E6%B3%95%E9%80%A0%E6%88%90%E9%98%BB%E5%A1%9E)
+            - [手动创建Looper](#%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BAlooper)
+        - [Handler](#handler)
+            - [常用函数](#%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0)
+            - [postDelayed的原理](#postdelayed%E7%9A%84%E5%8E%9F%E7%90%86)
+                - [精确计时](#%E7%B2%BE%E7%A1%AE%E8%AE%A1%E6%97%B6)
+                - [多个带有时延Runnable的执行顺序](#%E5%A4%9A%E4%B8%AA%E5%B8%A6%E6%9C%89%E6%97%B6%E5%BB%B6runnable%E7%9A%84%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F)
+    - [线程间通信](#%E7%BA%BF%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1)
+        - [共享内存](#%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98)
+        - [AsyncTask](#asynctask)
+            - [使用](#%E4%BD%BF%E7%94%A8)
+            - [限制](#%E9%99%90%E5%88%B6)
+            - [原理（非重点）](#%E5%8E%9F%E7%90%86%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
+        - [Handler](#handler)
+    - [线程池](#%E7%BA%BF%E7%A8%8B%E6%B1%A0)
+        - [ThreadPoolExecutor](#threadpoolexecutor)
+        - [执行规则](#%E6%89%A7%E8%A1%8C%E8%A7%84%E5%88%99)
+        - [分类](#%E5%88%86%E7%B1%BB)
+- [性能优化](#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96)
+    - [布局优化](#%E5%B8%83%E5%B1%80%E4%BC%98%E5%8C%96)
+        - [减少布局文件层级](#%E5%87%8F%E5%B0%91%E5%B8%83%E5%B1%80%E6%96%87%E4%BB%B6%E5%B1%82%E7%BA%A7)
+        - [ViewStub](#viewstub)
+    - [绘制优化](#%E7%BB%98%E5%88%B6%E4%BC%98%E5%8C%96)
+    - [内存泄露优化](#%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E4%BC%98%E5%8C%96)
+        - [原理](#%E5%8E%9F%E7%90%86)
+        - [常见内存泄露实例](#%E5%B8%B8%E8%A7%81%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E5%AE%9E%E4%BE%8B)
+        - [内存泄露的调试](#%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E8%B0%83%E8%AF%95)
+    - [响应速度优化——避免ANR](#%E5%93%8D%E5%BA%94%E9%80%9F%E5%BA%A6%E4%BC%98%E5%8C%96%E2%80%94%E2%80%94%E9%81%BF%E5%85%8Danr)
+        - [概念](#%E6%A6%82%E5%BF%B5)
+        - [调试](#%E8%B0%83%E8%AF%95)
+        - [避免](#%E9%81%BF%E5%85%8D)
+    - [ListView和Bitmap优化](#listview%E5%92%8Cbitmap%E4%BC%98%E5%8C%96)
+        - [ListView/GridView优化](#listviewgridview%E4%BC%98%E5%8C%96)
+        - [Bitmap优化：](#bitmap%E4%BC%98%E5%8C%96%EF%BC%9A)
+    - [线程优化](#%E7%BA%BF%E7%A8%8B%E4%BC%98%E5%8C%96)
+    - [防止内存溢出（OOM）](#%E9%98%B2%E6%AD%A2%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%EF%BC%88oom%EF%BC%89)
+        - [获取内存限制](#%E8%8E%B7%E5%8F%96%E5%86%85%E5%AD%98%E9%99%90%E5%88%B6)
+        - [原因](#%E5%8E%9F%E5%9B%A0)
+        - [解决](#%E8%A7%A3%E5%86%B3)
+    - [防止内存抖动](#%E9%98%B2%E6%AD%A2%E5%86%85%E5%AD%98%E6%8A%96%E5%8A%A8)
+        - [表现](#%E8%A1%A8%E7%8E%B0)
+        - [原理](#%E5%8E%9F%E7%90%86)
+        - [避免](#%E9%81%BF%E5%85%8D)
+    - [其他](#%E5%85%B6%E4%BB%96)
+- [像素单位](#%E5%83%8F%E7%B4%A0%E5%8D%95%E4%BD%8D)
+- [系统架构](#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84)
+
+<!-- /TOC -->
 
 # Activity
 
@@ -498,7 +829,7 @@ inSampleSize的取值应该总是为2的指数，如果不为2的指数，系统
 
 在使用缓存时，要为其指定一个最大容量。当容量满了以后，采用LRU(Least Recently Used)近期最少使用算法来移除缓存内容
 
-#### LruCache
+### LruCache
 
 内部采用LinkedHashMap以强引用的方式存储外界缓存对象，提供get和put方法完成缓存的获取和添加，缓存满时移除较早使用的缓存对象
 
@@ -519,18 +850,18 @@ mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
 
 [源码](https://link.jianshu.com/?t=https://android.googlesource.com/platform/libcore/+/android-4.1.1_r1/luni/src/main/java/libcore/io/DiskLruCache.java)
 
-| 方法                                                         | 备注                                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 方法                                                                            | 备注                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DiskLruCache open(File directory, int appVersion, int valueCount, long maxSize) | 打开一个缓存目录，如果没有则首先创建它，**directory：**指定数据缓存地址 **appVersion：**APP版本号，当版本号改变时，缓存数据会被清除 **valueCount：**同一个key可以对应多少文件 **maxSize：**最大可以缓存的数据量 |
-| Editor edit(String key)                                      | 通过key可以获得一个DiskLruCache.Editor，通过Editor可以得到一个输出流，进而缓存到本地存储上 |
-| void flush()                                                 | 强制缓冲文件保存到文件系统                                   |
-| Snapshot get(String key)                                     | 通过key值来获得一个Snapshot，如果Snapshot存在，则移动到LRU队列的头部来，通过Snapshot可以得到一个输入流InputStream |
-| long size()                                                  | 缓存数据的大小，单位是byte                                   |
-| boolean remove(String key)                                   | 根据key值来删除对应的数据，如果该数据正在被编辑，则不能删除  |
-| void delete()                                                | 关闭缓存并且删除目录下所有的缓存数据，即使有的数据不是由DiskLruCache 缓存到本目录的 |
-| void close()                                                 | 关闭DiskLruCache，缓存数据会保留在外存中                     |
-| boolean isClosed()                                           | 判断DiskLruCache是否关闭，返回true表示已关闭                 |
-| File getDirectory()                                          | 缓存数据的目录                                               |
+| Editor edit(String key)                                                         | 通过key可以获得一个DiskLruCache.Editor，通过Editor可以得到一个输出流，进而缓存到本地存储上                                                                                                                      |
+| void flush()                                                                    | 强制缓冲文件保存到文件系统                                                                                                                                                                                      |
+| Snapshot get(String key)                                                        | 通过key值来获得一个Snapshot，如果Snapshot存在，则移动到LRU队列的头部来，通过Snapshot可以得到一个输入流InputStream                                                                                               |
+| long size()                                                                     | 缓存数据的大小，单位是byte                                                                                                                                                                                      |
+| boolean remove(String key)                                                      | 根据key值来删除对应的数据，如果该数据正在被编辑，则不能删除                                                                                                                                                     |
+| void delete()                                                                   | 关闭缓存并且删除目录下所有的缓存数据，即使有的数据不是由DiskLruCache 缓存到本目录的                                                                                                                             |
+| void close()                                                                    | 关闭DiskLruCache，缓存数据会保留在外存中                                                                                                                                                                        |
+| boolean isClosed()                                                              | 判断DiskLruCache是否关闭，返回true表示已关闭                                                                                                                                                                    |
+| File getDirectory()                                                             | 缓存数据的目录                                                                                                                                                                                                  |
 
 ## 优化列表卡顿
 
@@ -1397,12 +1728,12 @@ CLassLoader类中loadClass的具体实现
 
 ### 种类
 
-| 名称   | 标签           | 子类                 | 效果        |
-| ---- | ------------ | ------------------ | --------- |
-| 平移   | \<translate> | TranslateAnimation | 移动View    |
+| 名称   | 标签         | 子类               | 效果           |
+| ------ | ------------ | ------------------ | -------------- |
+| 平移   | \<translate> | TranslateAnimation | 移动View       |
 | 缩放   | \<scale>     | ScaleAnimation     | 放大或缩小View |
-| 透明度  | \<alpha>     | AlphaAnimation     | 改变View透明度 |
-| 旋转   | \<rotate>    | RotateAnimation    | 旋转View    |
+| 透明度 | \<alpha>     | AlphaAnimation     | 改变View透明度 |
+| 旋转   | \<rotate>    | RotateAnimation    | 旋转View       |
 
 ### 使用
 
@@ -1823,6 +2154,221 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
 [断点续传的原理](http://blog.csdn.net/lu1024188315/article/details/51803471)
 
 [Android开发——断点续传原理以及实现](http://blog.csdn.net/SEU_Calvin/article/details/53749776)
+
+# EventBus
+
+## 概述
+
+### 使用场景
+
+EventBus能够简化各组件间的通信，让我们的代码书写变得简单，能有效的分离事件发送方和接收方(也就是解耦的意思)，能避免复杂和容易出错的依赖性和生命周期问题
+
+### 三要素
+
+* Event  事件。它可以是任意类型。
+* Subscriber 事件订阅者。在EventBus3.0之前我们必须定义以onEvent开头的那几个方法，分别是onEvent、onEventMainThread、onEventBackgroundThread和onEventAsync，而在3.0之后事件处理的方法名可以随意取，不过需要加上注解@subscribe()，并且指定线程模型，默认是POSTING。
+* Publisher 事件的发布者。我们可以在任意线程里发布事件，一般情况下，使用EventBus.getDefault()就可以得到一个EventBus对象，然后再调用post(Object)方法即可。
+
+### 四种线程模型
+
+* POSTING (默认)  表示事件处理函数的线程跟发布事件的线程在同一个线程。
+* MAIN 表示事件处理函数的线程在主线程(UI)线程，因此在这里不能进行耗时操作。
+* BACKGROUND 表示事件处理函数的线程在后台线程，因此不能进行UI操作。如果发布事件的线程是主线程(UI线程)，那么事件处理函数将会开启一个后台线程，如果发布事件的线程是在后台线程，那么事件处理函数就使用该线程。
+* ASYNC 表示无论事件发布的线程是哪一个，事件处理函数始终会新建一个子线程运行，同样不能进行UI操作。
+
+### 原理
+
+EventBus 2.x 是采用反射的方式对整个注册的类的所有方法进行扫描来完成注册，当然会有性能上的影响。EventBus  3.0中EventBus提供了EventBusAnnotationProcessor注解处理器来在编译期通过读取@Subscribe()注解并解析、处理其中所包含的信息，然后生成java类来保存所有订阅者关于订阅的信息，这样就比在运行时使用反射来获得这些订阅者的信息速度要快
+
+## 使用
+
+### 添加依赖
+
+```
+compile 'org.greenrobot:eventbus:3.0.0'
+```
+
+### 定义消息事件类
+
+```java
+public class MessageEvent{
+    private String message;
+    public  MessageEvent(String message){
+        this.message=message;
+    }
+ 
+    public String getMessage() {
+        return message;
+    }
+ 
+    public void setMessage(String message) {
+        this.message = message;
+    }
+}
+```
+
+### 注册和解除注册
+
+分别在FirstActivity的onCreate()方法和onDestory()方法里，进行注册EventBus和解除注册。
+
+```java
+public class FirstActivity extends AppCompatActivity {
+    private Button mButton;
+    private TextView mText;
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.first_activity);
+        mButton = (Button) findViewById(R.id.btn1);
+        mText = (TextView) findViewById(R.id.tv1); 
+        mText.setText("今天是星期三"); 
+        EventBus.getDefault().register(this);
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent (FirstActivity.this, SecondActivity.class);
+                startActivity(intent);
+            }
+        });
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void Event(MessageEvent messageEvent) {
+        mText.setText(messageEvent.getMessage());
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().unregister(this);
+        }
+    }
+
+}
+```
+
+### 事件处理
+
+```java
+public class SecondActivity extends AppCompatActivity {
+    private Button mButton2;
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.second_activity);
+        mButton2=(Button) findViewById(R.id.btn2);
+        mButton2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EventBus.getDefault().post(new MessageEvent("欢迎大家浏览我写的博客"));
+                finish();
+            }
+        });
+    }
+}
+```
+
+### 效果
+
+在FirstActivity中，左边是一个按钮，点击之后可以跳转到SecondActivity，在按钮的右边是一个TextView，用来进行结果的验证
+
+![img](https://upload-images.jianshu.io/upload_images/8744053-3b7a7efff24c5ca3.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/415)
+
+这是SecondActivity，在页面的左上角，是一个按钮，当点击按钮，就会发送了一个事件，最后这个Activity就会销毁掉
+
+![img](https://upload-images.jianshu.io/upload_images/8744053-11bec3513bf037e1.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/411)
+
+此时我们可以看到，FirstActivity里的文字已经变成了，我们在SecondActivity里设置的文字
+
+![img](https://upload-images.jianshu.io/upload_images/8744053-4cd09837aa12c8fd.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/411)
+
+### 粘性事件
+
+除了上面讲的普通事件外，EventBus还支持发送黏性事件，就是在发送事件之后再订阅该事件也能收到该事件，跟黏性广播类似。为了验证粘性事件我们修改以前的代码：
+
+#### 订阅粘性事件
+
+在FirstActivity中我们将注册事件添加到button的点击事件中：
+
+```java
+bt_subscription.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        //注册事件
+        EventBus.getDefault().register(MainActivity.this);
+    }
+});
+```
+
+#### 订阅者处理粘性事件
+
+在FirstActivity中新写一个方法用来处理粘性事件：
+
+```java
+@Subscribe(threadMode = ThreadMode.POSTING，sticky = true)
+public void onStickyEvent(MessageEvent messageEvent){
+    tv_message.setText(messageEvent.getMessage());
+}
+```
+
+#### 发送黏性事件
+
+在SecondActivity中我们定义一个Button来发送粘性事件：
+
+```java
+bt_subscription.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        EventBus.getDefault().postSticky(new MessageEvent("粘性事件"));
+        finish();
+    }
+});
+```
+
+好了运行代码再来看看效果，首先我们在FirstActivity中并没有订阅事件，而是直接跳到SecondActivity中点击发送粘性事件按钮，这时界面回到FirstActivity，我们看到TextView仍旧显示着FirstActivity的字段，这是因为我们现在还没有订阅事件。
+
+![这里写图片描述](https://img-blog.csdn.net/20160816165158464)————————–> ![这里写图片描述](https://img-blog.csdn.net/20160816165339217)
+
+接下来我们点击订阅事件，TextView发生改变显示“粘性事件”，大功告成。
+
+![这里写图片描述](https://img-blog.csdn.net/20160816165645143)
+
+## 常见问题
+
+### 设置订阅者的优先级
+
+如果不设置优先级，所有的订阅者都会收到消息，随机顺序
+
+使用注解参数priority，数字越大，优先级越高
+
+```java
+@Subscribe(priority = 1); //默认的是0
+public void onEvent(MessageEvent event) {
+}
+```
+
+### 停止事件传递
+
+```java
+// Called in the same thread (default)
+@Subscribe
+public void onEvent(MessageEvent event){
+    // Process the event
+
+    EventBus.getDefault().cancelEventDelivery(event) ;
+}
+```
+
+
+
+[Android 消息传递之 EventBus 3.0 使用详解](https://juejin.im/entry/57d5f5b47db2a200683e05d1)
+
+[EventBus 3.0使用详解](https://www.jianshu.com/p/f9ae5691e1bb)
+
+[Android事件总线（一）EventBus3.0用法全解析](https://blog.csdn.net/itachi85/article/details/52205464)
+
+[#Android# 学EventBus，你可以参考下我的笔记](https://www.jianshu.com/p/4a3d953d1319)
 
 # Fragment
 
@@ -3376,9 +3922,9 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
        public void attachBaseContextByDaemon(Context base) {
            super.attachBaseContextByDaemon(base);
        }
-          * give the configuration to lib in this callback
-       * @return
-       */
+          /* give the configuration to lib in this callback
+       	* @return
+       	*/
       @Override
       protected DaemonConfigurations getDaemonConfigurations() {
           DaemonConfigurations.DaemonConfiguration configuration1 = new DaemonConfigurations.DaemonConfiguration(
@@ -3395,8 +3941,6 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
           //return new DaemonConfigurations(configuration1, configuration2);//listener can be null
           return new DaemonConfigurations(configuration1, configuration2, listener);
       }
-   ```
-
 
       class MyDaemonListener implements DaemonConfigurations.DaemonListener{
           @Override
@@ -3415,7 +3959,7 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
 
    此时如果你想在自己的application里面复写`attachBaseContext`方法的话，发现他已经被写为final，因为我们需要抢时间，所以必须保证进程进入先加载Marsdaemon，如果你想在`attchBaseContext`中做一些事情的话，可以复写`attachBaseContextByDaemon`方法
 
-   ​
+
 
 4. 如果你的Application已经继承了其他的Application类，那么可以参考Appliation2，在Application的`attachBaseContex`t的时候初始化一个`DaemonClient`，然后调用他的`onAttachBaseContext`同样可以实现，当然了，他同样需要一个配置来告诉他我们刚才在manifest中配的信息
 
@@ -3431,8 +3975,6 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
            mDaemonClient.onAttachBaseContext(base);
        }
 
-
-
        private DaemonConfigurations createDaemonConfigurations(){
            DaemonConfigurations.DaemonConfiguration configuration1 = new DaemonConfigurations.DaemonConfiguration(
                "com.marswin89.marsdaemon.demo:process1",
@@ -3447,25 +3989,21 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
            return new DaemonConfigurations(configuration1, configuration2, listener);
        }
 
-
        class MyDaemonListener implements DaemonConfigurations.DaemonListener{
            @Override
            public void onPersistentStart(Context context) {
            }
-
+    
            @Override
            public void onDaemonAssistantStart(Context context) {
            }
-
+    
            @Override
            public void onWatchDaemonDaed() {
            }
        }
    }
    ```
-
-
-
 
 [Android 使用MarsDaemon进程常驻](https://www.jianshu.com/p/70d45a79456a)
 
@@ -3552,7 +4090,7 @@ Android中单个dex所能包含的最大方法数为65536：
 
 ### 修改gradle
 
-```gradle
+​```gradle
 android {
     ...
     defaultConfig {
@@ -3564,7 +4102,7 @@ android {
 dependencies {
     compile 'com.android.support:multidex:1.0.0'
 }
-```
+   ```
 
 ### 修改代码
 
@@ -3577,7 +4115,7 @@ dependencies {
                android:name="android.support.multidex.MultiDexApplication"
                ...
   />
-  ```
+   ```
 
 * 修改Application继承MultiDexApplication
 
@@ -3662,11 +4200,11 @@ Intent是立即发生
 
 ### 主要方法
 
-| 用途         | 主要方法                                     |
-| ---------- | ---------------------------------------- |
-| 启动Activity | getActivity(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.startActivity(Intent) |
-| 启动Service  | getService(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.startService(Intent) |
-| 发送广播       | getBroadcast(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.sendBroadcast(Intent) |
+| 用途         | 主要方法                                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| 启动Activity | getActivity(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.startActivity(Intent)  |
+| 启动Service  | getService(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.startService(Intent)    |
+| 发送广播     | getBroadcast(Context, int requestCode, Intent intent, int flags)<br>获得一个PendingIntent，当发生时相当于Context.sendBroadcast(Intent) |
 
 ### 匹配规则
 
@@ -4002,11 +4540,11 @@ SurfaceView继承之View，但拥有**独立的绘制表面**，即它**不与�
 
 ## 和View的区别
 
-|       | SurfaceView  | View     |
-| ----- | ------------ | -------- |
-| 适用场景  | 被动更新，例如频繁地刷新 | 主动更新     |
-| 刷新方式  | 子线程中刷新页面     | 主线程中刷新页面 |
-| 双缓冲机制 | 底层实现         | 无        |
+|            | SurfaceView              | View             |
+| ---------- | ------------------------ | ---------------- |
+| 适用场景   | 被动更新，例如频繁地刷新 | 主动更新         |
+| 刷新方式   | 子线程中刷新页面         | 主线程中刷新页面 |
+| 双缓冲机制 | 底层实现                 | 无               |
 
 ## 创建和初始化SurfaceView
 
@@ -4934,19 +5472,19 @@ WindowManagerGlobal以工厂形式向外提供实例，这是典型的工厂模�
 
 与添加过程类似，通过WIndowManagerImpl后再通过WindowManagerGlobal实现
 
-1. 通过findViewLocked查找待删除View的索引，调用removeViewLocked删除
+1. 通过findViewLocked查找待删除View的索引，调用`removeViewLocked`删除
 
-2. 主要使用异步删除：调用removeView，其中调用了ViewRootImpl的die方法，发送了请求删除的消息，将其加入mDyingViews中，再调用doDie->dispatchDetachedFromWindow
+2. 主要使用异步删除：调用`removeView`，其中调用了ViewRootImpl的die方法，发送了请求删除的消息，将其加入mDyingViews中，再调用`doDie`->`dispatchDetachedFromWindow`
 
-3. dispatchDetachedFromWindow：垃圾回收
+3. `dispatchDetachedFromWindow`：垃圾回收
 
-   ->Session.remove（IPC）->View#onDetachedFromWindow（资源回收）
+   ->`Session.remove`（IPC）->`View#onDetachedFromWindow`（资源回收）
 
-   ->WindowManagerGlobal#doRemoveView（刷新数据）
+   ->`WindowManagerGlobal#doRemoveView`（刷新数据）
 
 ### Window的更新过程
 
-WindowManagerGlobal#updateViewLayout
+`WindowManagerGlobal#updateViewLayout`
 
 1. 更新View和ViewRootImpl的LayoutParams
 2. 调用scheduleTraversals重新布局
@@ -5215,7 +5753,7 @@ class LooperThread extends Thread {
 
 #### postDelayed的原理
 
-##### 精确计时的
+##### 精确计时
 
 在`MessageQueue.next()`中，如果头部的这个Message是有延迟而且延迟时间没到的（now < msg.when），会计算一下时间（保存为变量`nextPollTimeoutMillis`），然后在循环开始的时候判断如果这个Message有延迟，就调用`nativePollOnce(ptr, nextPollTimeoutMillis)`进行阻塞。`nativePollOnce()`的作用类似与`object.wait()`，只不过是使用了Native的方法对这个线程精确时间的唤醒
 
@@ -5312,6 +5850,8 @@ class myAsync extends AsyncTask<Params, Progress, Result> {
 3. 这条消息被添加到MessageQueue的队列中等待被处理 
 4. Looper一直尝试从MessageQueue中提出待处理消息，分发到Handler的`handleMessage()`方法中，这样Handler中的业务逻辑就被切换到创建Handler的线程中了
 
+> 使用runOnUIThread更新UI线程
+
 [Android 异步消息处理机制 让你深入理解 Looper、Handler、Message三者关系](http://blog.csdn.net/lmj623565791/article/details/38377229)
 
 ## 线程池
@@ -5358,12 +5898,12 @@ ThreadPoolExecutor(int corePoolSize, // 核心线程数
 
 ### 分类
 
-| 名称                 | 功能                                                         |
-| -------------------- | ------------------------------------------------------------ |
-| FixedThreadPool      | 线程数量固定，只有核心线程，空闲不回收<br>可以更快响应外界请求 |
-| CachedThreadPool     | 线程数量不定，只有非核心线程，超时60秒回收<br>执行大量耗时较少的任务 |
+| 名称                 | 功能                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------ |
+| FixedThreadPool      | 线程数量固定，只有核心线程，空闲不回收<br>可以更快响应外界请求                       |
+| CachedThreadPool     | 线程数量不定，只有非核心线程，超时60秒回收<br>执行大量耗时较少的任务                 |
 | ScheduledThreadPool  | 核心线程数量固定，非核心线程数量不定，闲置立刻回收<br>执行定时任务和具有固定周期任务 |
-| SingleThreadExecutor | 只有一个核心线程<br>统一所有外界任务到一个线程中，避免同步问题 |
+| SingleThreadExecutor | 只有一个核心线程<br>统一所有外界任务到一个线程中，避免同步问题                       |
 
 [Java多线程-线程池ThreadPoolExecutor构造方法和规则](https://blog.csdn.net/qq_25806863/article/details/71126867)
 
@@ -5383,9 +5923,9 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 
 * 采用\<include\>和\<merge\>标签和ViewStub。\<include\>标签主要用于布局重用，\<include\>标签和\<merge\>标签配合使用，降低减少布局的层级。而ViewStub则提供了按需加载功能，提高了程序的初始化效率
 
-> include标签只支持android:layout开头的属性，除了android:id
+> include标签只支持android:layout开头的属性，除了`android:id`
 >
-> 如果include指定了android:layout_*，那么必须同时指定android:layout_width和android_layout_height
+> 如果include指定了`android:layout_*`，那么必须同时指定`android:layout_width`和`android_layout_height`
 
 ### ViewStub
 
@@ -5404,6 +5944,8 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 ## 内存泄露优化
 
 ### 原理
+
+**长生命周期的对象持有了短生命周期的对象，短生命周期对象无法释放**
 
 内存泄漏也称作“存储渗漏”，用动态存储分配函数动态开辟的空间，在使用完毕后未释放，结果导致一直占据该内存单元。直到程序结束。即所谓内存泄漏
 
@@ -5514,7 +6056,7 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
    } 
    ```
 
-   上面的代码中的sInstance实例类型为静态实例，在第一个MainActivity act1实例创建时，sInstance会获得并一直持有act1的引用。当MainAcitivity销毁后重建，因为sInstance持有act1的引用，所以act1是无法被GC回收的，进程中会存在2个MainActivity实例（act1和重建后的MainActivity实例），这个act1对象就是一个无用的但一直占用内存的对象，即无法回收的垃圾对象。所以，对于launchMode不是singleInstance的Activity， 应该避免在activity里面实例化其非静态内部类的静态实例
+   非静态内部类的静态实例会持有宿主类的强引用this，导致宿主类实例无法释放
 
 5. Activity使用静态成员
 
@@ -5579,22 +6121,21 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 
 * Activity 5秒内无法响应屏幕触摸事件或键盘输入事件
 * BroadcastReceiver 10秒内未执行完操作
+* Service 20秒内未执行完操作
 
 ### 调试
 
 1. DDMS输出的LOG可以判断ANR发生在哪个类，但无法确定在类中哪个位置
 2. 在/data/anr/traces.txt文件中保存了ANR发生时的代码调用栈，可以跟踪到发生ANR的所有代码段
+3. 使用TraceView测量函数耗时，使用Hierarchy Viewer查看View布局层次和每个View的刷新加载时间                
 
 ### 避免
 
-任何在主线程中运行的，需要消耗大量时间的操作都会引发ANR
+任何在主线程中运行的耗时操作都会引发ANR
 
-任何运行在主线程中的方法，都要尽可能的只做少量的工作。特别是活动生命周期中的重要方法如onCreate()和 onResume()等更应如此
-
-耗时操作：
-
-* 访问网络和数据库
-* 开销很大的计算，比如改变位图的大小，需要在一个单独的子线程中完成
+* 避免在Activity的onCreate等生命周期方法中做耗时操作
+* 避免在onReceive中做耗时操作，例如启动一个Activity
+* 尽量使用Handler等机制处理UI交互
 
 ## ListView和Bitmap优化
 
@@ -5675,6 +6216,15 @@ public class ViewHolder {
 
 ## 防止内存溢出（OOM）
 
+### 获取内存限制
+
+```java
+ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+System.out.println(am.getMemoryClass());
+```
+
+
+
 ### 原因
 
 1. 资源未得到及时释放：比如Context，Cursor等资源使用后未及时释放
@@ -5684,9 +6234,12 @@ public class ViewHolder {
 ### 解决
 
 1. 及时释放资源，避免加载过大资源，比如图片进行采样加载，及时使用`recycle()`释放资源
-2. 使用WeakReference代替强引用
+2. 使用弱代替强引用
 3. 减少static关键字使用
 4. 对于不可控的线程，尽量使用静态内部类，防止非静态内部类拥有外部类的强引用造成内存泄露
+5. 避免使用Enum，使用ArrayMap/SparseMap等代替HashMap，减少内存占用
+6. 增加对象重复利用，利用对象池技术
+7. 避免在onDraw中创建对象
 5. 使用TraceView，heap工具，allocation tracker等工具进行筛查
 
 [Android性能优化(一)--关于内存溢出](https://blog.csdn.net/checkiming/article/details/60480773)
@@ -5745,3 +6298,7 @@ dpi：像素密度，即像素/英寸
 dp：设备独立像素，dpi / 160
 
 px = dp * (dpi / 160)，在每英寸160像素点的屏幕上，1dp = 1px
+
+# 系统架构
+
+![这里写图片描述](https://img-blog.csdn.net/20170123173332254?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvaXRhY2hpODU=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
