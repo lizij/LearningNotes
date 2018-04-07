@@ -590,6 +590,144 @@ HashMap基于hashing原理，我们通过`put()`和`get()`方法储存和获取�
 
 [解决哈希（HASH）冲突的主要方法](http://blog.csdn.net/lightty/article/details/11191971)
 
+# 缓存机制设计
+
+## FIFO
+
+先入先出
+
+```java
+public class FIFOCache<K,V> extends LinkedHashMap<K, V>{
+    private final int SIZE;
+
+    public FIFOCache(int size) {
+        super();//调用父类无参构造，不启用LRU规则
+        SIZE = size;
+    }
+
+    //重写淘汰机制
+    @Override
+    protected boolean removeEldestEntry(java.util.Map.Entry<K, V> eldest) {
+        return size() > SIZE;  //如果缓存存储达到最大值删除最后一个
+    }
+}
+```
+
+
+
+## LRU
+
+最近最少使用，意思就是最近读取的数据放在最前面，最早读取的数据放在最后面，如果这个时候有新的数据进来，那么最后面存储的数据淘汰
+
+```java
+public class LRUCache<K,V> extends LinkedHashMap<K, V> {
+    private static final long serialVersionUID = 5853563362972200456L;
+
+    private final int SIZE;
+
+    public LRUCache(int size) {
+        super(size, 0.75f, true);  //int initialCapacity, float loadFactor, boolean accessOrder这3个分别表示容量，加载因子和是否启用LRU规则
+        SIZE = size;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(java.util.Map.Entry<K, V> eldest) {
+        return size() > SIZE;
+    }
+}
+```
+
+
+
+## LFU
+
+最不常使用，意思就是对存储的数据都会有一个计数引用，然后队列按数据引用次数排序，引用数多的排在最前面，引用数少的排在后面。如果这个时候有新的数据进来，把最后面的数据删除，把新进数据排在最后面，且引用次数为1
+
+```java
+public class LFUCache{
+
+    static class Value implements Comparable<Value>{    //定义一个静态内部类，主要是用于统计命中数
+        Object key;
+        Object val;
+        int hitCount;
+
+        public Value(Object v, Object key) {
+            this.key = key;
+            this.val = v;
+            this.hitCount = 1;  //第一次进入设置命中为1
+        }
+
+        public void setVal(Object obj){
+            this.val = obj;
+        }
+
+        public void countInc(){
+            hitCount++;
+        }
+
+        @Override
+        public int compareTo(Value o) {
+            if(o instanceof Value){  //如果比较的类属于Value或者是Value的子类
+                Value v = (Value) o;
+                if(this.hitCount > v.hitCount)
+                    return 1;
+                else
+                    return -1;
+            }
+            return 0;
+        }
+
+    }
+    final int SIZE;
+
+    private Map<Object, Value> map = new HashMap<Object, Value>();
+
+    public LFUCache(int size) {
+        SIZE = size;
+    }
+
+    //获取缓存中的数据
+    public Object get(Object k){
+        if(k == null)
+            return null;
+
+        //命中+1
+        map.get(k).countInc();
+        return map.get(k).val;
+    }
+
+    //存储数据
+    public void put(Object k, Object v){
+        //如果本来就存在
+        if(map.get(k) != null){
+            map.get(k).countInc();//命中计数
+            map.get(k).setVal(v);//覆盖结果值
+        }else{
+            //如果存储已超过限定值
+            if(map.size() >= SIZE){
+                remove();//移除最后一个数据
+            }
+            Value value  = new Value(v, k);
+            map.put(k, value);
+        }
+
+
+        //
+    }
+
+    //数据移除最后一个数据
+    public void remove(){
+        //先拿到最后一个数据
+        Value v = Collections.min(map.values());
+        //移除最后一个数据
+        map.remove(v.key);
+    }
+
+}
+```
+
+[用Java实现多种缓存机制](https://blog.csdn.net/u012403290/article/details/68926201)
+
 # 进程和线程
 
 ## 进程

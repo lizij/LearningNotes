@@ -158,6 +158,17 @@ if (r != null && !r.activity.mFinished) {
 
 > 在正常情况下Activity的创建和销毁不会调用onSaveInstanceState和onRestoreInstanceState方法
 
+可能触发的场景：
+
+1. 横竖屏切换
+2. Home键返回桌面：onPause()----onSaveInstanceState()----onStop()
+3. 直接后台切换到其他应用
+4. 直接锁屏
+
+从上边的可能性可以看出，onSaveInstanceState()的调用遵循一个重要原则，即当系统“未经你许可销毁了你的activity，而不是你自己手动销毁的，这时候onSaveInstanceState会被系统调用，这是系统的责任，因为它必须要提供一个机会让你保存你的数据
+
+而onRestoreInstanceState被调用的前提是，activity A“确实”被系统销毁了，而如果仅仅是停留在有这种可能性的情况下，则该方法不会被调用，例如，当正在显示activityA时，这时候直接按下电源键锁屏，那么会执行onSaveInstanceState()，紧接着再打开屏幕，这时候activityA不会被系统销毁，所以不会执行onRestoreInstanceState()
+
 使用
 
 ```java
@@ -182,7 +193,9 @@ public void onRestoreInstanceState(Bundle savedInstanceState) {
 
 ### 防止Activity重建
 
-在AndroidManifest.xml中对Activity的configChange属性进行配置。例如我们不希望屏幕旋转时重建，则需要设置为` android:configChanges="orientation"` ， 如果有多个值，可以用“|”连接
+在AndroidManifest.xml中对Activity的configChange属性进行配置。例如我们不希望屏幕旋转时重建，则需要设置为` android:configChanges="orientation|screenSize"` ， 如果有多个值，可以用“|”连接
+
+> 自从Android 3.2（API 13），在设置Activity的android:configChanges="orientation|keyboardHidden"后，还是一样会重新调用各个生命周期的。因为screen size也开始跟着设备的横竖切换而改变。所以，在AndroidManifest.xml里设置的MiniSdkVersion和 TargetSdkVersion属性大于等于13的情况下，如果你想阻止程序在运行时重新加载Activity，除了设置"orientation"，你还必须设置"ScreenSize"
 
 常用的配置选项还有
 
@@ -190,6 +203,19 @@ public void onRestoreInstanceState(Bundle savedInstanceState) {
 * locale：设备的本地位置发生了改变，例如切换了系统语言
 * keyboard：键盘类型发生了改变，例如插入了外接键盘
 * keyboardHidden：键盘的可访问性发生了改变，例如移除了外接键盘
+* screenSize：屏幕大小发生改版，例如横竖屏切换
+
+不设置configChanges的Activity生命周期：
+
+onPause()----onSaveInstanceState()----onStop()----onDestroy()----onCreate()-----onStart()-----onRestoreInstanceState()----onResume()
+
+只设置`orientation|keyboard`的Activity生命周期：与不设置的相同
+
+设置`orientation|screenSize`的Activity生命周期：
+
+onConfigurationChanged---onWindowFocusChanged
+
+[横竖屏切换时候的生命周期以及configchanges介绍](https://blog.csdn.net/qq_33234564/article/details/53286474)
 
 [异常情况下Activity数据的保存和恢复](http://blog.csdn.net/huaheshangxo/article/details/50829752#如何保存和恢复数据)
 
@@ -388,7 +414,13 @@ Android应用使用Intent机制在组件之间传递数据，如果应用在使�
 1. 将不必要导出的组件export属性设为false
 2. 在处理intent数据时捕获异常。
 
-# asset和resource
+# APK
+
+![img](https://img-blog.csdn.net/20141231185606435?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+## 文件结构
+
+### asset和res
 
 1. 两者目录下的文件在打包后会原封不动的保存在apk包中，不会被编译成二进制
 
@@ -407,6 +439,66 @@ Android应用使用Intent机制在组件之间传递数据，如果应用在使�
    ```
 
 3. res/raw不可以有目录结构，而assets则可以有目录结构，也就是assets目录下可以再建立文件夹
+
+### lib
+
+存放应用程序依赖的native库文件，一般是用C/C++编写，这里的lib库可能包含4中不同类型，根据CPU型号的不同，大体可以分为ARM，ARM-v7a，MIPS，X86，分别对应着ARM架构，ARM-V7架构，MIPS架构和X86架构，这些so库在APK包中的构成如下图
+
+![img](https://img-blog.csdn.net/20141231185613486?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+### META-INF
+
+保存应用的签名信息，签名信息可以验证APK文件的完整性。AndroidSDK在打包APK时会计算APK包中所有文件的完整性，并且把这些完整性保存到META-INF文件夹下，应用程序在安装的时候首先会根据META-INF文件夹校验APK的完整性，这样就可以保证APK中的每一个文件都不能被篡改。以此来确保APK应用程序不被恶意修改或者病毒感染，有利于确保Android应用的完整性和系统的安全性。META-INF目录下包含的文件有CERT.RSA，CERT.DSA，CERT.SF和MANIFEST.MF，其中CERT.RSA是开发者利用私钥对APK进行签名的签名文件，CERT.SF，MANIFEST.MF记录了文件中文件的SHA-1哈希值
+
+### AndroidManifest.xml
+
+Android应用程序的配置文件，是一个用来描述Android应用“整体资讯”的设定文件，简单来说，相当于Android应用向Android系统“自我介绍”的配置文件，Android系统可以根据这个“自我介绍”完整地了解APK应用程序的资讯，每个Android应用程序都必须包含一个AndroidManifest.xml文件，且它的名字是固定的，不能修改。我们在开发Android应用程序的时候，一般都把代码中的每一个Activity，Service，Provider和Receiver在AndroidManifest.xml中注册，只有这样系统才能启动对应的组件，另外这个文件还包含一些权限声明以及使用的SDK版本信息等等。程序打包时，会把AndroidManifest.xml进行简单的编译，便于Android系统识别，编译之后的格式是AXML格式，如下图
+
+![img](https://img-blog.csdn.net/20141231185617074?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+### classes.dex
+
+传统的Java程序，首先先把Java文件编译成class文件，字节码都保存在了class文件中，Java虚拟机可以通过解释执行这些class文件。而Dalvik虚拟机是在Java虚拟机进行了优化，执行的是Dalvik字节码，而这些Dalvik字节码是由Java字节码转换而来，一般情况下，Android应用在打包时通过AndroidSDK中的dx工具将Java字节码转换为Dalvik字节码。dx工具可以对多个class文件进行合并，重组，优化，可以达到减小体积，缩短运行时间的目的。dx工具的转换过程如图
+
+![img](https://img-blog.csdn.net/20141231185620085?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+## 打包过程
+
+![img](https://images2015.cnblogs.com/blog/217990/201702/217990-20170219155424582-264022190.png)
+
+1. 打包资源文件，生成R.java文件：aapt
+2. 处理AIDL文件，生成java文件：aidl
+3. 编译java文件，生成class文件：javac
+4. 将class文件转化为Davik VM支持的dex文件：dx
+5. 打包生成未签名的apk文件：apkbuilder
+6. 对未签名的apk进行签名：jarsigner
+7. 对签名后的apk进行对齐处理：zipalign
+
+[Android应用程序（APK）的编译打包过程](http://www.cnblogs.com/sjm19910902/p/6416022.html)
+
+## 安装过程
+
+Adroid的应用安装涉及到如下几个目录：
+
+/data/app：存放用户安装的APK的目录，安装时，把APK拷贝于此。
+
+/data/data：应用安装完成后，在/data/data目录下自动生成和APK包名（packagename）一样的文件夹，用于存放应用程序的数据。
+
+/data/dalvik-cache：存放APK的odex文件，便于应用启动时直接执行。
+
+具体安装过程如下：
+
+首先，复制APK安装包到/data/app下，然后校验APK的签名是否正确，检查APK的结构是否正常，进而解压并且校验APK中的dex文件，确定dex文件没有被损坏后，再把dex优化成odex，使得应用程序启动时间加快，同时在/data/data目录下建立于APK包名相同的文件夹，如果APK中有lib库，系统会判断这些so库的名字，查看是否以lib开头，是否以.so结尾，再根据CPU的架构解压对应的so库到/data/data/packagename/lib下。
+
+APK安装的时候会把DEX文件解压并且优化为odex，odex的格式如图所示：
+
+![img](https://img-blog.csdn.net/20141231185625108?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+
+
+odex在原来的dex文件头添加了一些数据，在文件尾部添加了程序运行时需要的依赖库和辅助数据，使得程序运行速度更快
+
+[APK文件结构和安装过程](https://blog.csdn.net/bupt073114/article/details/42298337)
 
 # BroadcastReceiver
 
@@ -3853,7 +3945,7 @@ dependencies {
                android:name="android.support.multidex.MultiDexApplication"
                ...
   />
-   ```
+  ```
 
 * 修改Application继承MultiDexApplication
 
@@ -4805,11 +4897,13 @@ public class AutoLinefeedLayout extends ViewGroup {
 
 [Android最简洁的自动换行布局组件](http://blog.csdn.net/u011192530/article/details/53019212)
 
-## 常见函数
+## View的刷新
+
+### 不使用多线程和双缓冲
 
 一般来说，如果View确定自身不再适合当前区域，比如说它的LayoutParams发生了改变，需要父布局对其进行重新测量、布局、绘制这三个流程，往往使用requestLayout。而invalidate则是刷新当前View，使当前View进行重绘，不会进行测量、布局流程，因此如果View只需要重绘而不需要测量，布局的时候，使用invalidate方法往往比requestLayout方法更高效
 
-### requestLayout() 
+#### requestLayout()
 
 子View调用requestLayout方法，会标记当前View及父容器，同时逐层向上提交，直到ViewRootImpl处理该事件，ViewRootImpl会调用三大流程，从measure开始，对于每一个含有标记位的view及其子View都会进行测量、布局、绘制
 
@@ -4817,17 +4911,25 @@ public class AutoLinefeedLayout extends ViewGroup {
 
 在这里，调用了scheduleTraversals方法，这个方法是一个异步方法，最终会调用到**ViewRootImpl#performTraversals**方法，这也是View工作流程的核心方法，在这个方法内部，分别调用measure、layout、draw方法来进行View的三大工作流程
 
-### invalidate()
+#### invalidate()
 
 当子View调用了invalidate方法后，会为该View添加一个标记位，同时不断向父容器请求刷新，父容器通过计算得出自身需要重绘的区域，直到传递到ViewRootImpl中，最终触发performTraversals方法，进行开始View树重绘流程(只绘制需要重绘的视图)
 
-### postInvalidate()
+#### postInvalidate()
 
 这个方法与invalidate方法的作用是一样的，都是使View树重绘，但两者的使用条件不同，postInvalidate是在非UI线程中调用，invalidate则是在UI线程中调用。
 
 ![requestlayout and invalidate.jpg](http://upload-images.jianshu.io/upload_images/1734948-b4493f7b0234dd69.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
 [Android View 深度分析requestLayout、invalidate与postInvalidate](https://blog.csdn.net/a553181867/article/details/51583060)
+
+### 使用多线程但不使用双缓冲
+
+此时适合使用Handler通知主线程进行页面更新
+
+### 使用多线程和双缓冲
+
+定义子类继承SurfaceView并实现SurfaceHolder.Callback接口
 
 # View事件体系
 
@@ -5894,6 +5996,10 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 4. 减少变量的使用，减少逻辑判断和加载图片等耗时操作，减少GC的执行，减少耗时操作造成的卡顿
 
 5. 根据列表滑动状态控制任务执行频率，例如快速滑动时不适合开启大量异步任务
+
+   SCROLL_STATE_FLING：快速滑动状态，不适合加载图片
+
+   SCROLL_STATE_IDLE或SCROLL_STATE_TOUCH_SCROLL：慢速或停止滑动，可以加载图片
 
 6. 开启硬件加速
 
