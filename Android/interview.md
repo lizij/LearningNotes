@@ -3828,7 +3828,7 @@ Android中单个dex所能包含的最大方法数为65536：
 
 ### 修改gradle
 
-​```gradle
+```gradle
 android {
     ...
     defaultConfig {
@@ -3840,7 +3840,7 @@ android {
 dependencies {
     compile 'com.android.support:multidex:1.0.0'
 }
-   ```
+```
 
 ### 修改代码
 
