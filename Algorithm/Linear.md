@@ -18,6 +18,43 @@ First in first out.
 2. Conflict: If the number of input is gigantic while the output is limited, there will be conflicts in output.
 3. Discrete: Try to make sure the output is evenly distributed
 
+### Hash() for String
+
+The value 31 was chosen because it is an odd prime. If it were even and the multiplication overflowed, information would be lost, as multiplication by 2 is equivalent to shifting. The advantage of using a prime is less clear, but it is traditional. A nice property of 31 is that the multiplication can be replaced by a shift and a subtraction for better performance: `31 * i == (i << 5) - i`. Modern VMs do this sort of optimization automatically.
+
+```java
+// hashcode() in java.lang.String
+@Override
+public int hashCode() {
+    int h = hash;
+    if (h == 0 && value.length > 0) {
+        char val[] = value;
+
+        for (int i = 0; i < value.length; i++) {
+            h = 31 * h + val[i];
+        }
+        hash = h;
+    }
+    return h;
+}
+```
+
+we can custom `hascode()` like this
+
+```java
+// R can be 31, the result will be in [0, M-1]
+@Override
+public int hashcode() {
+    int hash = 0;
+    for (int i = 0; i < s.length(); i++) {
+        hash = (R * hash + s.charAt(i)) % M;
+    }
+    return hash;
+}
+```
+
+
+
 ### Consistent hashing
 
 If the output of `hash()` is evenly distributed, `hash() % m` is also evenly distributed.
@@ -181,6 +218,9 @@ for (int coord: sortedCoords) {
 int[] arr = {1, 2, 3}
 System.out.println(Arrays.toString(arr));
 // output: [1, 2, 3]
+int[][] matrix = {{1, 2, 3}, {4, 5, 6}};
+System.out.println(Arrays.deepToString(matrix));
+// output: [[1, 2, 3], [4, 5, 6]]
 ```
 
 ### Integer.equals vs "=="
@@ -1499,6 +1539,26 @@ int lcs(int[] a, int alen, int[] b, int blen, int[][] mem){
 }
 ```
 
+dp\[i]\[j]: the max repeated length of A\[0...i] and B\[0...j]
+
+```java
+int lcs(int[] a, int[] b) {
+    int[][] dp = new int[a.length][b.length];
+    for (int i = 1; i < a.length; i++) {
+        for (int j = 1; j < b.length; j++) {
+            if (a[i] == b[j]) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j] + dp[i][j - 1]);
+            }
+        }
+    }
+    return dp[a.length + 1][b.length + 1];
+}
+```
+
+
+
 Similiar problem:Longest Common Subsequence
 
 ### More than Half Number
@@ -1607,7 +1667,7 @@ int numSubarrayBoundedMax(int[] A, int L, int R) {
 For I, DFS solution
 
 ```java
-List<List<Integer>> combinationSum2(int[] candidates, int target) {
+List<List<Integer>> combinationSum(int[] candidates, int target) {
     if (candidates == null || candidates.length == 0 || target < 0) {
         return null;
     }

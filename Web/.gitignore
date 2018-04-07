@@ -1,0 +1,7 @@
+.idea/
+out/
+*_files/
+*.docx
+*.pdf
+*.html
+*.iml

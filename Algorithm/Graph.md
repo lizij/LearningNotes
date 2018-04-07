@@ -383,7 +383,9 @@ Set<Edge> primMST(Graph graph) {
         if (set.contains(node)) continue;
         set.add(node);
         // add edges from the node
-        for (Edge edge: node.edges) queue.offer(edge);
+        for (Edge edge: node.edges) {
+            queue.offer(edge);
+        }
         while (!queue.isEmpty()) {
             // in every loop, find the shortest edge to connect to the nodes not in the set 
             Edge edge = queue.poll();
@@ -392,7 +394,9 @@ Set<Edge> primMST(Graph graph) {
                 set.add(toNode);
                 result.add(edge);
                 // add edges from the new added toNode
-                for (Edge nextEdge: toNode.edges) queue.offer(nextEdge);
+                for (Edge nextEdge: toNode.edges) {
+                    queue.offer(nextEdge);
+                }
             }
         }
     }

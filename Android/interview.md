@@ -1,337 +1,6 @@
 # Android开发面试题
 
 [TOC]
-<!-- TOC -->
-
-- [Android开发面试题](#android%E5%BC%80%E5%8F%91%E9%9D%A2%E8%AF%95%E9%A2%98)
-- [Activity](#activity)
-    - [启动模式](#%E5%90%AF%E5%8A%A8%E6%A8%A1%E5%BC%8F)
-        - [standard](#standard)
-        - [singleTop](#singletop)
-        - [singleTask](#singletask)
-            - [taskAffinity](#taskaffinity)
-            - [指定方式](#%E6%8C%87%E5%AE%9A%E6%96%B9%E5%BC%8F)
-            - [作用](#%E4%BD%9C%E7%94%A8)
-        - [singleInstance](#singleinstance)
-    - [生命周期](#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
-        - [一个Activity的生命周期](#%E4%B8%80%E4%B8%AAactivity%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
-        - [一个Activity调用另一个Activity的生命周期](#%E4%B8%80%E4%B8%AAactivity%E8%B0%83%E7%94%A8%E5%8F%A6%E4%B8%80%E4%B8%AAactivity%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
-        - [不同位置调用finish()的结果](#%E4%B8%8D%E5%90%8C%E4%BD%8D%E7%BD%AE%E8%B0%83%E7%94%A8finish%E7%9A%84%E7%BB%93%E6%9E%9C)
-            - [表现](#%E8%A1%A8%E7%8E%B0)
-            - [原理](#%E5%8E%9F%E7%90%86)
-    - [异常情况下Activity数据的保存和恢复](#%E5%BC%82%E5%B8%B8%E6%83%85%E5%86%B5%E4%B8%8Bactivity%E6%95%B0%E6%8D%AE%E7%9A%84%E4%BF%9D%E5%AD%98%E5%92%8C%E6%81%A2%E5%A4%8D)
-        - [保存和恢复数据](#%E4%BF%9D%E5%AD%98%E5%92%8C%E6%81%A2%E5%A4%8D%E6%95%B0%E6%8D%AE)
-        - [防止Activity重建](#%E9%98%B2%E6%AD%A2activity%E9%87%8D%E5%BB%BA)
-    - [启动过程](#%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B)
-        - [具体过程记录（非重点）](#%E5%85%B7%E4%BD%93%E8%BF%87%E7%A8%8B%E8%AE%B0%E5%BD%95%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
-        - [Instrumentation](#instrumentation)
-    - [IntentFilter匹配规则](#intentfilter%E5%8C%B9%E9%85%8D%E8%A7%84%E5%88%99)
-- [安全](#%E5%AE%89%E5%85%A8)
-    - [Webview 远程执行JS漏洞](#webview-%E8%BF%9C%E7%A8%8B%E6%89%A7%E8%A1%8Cjs%E6%BC%8F%E6%B4%9E)
-    - [DNS劫持](#dns%E5%8A%AB%E6%8C%81)
-    - [APP升级过程防劫持](#app%E5%8D%87%E7%BA%A7%E8%BF%87%E7%A8%8B%E9%98%B2%E5%8A%AB%E6%8C%81)
-        - [问题概述](#%E9%97%AE%E9%A2%98%E6%A6%82%E8%BF%B0)
-        - [解决方案](#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88)
-    - [本地拒绝服务漏洞](#%E6%9C%AC%E5%9C%B0%E6%8B%92%E7%BB%9D%E6%9C%8D%E5%8A%A1%E6%BC%8F%E6%B4%9E)
-        - [原理](#%E5%8E%9F%E7%90%86)
-        - [应用场景](#%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF)
-        - [漏洞检测](#%E6%BC%8F%E6%B4%9E%E6%A3%80%E6%B5%8B)
-        - [修复](#%E4%BF%AE%E5%A4%8D)
-- [asset和resource](#asset%E5%92%8Cresource)
-- [BroadcastReceiver](#broadcastreceiver)
-    - [注册方式](#%E6%B3%A8%E5%86%8C%E6%96%B9%E5%BC%8F)
-    - [工作原理（非重点）](#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
-        - [静态注册](#%E9%9D%99%E6%80%81%E6%B3%A8%E5%86%8C)
-        - [动态注册](#%E5%8A%A8%E6%80%81%E6%B3%A8%E5%86%8C)
-        - [发送和接收](#%E5%8F%91%E9%80%81%E5%92%8C%E6%8E%A5%E6%94%B6)
-- [Bitmap加载](#bitmap%E5%8A%A0%E8%BD%BD)
-    - [高效加载](#%E9%AB%98%E6%95%88%E5%8A%A0%E8%BD%BD)
-    - [缓存策略](#%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5)
-        - [LruCache](#lrucache)
-        - [DiskLruCache](#disklrucache)
-    - [优化列表卡顿](#%E4%BC%98%E5%8C%96%E5%88%97%E8%A1%A8%E5%8D%A1%E9%A1%BF)
-    - [ImageLoader设计](#imageloader%E8%AE%BE%E8%AE%A1)
-        - [基本功能](#%E5%9F%BA%E6%9C%AC%E5%8A%9F%E8%83%BD)
-        - [代码设计](#%E4%BB%A3%E7%A0%81%E8%AE%BE%E8%AE%A1)
-- [Binder](#binder)
-    - [运行机制](#%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6)
-    - [线程管理](#%E7%BA%BF%E7%A8%8B%E7%AE%A1%E7%90%86)
-- [Crash](#crash)
-- [Drawable](#drawable)
-    - [分类](#%E5%88%86%E7%B1%BB)
-        - [BitmapDrawable](#bitmapdrawable)
-        - [ShapeDrawable](#shapedrawable)
-        - [LayerDrawable](#layerdrawable)
-        - [StateListDrawable](#statelistdrawable)
-        - [LevelListDrawable](#levellistdrawable)
-        - [TransitionDrawable](#transitiondrawable)
-        - [InsetDrawable](#insetdrawable)
-        - [ScaleDrawable](#scaledrawable)
-        - [ClipDrawable](#clipdrawable)
-    - [自定义Drawable](#%E8%87%AA%E5%AE%9A%E4%B9%89drawable)
-- [动态加载](#%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BD)
-    - [基础性问题](#%E5%9F%BA%E7%A1%80%E6%80%A7%E9%97%AE%E9%A2%98)
-        - [资源访问](#%E8%B5%84%E6%BA%90%E8%AE%BF%E9%97%AE)
-        - [Activity生命周期管理](#activity%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E7%AE%A1%E7%90%86)
-            - [反射方式](#%E5%8F%8D%E5%B0%84%E6%96%B9%E5%BC%8F)
-            - [接口方式](#%E6%8E%A5%E5%8F%A3%E6%96%B9%E5%BC%8F)
-        - [ClassLoader管理](#classloader%E7%AE%A1%E7%90%86)
-    - [示例](#%E7%A4%BA%E4%BE%8B)
-- [动画](#%E5%8A%A8%E7%94%BB)
-    - [View动画](#view%E5%8A%A8%E7%94%BB)
-        - [种类](#%E7%A7%8D%E7%B1%BB)
-        - [使用](#%E4%BD%BF%E7%94%A8)
-            - [使用xml定义](#%E4%BD%BF%E7%94%A8xml%E5%AE%9A%E4%B9%89)
-            - [使用代码定义](#%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%A0%81%E5%AE%9A%E4%B9%89)
-        - [自定义View动画](#%E8%87%AA%E5%AE%9A%E4%B9%89view%E5%8A%A8%E7%94%BB)
-        - [其他场景](#%E5%85%B6%E4%BB%96%E5%9C%BA%E6%99%AF)
-            - [LayoutAnimation](#layoutanimation)
-            - [修改Activity切换效果](#%E4%BF%AE%E6%94%B9activity%E5%88%87%E6%8D%A2%E6%95%88%E6%9E%9C)
-    - [帧动画](#%E5%B8%A7%E5%8A%A8%E7%94%BB)
-    - [属性动画](#%E5%B1%9E%E6%80%A7%E5%8A%A8%E7%94%BB)
-        - [原理](#%E5%8E%9F%E7%90%86)
-        - [使用](#%E4%BD%BF%E7%94%A8)
-            - [使用代码定义](#%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%A0%81%E5%AE%9A%E4%B9%89)
-            - [使用XML定义](#%E4%BD%BF%E7%94%A8xml%E5%AE%9A%E4%B9%89)
-        - [监听器](#%E7%9B%91%E5%90%AC%E5%99%A8)
-        - [对任意属性做动画](#%E5%AF%B9%E4%BB%BB%E6%84%8F%E5%B1%9E%E6%80%A7%E5%81%9A%E5%8A%A8%E7%94%BB)
-    - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
-- [断点续传](#%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0)
-    - [关键点](#%E5%85%B3%E9%94%AE%E7%82%B9)
-    - [原理](#%E5%8E%9F%E7%90%86)
-    - [实现](#%E5%AE%9E%E7%8E%B0)
-- [EventBus](#eventbus)
-    - [概述](#%E6%A6%82%E8%BF%B0)
-        - [使用场景](#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF)
-        - [三要素](#%E4%B8%89%E8%A6%81%E7%B4%A0)
-        - [四种线程模型](#%E5%9B%9B%E7%A7%8D%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B)
-        - [原理](#%E5%8E%9F%E7%90%86)
-    - [使用](#%E4%BD%BF%E7%94%A8)
-        - [添加依赖](#%E6%B7%BB%E5%8A%A0%E4%BE%9D%E8%B5%96)
-        - [定义消息事件类](#%E5%AE%9A%E4%B9%89%E6%B6%88%E6%81%AF%E4%BA%8B%E4%BB%B6%E7%B1%BB)
-        - [注册和解除注册](#%E6%B3%A8%E5%86%8C%E5%92%8C%E8%A7%A3%E9%99%A4%E6%B3%A8%E5%86%8C)
-        - [事件处理](#%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86)
-        - [效果](#%E6%95%88%E6%9E%9C)
-        - [粘性事件](#%E7%B2%98%E6%80%A7%E4%BA%8B%E4%BB%B6)
-            - [订阅粘性事件](#%E8%AE%A2%E9%98%85%E7%B2%98%E6%80%A7%E4%BA%8B%E4%BB%B6)
-            - [订阅者处理粘性事件](#%E8%AE%A2%E9%98%85%E8%80%85%E5%A4%84%E7%90%86%E7%B2%98%E6%80%A7%E4%BA%8B%E4%BB%B6)
-            - [发送黏性事件](#%E5%8F%91%E9%80%81%E9%BB%8F%E6%80%A7%E4%BA%8B%E4%BB%B6)
-    - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
-        - [设置订阅者的优先级](#%E8%AE%BE%E7%BD%AE%E8%AE%A2%E9%98%85%E8%80%85%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7)
-        - [停止事件传递](#%E5%81%9C%E6%AD%A2%E4%BA%8B%E4%BB%B6%E4%BC%A0%E9%80%92)
-- [Fragment](#fragment)
-    - [加载方式](#%E5%8A%A0%E8%BD%BD%E6%96%B9%E5%BC%8F)
-    - [生命周期](#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
-    - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
-- [Glide图片加载](#glide%E5%9B%BE%E7%89%87%E5%8A%A0%E8%BD%BD)
-    - [准备](#%E5%87%86%E5%A4%87)
-    - [使用](#%E4%BD%BF%E7%94%A8)
-        - [基本用法](#%E5%9F%BA%E6%9C%AC%E7%94%A8%E6%B3%95)
-        - [缓存](#%E7%BC%93%E5%AD%98)
-        - [占位图](#%E5%8D%A0%E4%BD%8D%E5%9B%BE)
-        - [指定图片格式和大小](#%E6%8C%87%E5%AE%9A%E5%9B%BE%E7%89%87%E6%A0%BC%E5%BC%8F%E5%92%8C%E5%A4%A7%E5%B0%8F)
-    - [原理](#%E5%8E%9F%E7%90%86)
-        - [资源获取组件](#%E8%B5%84%E6%BA%90%E8%8E%B7%E5%8F%96%E7%BB%84%E4%BB%B6)
-        - [资源复用](#%E8%B5%84%E6%BA%90%E5%A4%8D%E7%94%A8)
-        - [图片池](#%E5%9B%BE%E7%89%87%E6%B1%A0)
-        - [加载流程](#%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B)
-        - [资源加载](#%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD)
-- [进程](#%E8%BF%9B%E7%A8%8B)
-    - [进程和线程的区别](#%E8%BF%9B%E7%A8%8B%E5%92%8C%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%8C%BA%E5%88%AB)
-        - [宏观认识](#%E5%AE%8F%E8%A7%82%E8%AE%A4%E8%AF%86)
-        - [区别](#%E5%8C%BA%E5%88%AB)
-        - [Android中的进程与线程](#android%E4%B8%AD%E7%9A%84%E8%BF%9B%E7%A8%8B%E4%B8%8E%E7%BA%BF%E7%A8%8B)
-    - [进程间通信方法（IPC）](#%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E6%B3%95%EF%BC%88ipc%EF%BC%89)
-        - [必要性](#%E5%BF%85%E8%A6%81%E6%80%A7)
-        - [序列化](#%E5%BA%8F%E5%88%97%E5%8C%96)
-            - [原因](#%E5%8E%9F%E5%9B%A0)
-            - [Serializable](#serializable)
-            - [Parcelable](#parcelable)
-            - [Serializable和Parcelable的区别](#serializable%E5%92%8Cparcelable%E7%9A%84%E5%8C%BA%E5%88%AB)
-        - [文件共享](#%E6%96%87%E4%BB%B6%E5%85%B1%E4%BA%AB)
-        - [Bundle](#bundle)
-        - [AIDL](#aidl)
-        - [Messenger](#messenger)
-        - [ContentProvider](#contentprovider)
-            - [工作原理（非重点）](#%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
-        - [Socket](#socket)
-        - [Binder连接池](#binder%E8%BF%9E%E6%8E%A5%E6%B1%A0)
-            - [适用场景](#%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF)
-            - [原理](#%E5%8E%9F%E7%90%86)
-            - [实现](#%E5%AE%9E%E7%8E%B0)
-- [ListView和RecyclerView](#listview%E5%92%8Crecyclerview)
-    - [ListView](#listview)
-        - [ListView的内部点击事件](#listview%E7%9A%84%E5%86%85%E9%83%A8%E7%82%B9%E5%87%BB%E4%BA%8B%E4%BB%B6)
-    - [RecyclerView](#recyclerview)
-        - [使用](#%E4%BD%BF%E7%94%A8)
-- [JSON](#json)
-    - [基础结构](#%E5%9F%BA%E7%A1%80%E7%BB%93%E6%9E%84)
-    - [fromJSON原理](#fromjson%E5%8E%9F%E7%90%86)
-- [JNI和NDK](#jni%E5%92%8Cndk)
-    - [定义](#%E5%AE%9A%E4%B9%89)
-    - [原理](#%E5%8E%9F%E7%90%86)
-    - [应用](#%E5%BA%94%E7%94%A8)
-    - [一般步骤](#%E4%B8%80%E8%88%AC%E6%AD%A5%E9%AA%A4)
-    - [方法注册](#%E6%96%B9%E6%B3%95%E6%B3%A8%E5%86%8C)
-        - [静态注册](#%E9%9D%99%E6%80%81%E6%B3%A8%E5%86%8C)
-        - [动态注册](#%E5%8A%A8%E6%80%81%E6%B3%A8%E5%86%8C)
-    - [JNI数据类型和类型签名](#jni%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%92%8C%E7%B1%BB%E5%9E%8B%E7%AD%BE%E5%90%8D)
-        - [数据类型转换](#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2)
-    - [jni调用java](#jni%E8%B0%83%E7%94%A8java)
-        - [一般步骤](#%E4%B8%80%E8%88%AC%E6%AD%A5%E9%AA%A4)
-        - [常用函数](#%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0)
-        - [示例](#%E7%A4%BA%E4%BE%8B)
-        - [常见问题](#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
-            - [JNIEnv和jobject多线程共享问题](#jnienv%E5%92%8Cjobject%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%85%B1%E4%BA%AB%E9%97%AE%E9%A2%98)
-- [MarsDaemon](#marsdaemon)
-    - [配置](#%E9%85%8D%E7%BD%AE)
-- [MVC和MVP](#mvc%E5%92%8Cmvp)
-    - [MVC](#mvc)
-        - [定义](#%E5%AE%9A%E4%B9%89)
-        - [优势](#%E4%BC%98%E5%8A%BF)
-        - [控制流程](#%E6%8E%A7%E5%88%B6%E6%B5%81%E7%A8%8B)
-    - [MVP](#mvp)
-        - [优势](#%E4%BC%98%E5%8A%BF)
-- [multidex](#multidex)
-    - [使用场景](#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF)
-    - [使用](#%E4%BD%BF%E7%94%A8)
-        - [修改gradle](#%E4%BF%AE%E6%94%B9gradle)
-- [okhttp](#okhttp)
-    - [功能](#%E5%8A%9F%E8%83%BD)
-    - [优势](#%E4%BC%98%E5%8A%BF)
-    - [示例](#%E7%A4%BA%E4%BE%8B)
-- [PendingIntent](#pendingintent)
-    - [用途](#%E7%94%A8%E9%80%94)
-        - [主要方法](#%E4%B8%BB%E8%A6%81%E6%96%B9%E6%B3%95)
-        - [匹配规则](#%E5%8C%B9%E9%85%8D%E8%A7%84%E5%88%99)
-        - [参数解析](#%E5%8F%82%E6%95%B0%E8%A7%A3%E6%9E%90)
-- [RemoteViews](#remoteviews)
-    - [原理](#%E5%8E%9F%E7%90%86)
-- [Service](#service)
-    - [startService和bindService](#startservice%E5%92%8Cbindservice)
-        - [startService](#startservice)
-        - [bindService](#bindservice)
-    - [生命周期](#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F)
-    - [HandlerThread](#handlerthread)
-        - [原理](#%E5%8E%9F%E7%90%86)
-        - [使用](#%E4%BD%BF%E7%94%A8)
-    - [IntentService](#intentservice)
-        - [使用场景](#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF)
-        - [使用](#%E4%BD%BF%E7%94%A8)
-        - [原理](#%E5%8E%9F%E7%90%86)
-    - [启动和绑定过程](#%E5%90%AF%E5%8A%A8%E5%92%8C%E7%BB%91%E5%AE%9A%E8%BF%87%E7%A8%8B)
-        - [启动](#%E5%90%AF%E5%8A%A8)
-        - [绑定](#%E7%BB%91%E5%AE%9A)
-- [SurfaceView](#surfaceview)
-    - [和View的区别](#%E5%92%8Cview%E7%9A%84%E5%8C%BA%E5%88%AB)
-    - [创建和初始化SurfaceView](#%E5%88%9B%E5%BB%BA%E5%92%8C%E5%88%9D%E5%A7%8B%E5%8C%96surfaceview)
-    - [使用SurfaceView](#%E4%BD%BF%E7%94%A8surfaceview)
-    - [画图板示例](#%E7%94%BB%E5%9B%BE%E6%9D%BF%E7%A4%BA%E4%BE%8B)
-- [View工作原理](#view%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86)
-    - [DecorView和ViewRoot](#decorview%E5%92%8Cviewroot)
-        - [DecorView](#decorview)
-        - [ViewRoot](#viewroot)
-    - [MeasureSpec和LayoutParams](#measurespec%E5%92%8Clayoutparams)
-        - [概念](#%E6%A6%82%E5%BF%B5)
-        - [MeasureSpec和LayoutParams的关系](#measurespec%E5%92%8Clayoutparams%E7%9A%84%E5%85%B3%E7%B3%BB)
-        - [普通View的MeasureSpec创建规则](#%E6%99%AE%E9%80%9Aview%E7%9A%84measurespec%E5%88%9B%E5%BB%BA%E8%A7%84%E5%88%99)
-    - [View的绘制过程](#view%E7%9A%84%E7%BB%98%E5%88%B6%E8%BF%87%E7%A8%8B)
-        - [measure](#measure)
-            - [View的measure过程](#view%E7%9A%84measure%E8%BF%87%E7%A8%8B)
-            - [ViewGroup的measure过程](#viewgroup%E7%9A%84measure%E8%BF%87%E7%A8%8B)
-            - [Activity实时获取View的宽高](#activity%E5%AE%9E%E6%97%B6%E8%8E%B7%E5%8F%96view%E7%9A%84%E5%AE%BD%E9%AB%98)
-        - [layout](#layout)
-        - [draw](#draw)
-    - [自定义View](#%E8%87%AA%E5%AE%9A%E4%B9%89view)
-        - [通常情况](#%E9%80%9A%E5%B8%B8%E6%83%85%E5%86%B5)
-        - [自定义属性](#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%B1%9E%E6%80%A7)
-    - [实例：实现自动换行的ViewGroup](#%E5%AE%9E%E4%BE%8B%EF%BC%9A%E5%AE%9E%E7%8E%B0%E8%87%AA%E5%8A%A8%E6%8D%A2%E8%A1%8C%E7%9A%84viewgroup)
-    - [常见函数](#%E5%B8%B8%E8%A7%81%E5%87%BD%E6%95%B0)
-        - [requestLayout()](#requestlayout)
-        - [invalidate()](#invalidate)
-        - [postInvalidate()](#postinvalidate)
-- [View事件体系](#view%E4%BA%8B%E4%BB%B6%E4%BD%93%E7%B3%BB)
-    - [基础概念](#%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5)
-        - [坐标](#%E5%9D%90%E6%A0%87)
-        - [事件类型](#%E4%BA%8B%E4%BB%B6%E7%B1%BB%E5%9E%8B)
-        - [TouchSlop](#touchslop)
-    - [View的滑动](#view%E7%9A%84%E6%BB%91%E5%8A%A8)
-        - [使用scrollTo/scrollBy](#%E4%BD%BF%E7%94%A8scrolltoscrollby)
-        - [使用动画](#%E4%BD%BF%E7%94%A8%E5%8A%A8%E7%94%BB)
-        - [改变布局参数](#%E6%94%B9%E5%8F%98%E5%B8%83%E5%B1%80%E5%8F%82%E6%95%B0)
-        - [弹性滑动](#%E5%BC%B9%E6%80%A7%E6%BB%91%E5%8A%A8)
-    - [事件分发机制](#%E4%BA%8B%E4%BB%B6%E5%88%86%E5%8F%91%E6%9C%BA%E5%88%B6)
-        - [核心方法](#%E6%A0%B8%E5%BF%83%E6%96%B9%E6%B3%95)
-        - [原理](#%E5%8E%9F%E7%90%86)
-        - [关键点](#%E5%85%B3%E9%94%AE%E7%82%B9)
-    - [滑动冲突处理](#%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E5%A4%84%E7%90%86)
-        - [常见场景](#%E5%B8%B8%E8%A7%81%E5%9C%BA%E6%99%AF)
-        - [外部拦截](#%E5%A4%96%E9%83%A8%E6%8B%A6%E6%88%AA)
-        - [内部拦截](#%E5%86%85%E9%83%A8%E6%8B%A6%E6%88%AA)
-- [Window](#window)
-    - [用法](#%E7%94%A8%E6%B3%95)
-    - [原理](#%E5%8E%9F%E7%90%86)
-        - [Window的添加过程](#window%E7%9A%84%E6%B7%BB%E5%8A%A0%E8%BF%87%E7%A8%8B)
-        - [Window的删除过程](#window%E7%9A%84%E5%88%A0%E9%99%A4%E8%BF%87%E7%A8%8B)
-        - [Window的更新过程](#window%E7%9A%84%E6%9B%B4%E6%96%B0%E8%BF%87%E7%A8%8B)
-    - [Window的创建过程](#window%E7%9A%84%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
-        - [Activity的Window创建过程](#activity%E7%9A%84window%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
-        - [Dialog的Window创建过程](#dialog%E7%9A%84window%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
-        - [Toast的Window创建过程](#toast%E7%9A%84window%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B)
-- [线程和消息机制](#%E7%BA%BF%E7%A8%8B%E5%92%8C%E6%B6%88%E6%81%AF%E6%9C%BA%E5%88%B6)
-    - [消息机制](#%E6%B6%88%E6%81%AF%E6%9C%BA%E5%88%B6)
-        - [MessageQueue](#messagequeue)
-        - [Looper](#looper)
-        - [主要函数](#%E4%B8%BB%E8%A6%81%E5%87%BD%E6%95%B0)
-            - [Android系统是如何保证一个线程只有一个Looper的](#android%E7%B3%BB%E7%BB%9F%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%80%E4%B8%AA%E7%BA%BF%E7%A8%8B%E5%8F%AA%E6%9C%89%E4%B8%80%E4%B8%AAlooper%E7%9A%84)
-            - [主线程消息循环——为什么主线程不会因为Looper.loop()方法造成阻塞](#%E4%B8%BB%E7%BA%BF%E7%A8%8B%E6%B6%88%E6%81%AF%E5%BE%AA%E7%8E%AF%E2%80%94%E2%80%94%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%BB%E7%BA%BF%E7%A8%8B%E4%B8%8D%E4%BC%9A%E5%9B%A0%E4%B8%BAlooperloop%E6%96%B9%E6%B3%95%E9%80%A0%E6%88%90%E9%98%BB%E5%A1%9E)
-            - [手动创建Looper](#%E6%89%8B%E5%8A%A8%E5%88%9B%E5%BB%BAlooper)
-        - [Handler](#handler)
-            - [常用函数](#%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0)
-            - [postDelayed的原理](#postdelayed%E7%9A%84%E5%8E%9F%E7%90%86)
-                - [精确计时](#%E7%B2%BE%E7%A1%AE%E8%AE%A1%E6%97%B6)
-                - [多个带有时延Runnable的执行顺序](#%E5%A4%9A%E4%B8%AA%E5%B8%A6%E6%9C%89%E6%97%B6%E5%BB%B6runnable%E7%9A%84%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F)
-    - [线程间通信](#%E7%BA%BF%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1)
-        - [共享内存](#%E5%85%B1%E4%BA%AB%E5%86%85%E5%AD%98)
-        - [AsyncTask](#asynctask)
-            - [使用](#%E4%BD%BF%E7%94%A8)
-            - [限制](#%E9%99%90%E5%88%B6)
-            - [原理（非重点）](#%E5%8E%9F%E7%90%86%EF%BC%88%E9%9D%9E%E9%87%8D%E7%82%B9%EF%BC%89)
-        - [Handler](#handler)
-    - [线程池](#%E7%BA%BF%E7%A8%8B%E6%B1%A0)
-        - [ThreadPoolExecutor](#threadpoolexecutor)
-        - [执行规则](#%E6%89%A7%E8%A1%8C%E8%A7%84%E5%88%99)
-        - [分类](#%E5%88%86%E7%B1%BB)
-- [性能优化](#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96)
-    - [布局优化](#%E5%B8%83%E5%B1%80%E4%BC%98%E5%8C%96)
-        - [减少布局文件层级](#%E5%87%8F%E5%B0%91%E5%B8%83%E5%B1%80%E6%96%87%E4%BB%B6%E5%B1%82%E7%BA%A7)
-        - [ViewStub](#viewstub)
-    - [绘制优化](#%E7%BB%98%E5%88%B6%E4%BC%98%E5%8C%96)
-    - [内存泄露优化](#%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E4%BC%98%E5%8C%96)
-        - [原理](#%E5%8E%9F%E7%90%86)
-        - [常见内存泄露实例](#%E5%B8%B8%E8%A7%81%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E5%AE%9E%E4%BE%8B)
-        - [内存泄露的调试](#%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E8%B0%83%E8%AF%95)
-    - [响应速度优化——避免ANR](#%E5%93%8D%E5%BA%94%E9%80%9F%E5%BA%A6%E4%BC%98%E5%8C%96%E2%80%94%E2%80%94%E9%81%BF%E5%85%8Danr)
-        - [概念](#%E6%A6%82%E5%BF%B5)
-        - [调试](#%E8%B0%83%E8%AF%95)
-        - [避免](#%E9%81%BF%E5%85%8D)
-    - [ListView和Bitmap优化](#listview%E5%92%8Cbitmap%E4%BC%98%E5%8C%96)
-        - [ListView/GridView优化](#listviewgridview%E4%BC%98%E5%8C%96)
-        - [Bitmap优化：](#bitmap%E4%BC%98%E5%8C%96%EF%BC%9A)
-    - [线程优化](#%E7%BA%BF%E7%A8%8B%E4%BC%98%E5%8C%96)
-    - [防止内存溢出（OOM）](#%E9%98%B2%E6%AD%A2%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%EF%BC%88oom%EF%BC%89)
-        - [获取内存限制](#%E8%8E%B7%E5%8F%96%E5%86%85%E5%AD%98%E9%99%90%E5%88%B6)
-        - [原因](#%E5%8E%9F%E5%9B%A0)
-        - [解决](#%E8%A7%A3%E5%86%B3)
-    - [防止内存抖动](#%E9%98%B2%E6%AD%A2%E5%86%85%E5%AD%98%E6%8A%96%E5%8A%A8)
-        - [表现](#%E8%A1%A8%E7%8E%B0)
-        - [原理](#%E5%8E%9F%E7%90%86)
-        - [避免](#%E9%81%BF%E5%85%8D)
-    - [其他](#%E5%85%B6%E4%BB%96)
-- [像素单位](#%E5%83%8F%E7%B4%A0%E5%8D%95%E4%BD%8D)
-- [系统架构](#%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84)
-
-<!-- /TOC -->
 
 # Activity
 
@@ -2161,7 +1830,15 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
 
 ### 使用场景
 
-EventBus能够简化各组件间的通信，让我们的代码书写变得简单，能有效的分离事件发送方和接收方(也就是解耦的意思)，能避免复杂和容易出错的依赖性和生命周期问题
+1. 简化组件间的通信 
+  * 对发送和接受事件解耦 
+  * 可以在Activity，Fragment，和后台线程间执行 
+  * 避免了复杂的和容易出错的依赖和生命周期问题 
+2. 让你的代码更简洁 
+3. 更快 
+4. 更轻量（jar包小于50K） 
+5. 实践证明已经有一亿多的APP中集成了EventBus 
+6. 拥有先进的功能比如线程分发，用户优先级等等
 
 ### 三要素
 
@@ -2169,16 +1846,33 @@ EventBus能够简化各组件间的通信，让我们的代码书写变得简单
 * Subscriber 事件订阅者。在EventBus3.0之前我们必须定义以onEvent开头的那几个方法，分别是onEvent、onEventMainThread、onEventBackgroundThread和onEventAsync，而在3.0之后事件处理的方法名可以随意取，不过需要加上注解@subscribe()，并且指定线程模型，默认是POSTING。
 * Publisher 事件的发布者。我们可以在任意线程里发布事件，一般情况下，使用EventBus.getDefault()就可以得到一个EventBus对象，然后再调用post(Object)方法即可。
 
-### 四种线程模型
+### 线程模型
 
-* POSTING (默认)  表示事件处理函数的线程跟发布事件的线程在同一个线程。
-* MAIN 表示事件处理函数的线程在主线程(UI)线程，因此在这里不能进行耗时操作。
-* BACKGROUND 表示事件处理函数的线程在后台线程，因此不能进行UI操作。如果发布事件的线程是主线程(UI线程)，那么事件处理函数将会开启一个后台线程，如果发布事件的线程是在后台线程，那么事件处理函数就使用该线程。
-* ASYNC 表示无论事件发布的线程是哪一个，事件处理函数始终会新建一个子线程运行，同样不能进行UI操作。
+* POSTING (默认)
+  * 事件处理函数的线程跟发布事件的线程在同一个线程。
+* MAIN
+  * 事件处理函数的线程在主线程(UI)线程
+  * 不能进行耗时操作
+* MAIN_ORDERED
+  * 与MAIN类似，不同之处在于事件的处理顺序更为严格
+* BACKGROUND 
+  * 事件处理函数的线程在后台线程
+    * 如果发布事件的线程是主线程(UI线程)，那么事件处理函数将会开启**唯一**一个后台线程
+    * 如果发布事件的线程是在后台线程，那么事件处理函数就使用该线程，按顺序分发事件
+  * 不能进行UI操作
+* ASYNC
+  * 无论事件发布的线程是哪一个，事件处理函数始终会新建一个子线程运行
+  * 不能进行UI操作。
 
 ### 原理
 
+![img](http://i.imgur.com/U9B8Xtv.png)
+
 EventBus 2.x 是采用反射的方式对整个注册的类的所有方法进行扫描来完成注册，当然会有性能上的影响。EventBus  3.0中EventBus提供了EventBusAnnotationProcessor注解处理器来在编译期通过读取@Subscribe()注解并解析、处理其中所包含的信息，然后生成java类来保存所有订阅者关于订阅的信息，这样就比在运行时使用反射来获得这些订阅者的信息速度要快
+
+![img](https://upload-images.jianshu.io/upload_images/1485091-8bf39ad48834f39c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
+
+![img](https://upload-images.jianshu.io/upload_images/1485091-b7b63f83d65903d1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
 
 ## 使用
 
@@ -2334,11 +2028,24 @@ bt_subscription.setOnClickListener(new View.OnClickListener() {
 
 ![这里写图片描述](https://img-blog.csdn.net/20160816165645143)
 
-## 常见问题
+#### 移除黏性事件
+
+当subscriber注册后，最后一个sticky event会自动匹配。但是，有些时候，主动去检查sticky event会更方便，**并且 sticky event 需要remove,阻断继续传递。**
+
+```java
+//返回的是之前的sticky event
+MessageEvent stickyEvent = EventBus.getDefault().removeStickyEvent(MessageEvent.class);
+// Better check that an event was actually posted before
+if(stickyEvent != null) {
+    // Now do something with it
+}
+```
+
+
 
 ### 设置订阅者的优先级
 
-如果不设置优先级，所有的订阅者都会收到消息，随机顺序
+**如果不设置优先级，所有的订阅者都会收到消息，随机顺序**
 
 使用注解参数priority，数字越大，优先级越高
 
@@ -2360,7 +2067,36 @@ public void onEvent(MessageEvent event){
 }
 ```
 
+### 个性化配置EventBus
 
+当默认的EventBus不足以满足需求时，EventBusBuilder就上场了，EventBusBuilder允许配置各种需求的EventBus
+
+当没有subscribers的时候，eventbus保持静默
+
+```java
+EventBus eventBus = EventBus.builder().logNoSubscriberMessages(false)
+    .sendNoSubscriberEvent(false).build();
+```
+
+默认情况下，eventbus捕获onevent抛出的异常，并且发送一个SubscriberExceptionEvent 可能不必处理
+
+```java
+EventBus eventBus = EventBus.builder().throwSubscriberException(true).build();
+```
+
+配置单例
+
+**官方推荐：在application类中，配置eventbus单例，保证eventbus的统一**
+
+例如：配置eventbus 只在DEBUG模式下，抛出异常，便于自测，同时又不会导致release环境的app崩溃
+
+注意`installDefaultEventBus()`必须在第一次使用前调用，否则会抛出异常
+
+```java
+EventBus.builder().throwSubscriberException(BuildConfig.DEBUG).installDefaultEventBus();
+```
+
+[EventBus 3.0 源码分析](https://www.jianshu.com/p/f057c460c77e)
 
 [Android 消息传递之 EventBus 3.0 使用详解](https://juejin.im/entry/57d5f5b47db2a200683e05d1)
 
@@ -2369,6 +2105,8 @@ public void onEvent(MessageEvent event){
 [Android事件总线（一）EventBus3.0用法全解析](https://blog.csdn.net/itachi85/article/details/52205464)
 
 [#Android# 学EventBus，你可以参考下我的笔记](https://www.jianshu.com/p/4a3d953d1319)
+
+[EventBus Documentation](http://greenrobot.org/eventbus/documentation/)
 
 # Fragment
 

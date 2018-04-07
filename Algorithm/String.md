@@ -470,7 +470,7 @@ boolean isRotation(String a, String b) {
         return false;
     }
     String bb = b + b;
-    return contains(b2, a) != -1;
+    return contains(bb, a) != -1;
 }
 ```
 
