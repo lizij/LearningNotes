@@ -355,7 +355,7 @@ class ArrayQueue {
 }
 ```
 
-### GetMinStack
+### [GetMinStack](https://leetcode.com/problems/min-stack/description/)
 
 > Implement a stack with getMin()
 >
@@ -1442,7 +1442,7 @@ int maxABS(int[] arr) {
 }
 ```
 
-### SlidingWindowMaxArray
+### [SlidingWindowMaxArray](https://leetcode.com/problems/sliding-window-maximum/description/)
 
 > Get every max of a given size w sliding windows of a given array.
 >
@@ -1475,7 +1475,7 @@ int[] getMaxWindow(int[] arr, int w) {
     for (int i = 0; i < arr.length; i++) {
         while (!qmax.isEmpty() && arr[qmax.peekLast()] <= arr[i]) qmax.pollLast();
         qmax.addLast(i);
-        if (qmax.peekFirst() == i - w) qmax.pollFirst();//remove out-date index
+        while (qmax.peekFirst() == i - w) qmax.pollFirst();//remove out-date index
         if (i >= w - 1) res[index++] = arr[qmax.peekFirst()];//from w - 1, start to record every max of sliding windows
     }
     return res;

@@ -19,7 +19,7 @@
 
 ### singleTop
 
-1. 当前栈中已有该Activity的实例并且该实例位于栈顶时，不会新建实例，而是复用栈顶的实例，并且会将Intent对象传入，回调onNewIntent方法
+1. 当前栈中已有该Activity的实例并且该实例位于栈顶时，不会新建实例，而是复用栈顶的实例，并且会将Intent对象传入，回调`onNewIntent`方法
 2. 当前栈中已有该Activity的实例但是该实例不在栈顶时，其行为和standard启动模式一样，依然会创建一个新的实例
 3. 当前栈中不存在该Activity的实例时，其行为同standard启动模式
 
@@ -31,7 +31,7 @@
 
 1. 如果不存在，则会创建一个新的Task，并创建新的Activity实例入栈到新创建的Task中去
 2. 如果存在，则得到该任务栈，查找该任务栈中是否存在该Activity实例 
-   * 如果存在实例，则将它上面的Activity实例都出栈，然后回调启动的Activity实例的onNewIntent方法 
+   * 如果存在实例，则将它上面的Activity实例都出栈，然后回调启动的Activity实例的`onNewIntent`方法 
    * 如果不存在该实例，则新建Activity，并入栈 
 
 此外，我们可以将两个不同App中的Activity设置为相同的taskAffinity，这样虽然在不同的应用中，但是Activity会被分配到同一个Task中去
@@ -72,7 +72,11 @@ taskAffinity和singleTask配对使用时，它是具有该模式的Activity的�
 
 ### 一个Activity的生命周期
 
+
+
 ![](http://hi.csdn.net/attachment/201109/1/0_1314838777He6C.gif)
+
+
 
 完整生存期：onCreate() - onDestroy()，内存初始化和释放
 
@@ -83,25 +87,6 @@ taskAffinity和singleTask配对使用时，它是具有该模式的Activity的�
 如果一个Activity没有被完全遮挡住，是不会触发onStop的
 
 [基础总结篇之一：Activity生命周期](http://blog.csdn.net/liuhe688/article/details/6733407)
-
-### 一个Activity调用另一个Activity的生命周期
-
-1. A.onCreate()
-2. A.onStart()
-3. A.onResume()
-4. 启动B
-5. A.onPause()
-6. B.onCreate()
-7. B.onStart()
-8. B.onResume()
-9. A.onStop()
-10. 返回A
-11. B.onPause()
-12. A.onRestart()
-13. A.onStart()
-14. A.onResume()
-15. B.onStop()
-16. B.onDestroy()
 
 ### 不同位置调用finish()的结果
 
@@ -144,7 +129,7 @@ if (r != null && !r.activity.mFinished) {
 }
 ```
 
- 如果此时finish，就不会执行finish()，会调用`ActivityManagerNative.getDefault().finishActivity(token, Activity.RESULT_CANCELED, null)`执行销毁
+如果此时finish，就不会执行finish()，会调用`ActivityManagerNative.getDefault().finishActivity(token, Activity.RESULT_CANCELED, null)`执行销毁
 
 [android 生命周期不同方法调用finish()，经历生命周期方法不一样，为什么？](https://github.com/android-cn/android-discuss/issues/430)
 
@@ -165,9 +150,11 @@ if (r != null && !r.activity.mFinished) {
 3. 直接后台切换到其他应用
 4. 直接锁屏
 
-从上边的可能性可以看出，onSaveInstanceState()的调用遵循一个重要原则，即当系统“未经你许可销毁了你的activity，而不是你自己手动销毁的，这时候onSaveInstanceState会被系统调用，这是系统的责任，因为它必须要提供一个机会让你保存你的数据
+从上边的可能性可以看出，onSaveInstanceState()的调用遵循一个重要原则，即当系统**未经你许可销毁了你的activity，而不是你自己手动销毁的**，这时候onSaveInstanceState会被系统调用，这是系统的责任，因为它必须要提供一个机会让你保存你的数据
 
-而onRestoreInstanceState被调用的前提是，activity A“确实”被系统销毁了，而如果仅仅是停留在有这种可能性的情况下，则该方法不会被调用，例如，当正在显示activityA时，这时候直接按下电源键锁屏，那么会执行onSaveInstanceState()，紧接着再打开屏幕，这时候activityA不会被系统销毁，所以不会执行onRestoreInstanceState()
+而**onRestoreInstanceState被调用的前提是，activity A确实*被系统销毁了，而如果仅仅是停留在有这种可能性的情况下，则该方法不会被调用**
+
+例如，当正在显示activityA时，这时候直接按下电源键锁屏，那么会执行onSaveInstanceState()，紧接着再打开屏幕，这时候activityA不会被系统销毁，所以不会执行onRestoreInstanceState()
 
 使用
 
@@ -195,9 +182,9 @@ public void onRestoreInstanceState(Bundle savedInstanceState) {
 
 在AndroidManifest.xml中对Activity的configChange属性进行配置。例如我们不希望屏幕旋转时重建，则需要设置为` android:configChanges="orientation|screenSize"` ， 如果有多个值，可以用“|”连接
 
-> 自从Android 3.2（API 13），在设置Activity的android:configChanges="orientation|keyboardHidden"后，还是一样会重新调用各个生命周期的。因为screen size也开始跟着设备的横竖切换而改变。所以，在AndroidManifest.xml里设置的MiniSdkVersion和 TargetSdkVersion属性大于等于13的情况下，如果你想阻止程序在运行时重新加载Activity，除了设置"orientation"，你还必须设置"ScreenSize"
+> 自从Android 3.2（API 13），在设置Activity的`android:configChanges="orientation|keyboardHidden`后，还是一样会重新调用各个生命周期的。因为screen size也开始跟着设备的横竖切换而改变。所以，在AndroidManifest.xml里设置的MiniSdkVersion和 TargetSdkVersion属性大于等于13的情况下，如果你想阻止程序在运行时重新加载Activity，除了设置"orientation"，你还必须设置"ScreenSize"
 
-常用的配置选项还有
+常用的配置选项有
 
 * orientation：屏幕方向发生了改变，例如横竖屏切换
 * locale：设备的本地位置发生了改变，例如切换了系统语言
@@ -209,11 +196,11 @@ public void onRestoreInstanceState(Bundle savedInstanceState) {
 
 onPause()----onSaveInstanceState()----onStop()----onDestroy()----onCreate()-----onStart()-----onRestoreInstanceState()----onResume()
 
-只设置`orientation|keyboard`的Activity生命周期：与不设置的相同
+只设置`orientation|keyboard`的Activity生命周期：与不设置相同
 
 设置`orientation|screenSize`的Activity生命周期：
 
-onConfigurationChanged---onWindowFocusChanged
+`onConfigurationChanged`---`onWindowFocusChanged`
 
 [横竖屏切换时候的生命周期以及configchanges介绍](https://blog.csdn.net/qq_33234564/article/details/53286474)
 
@@ -241,7 +228,11 @@ onConfigurationChanged---onWindowFocusChanged
 
    > app.thread类型为IApplicationThread，继承自IInterface，是一个Binder接口，内部包含了大量启动停止Activity的接口，实现类为ApplicationThread
 
+
+
 ![Activity启动过程](images/activity启动过程1.png)
+
+
 
 6. **ApplicationThread#scheduleLaunchActivity**发送启动消息到Handler H，调用ActivityThread#handleLaunchActivity，其中**performLaunchActivity**最终完成了：
 
@@ -249,7 +240,7 @@ onConfigurationChanged---onWindowFocusChanged
    2. 通过mInstrumentation的newActivity使用类加载器创建Activity对象
    3. 通过LoadedApk的makeApplication尝试创建Application对象
    4. 创建ContextImpl对象并通过Activity的attach完成重要数据初始化
-   5. 调用Activity的onCreate
+   5. 调用Activity的生命周期方法
 
    > ContextImpl是Context的具体实现，通过Activity#attach与Activity建立联系，除此之外，attach还会建立Window并关联Activity
 
@@ -276,7 +267,7 @@ Android Instrumentation是Android系统里面的一套控制方法或者”钩�
 
 ## IntentFilter匹配规则
 
-为了匹配过滤列表，需要同时匹配过滤列表中的action,category,data信息，否则匹配失败。另外，一个Activity中可以有多个intent-filter，一个Intent只要能匹配任何一组intent-filter即可成功启动对应的Activity
+为了匹配过滤列表，需要同时匹配过滤列表中的action，category，data信息，否则匹配失败。另外，一个Activity中可以有多个intent-filter，一个Intent只要能匹配任何一组intent-filter即可成功启动对应的Activity
 
 * action：要求Intent中的action存在且必须和过滤规则中的其中一个action相同，区分大小写
 
@@ -304,75 +295,13 @@ DNS劫持俗称抓包。通过对url的二次劫持，修改参数和返回值�
 
 ## APP升级过程防劫持
 
-### 问题概述
-
 做app版本升级时一般流程是采用请求升级接口，如果有升级，服务端返回下一个下载地址，下载好Apk后，再点击安装
 
-* 升级API：被劫持后返回错误的下载地址
+* 升级API：被劫持后返回错误的下载地址（HTTPS，URL验证）
 
 
-* 下载API：返回恶意文件或者apk
-* 安装过程：安装apk时本地文件path被篡改
-
-### 解决方案
-
-* 升级API：HTTPS，URL验证
-
-  ```java
-  UpgradeModel  aResult = xxxx;//解析服务器返回的后数据
-  if (aResult != null && aResult.getData() != null ) {
-      String url = aResult.getData().getDownUrl();
-      if (url == null || !TextUtils.equals(url, "这里是你知道的下载地址： 也可以只验证hostUrl")) {
-          // 如果符合，说明不是目标下载地址，就不去下载
-      }
-  }
-  ```
-
-* 下载API：HTTPS，文件Hash校验，签名key验证
-
-  ```java
-  File file = DownUtils.getFile(url);
-  // 监测是否要重新下载
-  if (file.exists() && TextUtils.equals(aResult.getData().getHashCode(), EncryptUtils.Md5File(file))) {
-      && TextUtils.equals(aResult.getData().getKey(), DownLoadModel.getData()..getKey())
-          // 如果符合，就去安装 不符合重新下载 删除恶意文件
-  }
-  ```
-
-* 安装过程：安全检查，文件签名，包名校验
-
-  ```java
-  if (!SafetyUtils.checkFile(path + name, context)) {
-      return;
-  }
-
-  if (!SafetyUtils.checkPagakgeName(context, path + name)) {
-      Toast.makeText(context, "升级包被恶意软件篡改 请重新升级下载安装", Toast.LENGTH_SHORT ).show();
-      DLUtils.deleteFile(path + name);
-      ((Activity)context).finish();
-      return;
-  }
-
-  switch (SafetyUtils.checkPagakgeSign(context, path + name)) {
-
-      case SafetyUtils.SUCCESS:
-          DLUtils.openFile(path + name, context);
-          break;
-
-      case SafetyUtils.SIGNATURES_INVALIDATE:
-          Toast.makeText(context, "升级包安全校验失败 请重新升级", Toast.LENGTH_SHORT ).show();
-          ((Activity)context).finish();
-          break;
-
-      case SafetyUtils.VERIFY_SIGNATURES_FAIL:
-          Toast.makeText(context, "升级包为盗版应用 请重新升级", Toast.LENGTH_SHORT ).show();
-          ((Activity)context).finish();
-          break;
-
-      default:
-          break;
-  }
-  ```
+* 下载API：返回恶意文件或者apk（HTTPS，文件Hash校验，签名key验证）
+* 安装过程：安装apk时本地文件path被篡改（安全检查，文件签名，包名校验）
 
 [App安全（一） Android防止升级过程被劫持和换包](http://blog.csdn.net/sk719887916/article/details/52233112)
 
@@ -416,7 +345,11 @@ Android应用使用Intent机制在组件之间传递数据，如果应用在使�
 
 # APK
 
+
+
 ![img](https://img-blog.csdn.net/20141231185606435?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+
 
 ## 文件结构
 
@@ -444,7 +377,11 @@ Android应用使用Intent机制在组件之间传递数据，如果应用在使�
 
 存放应用程序依赖的native库文件，一般是用C/C++编写，这里的lib库可能包含4中不同类型，根据CPU型号的不同，大体可以分为ARM，ARM-v7a，MIPS，X86，分别对应着ARM架构，ARM-V7架构，MIPS架构和X86架构，这些so库在APK包中的构成如下图
 
+
+
 ![img](https://img-blog.csdn.net/20141231185613486?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+
 
 ### META-INF
 
@@ -454,17 +391,29 @@ Android应用使用Intent机制在组件之间传递数据，如果应用在使�
 
 Android应用程序的配置文件，是一个用来描述Android应用“整体资讯”的设定文件，简单来说，相当于Android应用向Android系统“自我介绍”的配置文件，Android系统可以根据这个“自我介绍”完整地了解APK应用程序的资讯，每个Android应用程序都必须包含一个AndroidManifest.xml文件，且它的名字是固定的，不能修改。我们在开发Android应用程序的时候，一般都把代码中的每一个Activity，Service，Provider和Receiver在AndroidManifest.xml中注册，只有这样系统才能启动对应的组件，另外这个文件还包含一些权限声明以及使用的SDK版本信息等等。程序打包时，会把AndroidManifest.xml进行简单的编译，便于Android系统识别，编译之后的格式是AXML格式，如下图
 
+
+
 ![img](https://img-blog.csdn.net/20141231185617074?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+
 
 ### classes.dex
 
 传统的Java程序，首先先把Java文件编译成class文件，字节码都保存在了class文件中，Java虚拟机可以通过解释执行这些class文件。而Dalvik虚拟机是在Java虚拟机进行了优化，执行的是Dalvik字节码，而这些Dalvik字节码是由Java字节码转换而来，一般情况下，Android应用在打包时通过AndroidSDK中的dx工具将Java字节码转换为Dalvik字节码。dx工具可以对多个class文件进行合并，重组，优化，可以达到减小体积，缩短运行时间的目的。dx工具的转换过程如图
 
+
+
 ![img](https://img-blog.csdn.net/20141231185620085?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+
+
 
 ## 打包过程
 
+
+
 ![img](https://images2015.cnblogs.com/blog/217990/201702/217990-20170219155424582-264022190.png)
+
+
 
 1. 打包资源文件，生成R.java文件：aapt
 2. 处理AIDL文件，生成java文件：aidl
@@ -480,17 +429,19 @@ Android应用程序的配置文件，是一个用来描述Android应用“整体
 
 Adroid的应用安装涉及到如下几个目录：
 
-/data/app：存放用户安装的APK的目录，安装时，把APK拷贝于此。
+`/data/app`：存放用户安装的APK的目录，安装时，把APK拷贝于此。
 
-/data/data：应用安装完成后，在/data/data目录下自动生成和APK包名（packagename）一样的文件夹，用于存放应用程序的数据。
+`/data/data`：应用安装完成后，在/data/data目录下自动生成和APK包名（packagename）一样的文件夹，用于存放应用程序的数据。
 
-/data/dalvik-cache：存放APK的odex文件，便于应用启动时直接执行。
+`/data/dalvik-cache`：存放APK的odex文件，便于应用启动时直接执行。
 
 具体安装过程如下：
 
 首先，复制APK安装包到/data/app下，然后校验APK的签名是否正确，检查APK的结构是否正常，进而解压并且校验APK中的dex文件，确定dex文件没有被损坏后，再把dex优化成odex，使得应用程序启动时间加快，同时在/data/data目录下建立于APK包名相同的文件夹，如果APK中有lib库，系统会判断这些so库的名字，查看是否以lib开头，是否以.so结尾，再根据CPU的架构解压对应的so库到/data/data/packagename/lib下。
 
 APK安装的时候会把DEX文件解压并且优化为odex，odex的格式如图所示：
+
+
 
 ![img](https://img-blog.csdn.net/20141231185625108?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYnVwdDA3MzExNA==/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
 
@@ -563,7 +514,7 @@ registerReceiver(broadcast, filter);
 
 # Bitmap加载
 
-## 高效加载
+## 图片加载
 
 > 由于Bitmap的特殊性以及Android对单个应用所施加的内存限制，比如16MB，这导致加载Bitmap的时候容易出现内存溢出
 
@@ -602,7 +553,7 @@ int cacheSize = maxMemory / 8;
 mMemoryCache = new LruCache<String, Bitmap>(cacheSize) {
     @Override
     protected int sizeOf(String key, Bitmap bitmap) {
-        return bitmap.getRowBytes() * bitmap.getHeight() / 1024;
+        return bitmap.getRowBytes() * bitmap.getHeight() / 1024; // 每行的Byte数x行高
     }
 };
 ```
@@ -927,7 +878,11 @@ Binder基于Client-Server通信模式，其中Client、Server和Service Manager�
 * ServiceManager进程：ServiceManager的作用是将**字符形式的Binder名字转化成Client中对该Binder的引用**，使得Client能够通过Binder名字获得对Server中Binder实体的引用
 * Binder驱动：驱动负责进程之间Binder通信的建立，Binder在进程之间的传递，Binder引用计数管理，数据包在进程之间的传递和交互等一系列底层支持。
 
+
+
 ![](https://upload-images.jianshu.io/upload_images/1685558-1754d79d2969841f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
+
+
 
 Server进程向Service Manager进程注册服务（可访问的方法接口），Client进程通过Binder驱动可以访问到Server进程提供的服务。Binder驱动管理着Binder之间的数据传递，这个数据的具体格式由Binder协议定义（可以类比为网络传输的TCP协议）。并且Binder驱动持有每个Server在内核中的Binder实体，并给Client进程提供Binder的引用
 
@@ -1302,27 +1257,11 @@ public Resources getResources() {
 public interface DLPlugin {
     public void onStart();
     public void onRestart();
-    public void onActivityResult(int requestCode, int resultCode, Intent data);
-    public void onResume();
-    public void onPause();
-    public void onStop();
-    public void onDestroy();
-    public void onCreate(Bundle savedInstanceState);
-    public void setProxy(Activity proxyActivity, String dexPath);
-    public void onSaveInstanceState(Bundle outState);
-    public void onNewIntent(Intent intent);
-    public void onRestoreInstanceState(Bundle savedInstanceState);
-    public boolean onTouchEvent(MotionEvent event);
-    public boolean onKeyUp(int keyCode, KeyEvent event);
-    public void onWindowAttributesChanged(LayoutParams params);
-    public void onWindowFocusChanged(boolean hasFocus);
-    public void onBackPressed();
     //...
 }
 ```
 
 ```java
-//...
 @Override
 protected void onStart() {
     mRemoteActivity.onStart();
@@ -1333,24 +1272,6 @@ protected void onStart() {
 protected void onRestart() {
     mRemoteActivity.onRestart();
     super.onRestart();
-}
-
-@Override
-protected void onResume() {
-    mRemoteActivity.onResume();
-    super.onResume();
-}
-
-@Override
-protected void onPause() {
-    mRemoteActivity.onPause();
-    super.onPause();
-}
-
-@Override
-protected void onStop() {
-    mRemoteActivity.onStop();
-    super.onStop();
 }
 //...
 ```
@@ -1469,13 +1390,6 @@ Object o = clazz.newInstance();
 Method m = clazz.getDeclaredMethod("test");
 result = (String) m.invoke(o);
 ```
-
-CLassLoader类中loadClass的具体实现
-
-1. 查看请求的类装载器是否已经被装载进这个类装载器的命名空间。如果确实如此，返回这个已经装载的Class实例。
-2. 否则调用委托机制，如果父类加载成功，则返回这个Class实例。
-3. 否则，调用findClass()，findClass会试图寻找或生成一个字节数组。如果成功，findClass()把字节数组传递给defineClass，后者试着导入这个类型，返回一个Class实例。如果findClass返回了一个Class实例，loadClass()把这个实例返回。
-4. 否则，findClass抛出某些异常，loadClass返回同样异常
 
 [在运行时刻从文件中调入Class(defineClass 的使用)](https://blog.csdn.net/u013344397/article/details/53002240)
 
@@ -1929,14 +1843,18 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
 2. 让你的代码更简洁 
 3. 更快 
 4. 更轻量（jar包小于50K） 
-5. 实践证明已经有一亿多的APP中集成了EventBus 
+5. 事实证明已经有一亿多的APP中集成了EventBus 
 6. 拥有先进的功能比如线程分发，用户优先级等等
 
 ### 三要素
 
-* Event  事件。它可以是任意类型。
-* Subscriber 事件订阅者。在EventBus3.0之前我们必须定义以onEvent开头的那几个方法，分别是onEvent、onEventMainThread、onEventBackgroundThread和onEventAsync，而在3.0之后事件处理的方法名可以随意取，不过需要加上注解@subscribe()，并且指定线程模型，默认是POSTING。
-* Publisher 事件的发布者。我们可以在任意线程里发布事件，一般情况下，使用EventBus.getDefault()就可以得到一个EventBus对象，然后再调用post(Object)方法即可。
+* Event  事件
+  * 可以是任意类型。
+* Subscriber 事件订阅者
+  * 3.0之前我们必须定义以onEvent开头的那几个方法，分别是onEvent、onEventMainThread、onEventBackgroundThread和onEventAsync
+  * 3.0之后事件处理的方法名可以随意取，不过需要加上注解@subscribe()，并且指定线程模型，默认是POSTING。
+* Publisher 事件的发布者
+  * 可以在任意线程里发布事件，一般情况下，使用EventBus.getDefault()就可以得到一个EventBus对象，然后再调用post(Object)方法即可。
 
 ### 线程模型
 
@@ -1958,13 +1876,27 @@ Last-Modified=Mon, 30 Apr 2001 12:55:20 GMT
 
 ### 原理
 
+
+
 ![img](http://i.imgur.com/U9B8Xtv.png)
 
-EventBus 2.x 是采用反射的方式对整个注册的类的所有方法进行扫描来完成注册，当然会有性能上的影响。EventBus  3.0中EventBus提供了EventBusAnnotationProcessor注解处理器来在编译期通过读取@Subscribe()注解并解析、处理其中所包含的信息，然后生成java类来保存所有订阅者关于订阅的信息，这样就比在运行时使用反射来获得这些订阅者的信息速度要快
+
+
+
+
+2.x 是采用反射的方式对整个注册的类的所有方法进行扫描来完成注册，当然会有性能上的影响。
+
+3.0中EventBus提供了EventBusAnnotationProcessor注解处理器来在编译期通过读取@Subscribe()注解并解析、处理其中所包含的信息，然后生成java类来保存所有订阅者关于订阅的信息，这样就比在运行时使用反射来获得这些订阅者的信息速度要快
+
+
 
 ![img](https://upload-images.jianshu.io/upload_images/1485091-8bf39ad48834f39c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
 
+
+
 ![img](https://upload-images.jianshu.io/upload_images/1485091-b7b63f83d65903d1.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
+
+
 
 ## 使用
 
@@ -2059,15 +1991,27 @@ public class SecondActivity extends AppCompatActivity {
 
 在FirstActivity中，左边是一个按钮，点击之后可以跳转到SecondActivity，在按钮的右边是一个TextView，用来进行结果的验证
 
+
+
 ![img](https://upload-images.jianshu.io/upload_images/8744053-3b7a7efff24c5ca3.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/415)
+
+
 
 这是SecondActivity，在页面的左上角，是一个按钮，当点击按钮，就会发送了一个事件，最后这个Activity就会销毁掉
 
+
+
 ![img](https://upload-images.jianshu.io/upload_images/8744053-11bec3513bf037e1.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/411)
+
+
 
 此时我们可以看到，FirstActivity里的文字已经变成了，我们在SecondActivity里设置的文字
 
+
+
 ![img](https://upload-images.jianshu.io/upload_images/8744053-4cd09837aa12c8fd.PNG?imageMogr2/auto-orient/strip%7CimageView2/2/w/411)
+
+
 
 ### 粘性事件
 
@@ -2114,11 +2058,19 @@ bt_subscription.setOnClickListener(new View.OnClickListener() {
 
 好了运行代码再来看看效果，首先我们在FirstActivity中并没有订阅事件，而是直接跳到SecondActivity中点击发送粘性事件按钮，这时界面回到FirstActivity，我们看到TextView仍旧显示着FirstActivity的字段，这是因为我们现在还没有订阅事件。
 
+
+
 ![这里写图片描述](https://img-blog.csdn.net/20160816165158464)————————–> ![这里写图片描述](https://img-blog.csdn.net/20160816165339217)
 
-接下来我们点击订阅事件，TextView发生改变显示“粘性事件”，大功告成。
+
+
+接下来我们点击订阅事件，TextView发生改变显示“粘性事件”
+
+
 
 ![这里写图片描述](https://img-blog.csdn.net/20160816165645143)
+
+
 
 #### 移除黏性事件
 
@@ -2280,7 +2232,7 @@ void replaceFragment(Fragment fragment) {
 
 ```
 dependencies {  
-compile 'com.github.bumptech.glide:glide:3.6.1'  
+    compile 'com.github.bumptech.glide:glide:3.6.1'  
 }
 ```
 
@@ -2352,7 +2304,11 @@ Glide.with(this)
 
 Glide 收到加载及显示资源的任务，创建 Request 并将它交给RequestManager，Request 启动 Engine 去数据源获取资源(通过 Fetcher )，获取到后 Transformation 处理后交给 Target
 
+
+
 ![](http://www.trinea.cn/wp-content/uploads/2015/10/overall-design-glide.jpg?dc9529)
+
+
 
 ### 资源获取组件
 
@@ -2761,7 +2717,11 @@ Android内置的许多数据都是使用ContentProvider形式，供开发者调�
 
 > ContentProvider所在的进程启动后，ContentProvider会被同时启动并发布到AMS中，onCreate优先于Application的onCreate执行
 
+
+
 ![ontentprovider启动过程](D:\Lizij\Document\LearningNotes\Android\images\contentprovider启动过程1.png)
+
+
 
 1. 应用启动时，从ActivityThread#main进入，创建ActivityThread实例并创建主线程消息队列
 2. 在attach中远程调用AMS#attachApplication并将ApplicationThread（Binder，IApplicationThread）提供给AMS
@@ -2977,11 +2937,83 @@ public class BinderPool {
 
 ## ListView
 
+### ListView/GridView优化
+
+1. convertView的复用
+
+   在Adapter类的getView方法中通过判断convertView是否为null，是的话就需要在创建一个视图出来，然后给视图设置数据，最后将这个视图返回给底层，呈现给用户；如果不为null的话，其他新的view可以通过复用的方式使用已经消失的条目view，重新设置上数据然后展现出来
+
+2. 使用内部类ViewHolder
+
+   可以创建一个内部类ViewHolder，里面的成员变量和view中所包含的组件个数、类型相同，在convertview为null的时候，把findviewbyId找到的控件赋给ViewHolder中对应的变量，就相当于先把它们装进一个容器，下次要用的时候，直接从容器中获取
+
+3. 分段分页加载
+
+   分批加载大量数据，缓解一次性加载大量数据而导致OOM崩溃的情况
+
+4. 减少变量的使用，减少逻辑判断和加载图片等耗时操作，减少GC的执行，减少耗时操作造成的卡顿
+
+5. 根据列表滑动状态控制任务执行频率，例如快速滑动时不适合开启大量异步任务
+
+   SCROLL_STATE_FLING：快速滑动状态，不适合加载图片
+
+   SCROLL_STATE_IDLE或SCROLL_STATE_TOUCH_SCROLL：慢速或停止滑动，可以加载图片
+
+6. 开启硬件加速
+
+```java
+@Override
+public View getView(int position, View convertView, ViewGroup parent) {
+    ViewHolder holder;
+    View itemView = null;
+    if (convertView == null) {
+        itemView = View.inflate(context, R.layout.item_news_data, null);
+        holder = new ViewHolder(itemView);
+        //用setTag的方法把ViewHolder与convertView "绑定"在一起
+        itemView.setTag(holder);
+    } else {
+        //当不为null时，我们让itemView=converView，用getTag方法取出这个itemView对应的holder对象，就可以获取这个itemView对象中的组件
+        itemView = convertView;
+        holder = (ViewHolder) itemView.getTag();
+    }
+
+    NewsBean newsBean = newsListDatas.get(position);
+    holder.tvNewsTitle.setText(newsBean.title);
+    holder.tvNewsDate.setText(newsBean.pubdate);
+    mBitmapUtils.display(holder.ivNewsIcon, newsBean.listimage);
+
+    return itemView;
+}
+
+public class ViewHolder {
+    @ViewInject(R.id.iv_item_news_icon)
+    private ImageView ivNewsIcon;// 新闻图片
+    @ViewInject(R.id.tv_item_news_title)
+    private TextView tvNewsTitle;// 新闻标题
+    @ViewInject(R.id.tv_item_news_pubdate)
+    private TextView tvNewsDate;// 新闻发布时间
+    @ViewInject(R.id.tv_comment_count)
+    private TextView tvCommentIcon;// 新闻评论
+
+    public ViewHolder(View itemView) {
+        ViewUtils.inject(this, itemView);
+    }
+}
+```
+
+[ListView的四种优化方式](http://blog.csdn.net/xk632172748/article/details/51942479)
+
+[Android性能优化之提高ListView性能的技巧](http://blog.csdn.net/xk632172748/article/details/51942479)
+
 ### ListView的内部点击事件
 
 在使用ListView的时候，我们通常会使用到其item的点击事件。而有些时候我们可能会用到item内部控件的点击操作，比如在item内部有个Button，当点击该Button时，删除所在的item。
 
+
+
 ![itemdeleteclick](http://img.blog.csdn.net/20170129141401807?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvSlpob3dl/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+
 
 ListView布局文件
 
@@ -3082,6 +3114,402 @@ adapter.setOnItemDeleteClickListener(new MyAdapter.onItemDeleteListener() {
 ```
 
 [Android ListView：实现item内部控件的点击事件](http://blog.csdn.net/JZhowe/article/details/54767477)
+
+### 工作原理
+
+ListView在借助RecycleBin机制的帮助下，实现了一个生产者和消费者的模式，不管有任意多条数据需要显示，ListView中的子View其实来来回回就那么几个，移出屏幕的子View会很快被移入屏幕的数据重新利用起来，原理示意图如下所示：
+
+![](https://img-blog.csdn.net/20150719213754421?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
+### 异步加载图片问题
+
+#### 问题分析
+
+每当有新的元素进入界面时就会回调getView()方法，而在getView()方法中会开启异步请求从网络上获取图片，注意网络操作都是比较耗时的，也就是说当我们快速滑动ListView的时候就很有可能出现这样一种情况，某一个位置上的元素进入屏幕后开始从网络上请求图片，但是还没等图片下载完成，它就又被移出了屏幕。这种情况下会产生什么样的现象呢？根据ListView的工作原理，被移出屏幕的控件将会很快被新进入屏幕的元素重新利用起来，而如果在这个时候刚好前面发起的图片请求有了响应，就会将刚才位置上的图片显示到当前位置上，因为虽然它们位置不同，但都是共用的同一个ImageView实例，这样就出现了图片乱序的情况
+
+#### 解决方案
+
+##### findViewWithTag
+
+```java
+/** 
+ * 原文地址: http://blog.csdn.net/guolin_blog/article/details/45586553 
+ * @author guolin 
+ */  
+public class ImageAdapter extends ArrayAdapter<String> {
+
+    private ListView mListView; 
+
+    //......
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        if (mListView == null) {  
+            mListView = (ListView) parent;  
+        } 
+        String url = getItem(position);
+        View view;
+        if (convertView == null) {
+            view = LayoutInflater.from(getContext()).inflate(R.layout.image_item, null);
+        } else {
+            view = convertView;
+        }
+        ImageView image = (ImageView) view.findViewById(R.id.image);
+        image.setImageResource(R.drawable.empty_photo);
+        image.setTag(url);
+        BitmapDrawable drawable = getBitmapFromMemoryCache(url);
+        if (drawable != null) {
+            image.setImageDrawable(drawable);
+        } else {
+            BitmapWorkerTask task = new BitmapWorkerTask();
+            task.execute(url);
+        }
+        return view;
+    }
+
+    //......
+
+    /**
+	 * 异步下载图片的任务。
+	 * 
+	 * @author guolin
+	 */
+    class BitmapWorkerTask extends AsyncTask<String, Void, BitmapDrawable> {
+
+        String imageUrl; 
+
+        @Override
+        protected BitmapDrawable doInBackground(String... params) {
+            imageUrl = params[0];
+            // 在后台开始下载图片
+            Bitmap bitmap = downloadBitmap(imageUrl);
+            BitmapDrawable drawable = new BitmapDrawable(getContext().getResources(), bitmap);
+            addBitmapToMemoryCache(imageUrl, drawable);
+            return drawable;
+        }
+
+        @Override
+        protected void onPostExecute(BitmapDrawable drawable) {
+            ImageView imageView = (ImageView) mListView.findViewWithTag(imageUrl);  
+            if (imageView != null && drawable != null) {  
+                imageView.setImageDrawable(drawable);  
+            } 
+        }
+
+        //......
+
+    }
+
+}
+```
+
+1. 获得ListView的实例，通过getView的第三个参数`ViewGroup parent`获得
+
+2. 使用ImageView的setTag方法，把当前位置图片的URL作为参数传入
+
+3. 在BitmapWorkerTask的onPostExecute方法中，通过ListView的findViewWithTag方法获取ImageView控件的实例，判断下是否为空，不为空则显示图片
+
+   > 由于ListView中的ImageView控件都是重用的，移出屏幕的控件很快会被进入屏幕的图片重新利用起来，那么getView()方法就会再次得到执行，而在getView()方法中会为这个ImageView控件设置新的Tag，这样老的Tag就会被覆盖掉，于是这时再调用findVIewWithTag()方法并传入老的Tag，就只能得到null了，而我们判断只有ImageView不等于null的时候才会设置图片，这样图片乱序的问题也就不存在了
+
+##### 使用弱引用关联
+
+让ImageView和BitmapWorkerTask之间建立一个双向关联，互相持有对方的引用，再通过适当的逻辑判断来解决图片乱序问题，然后为了防止出现内存泄漏的情况，双向关联要使用弱引用的方式建立
+
+```java
+/** 
+ * 原文地址: http://blog.csdn.net/guolin_blog/article/details/45586553 
+ * @author guolin 
+ */  
+public class ImageAdapter extends ArrayAdapter<String> {
+
+    private ListView mListView; 
+
+    private Bitmap mLoadingBitmap;
+
+    /**
+	 * 图片缓存技术的核心类，用于缓存所有下载好的图片，在程序内存达到设定值时会将最少最近使用的图片移除掉。
+	 */
+    private LruCache<String, BitmapDrawable> mMemoryCache;
+
+    public ImageAdapter(Context context, int resource, String[] objects) {
+        super(context, resource, objects);
+        mLoadingBitmap = BitmapFactory.decodeResource(context.getResources(),
+                                                      R.drawable.empty_photo);
+        // 获取应用程序最大可用内存
+        int maxMemory = (int) Runtime.getRuntime().maxMemory();
+        int cacheSize = maxMemory / 8;
+        mMemoryCache = new LruCache<String, BitmapDrawable>(cacheSize) {
+            @Override
+            protected int sizeOf(String key, BitmapDrawable drawable) {
+                return drawable.getBitmap().getByteCount();
+            }
+        };
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        if (mListView == null) {  
+            mListView = (ListView) parent;  
+        } 
+        String url = getItem(position);
+        View view;
+        if (convertView == null) {
+            view = LayoutInflater.from(getContext()).inflate(R.layout.image_item, null);
+        } else {
+            view = convertView;
+        }
+        ImageView image = (ImageView) view.findViewById(R.id.image);
+        BitmapDrawable drawable = getBitmapFromMemoryCache(url);
+        if (drawable != null) {
+            image.setImageDrawable(drawable);
+        } else if (cancelPotentialWork(url, image)) {
+            BitmapWorkerTask task = new BitmapWorkerTask(image);
+            AsyncDrawable asyncDrawable = new AsyncDrawable(getContext()
+                                                            .getResources(), mLoadingBitmap, task);
+            image.setImageDrawable(asyncDrawable);
+            task.execute(url);
+        }
+        return view;
+    }
+
+    /**
+	 * 自定义的一个Drawable，让这个Drawable持有BitmapWorkerTask的弱引用。
+	 */
+    class AsyncDrawable extends BitmapDrawable {
+
+        private WeakReference<BitmapWorkerTask> bitmapWorkerTaskReference;
+
+        public AsyncDrawable(Resources res, Bitmap bitmap,
+                             BitmapWorkerTask bitmapWorkerTask) {
+            super(res, bitmap);
+            bitmapWorkerTaskReference = new WeakReference<BitmapWorkerTask>(
+                bitmapWorkerTask);
+        }
+
+        public BitmapWorkerTask getBitmapWorkerTask() {
+            return bitmapWorkerTaskReference.get();
+        }
+
+    }
+
+    /**
+	 * 获取传入的ImageView它所对应的BitmapWorkerTask。
+	 */
+    private BitmapWorkerTask getBitmapWorkerTask(ImageView imageView) {
+        if (imageView != null) {
+            Drawable drawable = imageView.getDrawable();
+            if (drawable instanceof AsyncDrawable) {
+                AsyncDrawable asyncDrawable = (AsyncDrawable) drawable;
+                return asyncDrawable.getBitmapWorkerTask();
+            }
+        }
+        return null;
+    }
+
+    /**
+	 * 取消掉后台的潜在任务，当认为当前ImageView存在着一个另外图片请求任务时
+	 * ，则把它取消掉并返回true，否则返回false。
+	 */
+    public boolean cancelPotentialWork(String url, ImageView imageView) {
+        BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
+        if (bitmapWorkerTask != null) {
+            String imageUrl = bitmapWorkerTask.imageUrl;
+            if (imageUrl == null || !imageUrl.equals(url)) {
+                bitmapWorkerTask.cancel(true);
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+	 * 将一张图片存储到LruCache中。
+	 * 
+	 * @param key
+	 *            LruCache的键，这里传入图片的URL地址。
+	 * @param drawable
+	 *            LruCache的值，这里传入从网络上下载的BitmapDrawable对象。
+	 */
+    public void addBitmapToMemoryCache(String key, BitmapDrawable drawable) {
+        if (getBitmapFromMemoryCache(key) == null) {
+            mMemoryCache.put(key, drawable);
+        }
+    }
+
+    /**
+	 * 从LruCache中获取一张图片，如果不存在就返回null。
+	 * 
+	 * @param key
+	 *            LruCache的键，这里传入图片的URL地址。
+	 * @return 对应传入键的BitmapDrawable对象，或者null。
+	 */
+    public BitmapDrawable getBitmapFromMemoryCache(String key) {
+        return mMemoryCache.get(key);
+    }
+
+    /**
+	 * 异步下载图片的任务。
+	 * 
+	 * @author guolin
+	 */
+    class BitmapWorkerTask extends AsyncTask<String, Void, BitmapDrawable> {
+
+        String imageUrl; 
+
+        private WeakReference<ImageView> imageViewReference;
+
+        public BitmapWorkerTask(ImageView imageView) {  
+            imageViewReference = new WeakReference<ImageView>(imageView);
+        }  
+
+        @Override
+        protected BitmapDrawable doInBackground(String... params) {
+            imageUrl = params[0];
+            // 在后台开始下载图片
+            Bitmap bitmap = downloadBitmap(imageUrl);
+            BitmapDrawable drawable = new BitmapDrawable(getContext().getResources(), bitmap);
+            addBitmapToMemoryCache(imageUrl, drawable);
+            return drawable;
+        }
+
+        @Override
+        protected void onPostExecute(BitmapDrawable drawable) {
+            ImageView imageView = getAttachedImageView();
+            if (imageView != null && drawable != null) {  
+                imageView.setImageDrawable(drawable);  
+            } 
+        }
+
+        /**
+		 * 获取当前BitmapWorkerTask所关联的ImageView。
+		 */
+        private ImageView getAttachedImageView() {
+            ImageView imageView = imageViewReference.get();
+            BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
+            if (this == bitmapWorkerTask) {
+                return imageView;
+            }
+            return null;
+        }
+
+        /**
+		 * 建立HTTP请求，并获取Bitmap对象。
+		 * 
+		 * @param imageUrl
+		 *            图片的URL地址
+		 * @return 解析后的Bitmap对象
+		 */
+        private Bitmap downloadBitmap(String imageUrl) {
+            Bitmap bitmap = null;
+            HttpURLConnection con = null;
+            try {
+                URL url = new URL(imageUrl);
+                con = (HttpURLConnection) url.openConnection();
+                con.setConnectTimeout(5 * 1000);
+                con.setReadTimeout(10 * 1000);
+                bitmap = BitmapFactory.decodeStream(con.getInputStream());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (con != null) {
+                    con.disconnect();
+                }
+            }
+            return bitmap;
+        }
+
+    }
+
+}
+```
+
+> 在getAttachedImageView()方法当中，它会使用当前BitmapWorkerTask所关联的ImageView来反向获取这个ImageView所关联的BitmapWorkerTask，然后用这两个BitmapWorkerTask做对比，如果发现是同一个BitmapWorkerTask才会返回ImageView，否则就返回null。那么什么情况下这两个BitmapWorkerTask才会不同呢？比如说某个图片被移出了屏幕，它的ImageView被另外一个新进入屏幕的图片重用了，那么就会给这个ImageView关联一个新的BitmapWorkerTask，这种情况下，上一个BitmapWorkerTask和新的BitmapWorkerTask肯定就不相等了，这时getAttachedImageView()方法会返回null，而我们又判断ImageView等于null的话是不会设置图片的，因此就不会出现图片乱序的情况了
+
+##### 使用NetworkImageView
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <com.android.volley.toolbox.NetworkImageView
+        android:id="@+id/image"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:src="@drawable/empty_photo" 
+        android:scaleType="fitXY"/>
+
+</LinearLayout>
+```
+
+```java
+/**
+ * 原文地址: http://blog.csdn.net/guolin_blog/article/details/45586553
+ * @author guolin
+ */
+public class ImageAdapter extends ArrayAdapter<String> {
+
+    ImageLoader mImageLoader;
+
+    public ImageAdapter(Context context, int resource, String[] objects) {
+        super(context, resource, objects);
+        RequestQueue queue = Volley.newRequestQueue(context);
+        mImageLoader = new ImageLoader(queue, new BitmapCache());
+    }
+
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        String url = getItem(position);
+        View view;
+        if (convertView == null) {
+            view = LayoutInflater.from(getContext()).inflate(R.layout.image_item, null);
+        } else {
+            view = convertView;
+        }
+        NetworkImageView image = (NetworkImageView) view.findViewById(R.id.image);
+        image.setDefaultImageResId(R.drawable.empty_photo);
+        image.setErrorImageResId(R.drawable.empty_photo);
+        image.setImageUrl(url, mImageLoader);
+        return view;
+    }
+
+    /**
+	 * 使用LruCache来缓存图片
+	 */
+    public class BitmapCache implements ImageCache {
+
+        private LruCache<String, Bitmap> mCache;
+
+        public BitmapCache() {
+            // 获取应用程序最大可用内存
+            int maxMemory = (int) Runtime.getRuntime().maxMemory();
+            int cacheSize = maxMemory / 8;
+            mCache = new LruCache<String, Bitmap>(cacheSize) {
+                @Override
+                protected int sizeOf(String key, Bitmap bitmap) {
+                    return bitmap.getRowBytes() * bitmap.getHeight();
+                }
+            };
+        }
+
+        @Override
+        public Bitmap getBitmap(String url) {
+            return mCache.get(url);
+        }
+
+        @Override
+        public void putBitmap(String url, Bitmap bitmap) {
+            mCache.put(url, bitmap);
+        }
+
+    }
+
+}
+```
+
+
 
 ## RecyclerView
 
@@ -3226,7 +3654,11 @@ NDK(Native Development Kit)是Android所提供的一个工具集合，通过NDL�
 
 例如MediaRecorder: Java对应的是MediaRecorder.java，也就是我们应用开发中直接调用的类。JNI层对用的是libmedia_jni.so，它是一个JNI的动态库。Native层对应的是libmedia.so，这个动态库完成了实际的调用的功能
 
+
+
 ![](http://upload-images.jianshu.io/upload_images/1417629-6c97c443eb71c989.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+
 
 ## 应用
 
@@ -3472,7 +3904,11 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *reserved)
 
 ## JNI数据类型和类型签名
 
+
+
 ![img](https://upload-images.jianshu.io/upload_images/1952665-50f914b8ae912780.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/538)
+
+
 
 JNIEnv是指向可用JNI函数表的接口指针，原生代码通过JNIEnv接口指针提供的各种函数来使用虚拟机的功能。JNIEnv是一个指向线程-局部数据的指针，而线程-局部数据中包含指向线程表的指针。实现原生方法的函数将JNIEnv接口指针作为它们的第一个参数。
 
@@ -3629,8 +4065,7 @@ int frecvMsg_callback() {
     JNIEnv *env;  
     // 获取当前线程的 env   
     //Attach主线程
-    if((*gs_jvm)->AttachCurrentThread(gs_jvm, &env, NULL) != JNI_OK)
-    {
+    if((*gs_jvm)->AttachCurrentThread(gs_jvm, &env, NULL) != JNI_OK) {
         LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
         return NULL;
     }
@@ -3638,15 +4073,13 @@ int frecvMsg_callback() {
     jclass cls;
     //找到对应的类
     cls = (*env)->GetObjectClass(env,gs_obj);
-    if(cls == NULL)
-    {
+    if(cls == NULL) {
         LOGE("FindClass() Error.....");
         goto error;
     }
     //再获得类中的方法
     mid = (*env)->GetMethodID(env, cls, "fromJNI", "(I)V");
-    if (mid == NULL)
-    {
+    if (mid == NULL) {
         LOGE("GetMethodID() Error.....");
         goto error; 
     }
@@ -3656,8 +4089,7 @@ int frecvMsg_callback() {
     // 用完之后一定要  DetachCurrentThread 取消关联，要不然程序退出会有异常  
     error:   
     //Detach主线程
-    if((*gs_jvm)->DetachCurrentThread(gs_jvm) != JNI_OK)
-    {
+    if((*gs_jvm)->DetachCurrentThread(gs_jvm) != JNI_OK) {
         LOGE("%s: DetachCurrentThread() failed", __FUNCTION__);
     }
 
@@ -3665,31 +4097,28 @@ int frecvMsg_callback() {
 }
 
 //由java调用以创建子线程
-JNIEXPORT void Java_com_test_JniThreadTestActivity_mainThread( JNIEnv* env, jobject obj, jint threadNum)
-{
+JNIEXPORT void Java_com_test_JniThreadTestActivity_mainThread( JNIEnv* env, jobject obj, jint threadNum) {
     int i;
     pthread_t* pt;
     pt = (pthread_t*) malloc(threadNum * sizeof(pthread_t));
-    for (i = 0; i < threadNum; i++){
+    for (i = 0; i < threadNum; i++) {
         //创建子线程
         pthread_create(&pt[i], NULL, &thread_fun, (void *)i);
     }
 
-    for (i = 0; i < threadNum; i++){
+    for (i = 0; i < threadNum; i++) {
         pthread_join(pt[i], NULL);
     }
     LOGE("main thread exit.....");
 }
 
 //当动态库被加载时这个函数被系统调用
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
-{
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     JNIEnv* env = NULL;
     jint result = -1;   
 
     //获取JNI版本
-    if ((*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_4) != JNI_OK)
-    {
+    if ((*vm)->GetEnv(vm, (void**)&env, JNI_VERSION_1_4) != JNI_OK) {
         LOGE("GetEnv failed!");
         return result;
     }
@@ -3845,7 +4274,11 @@ MarsDaemon是一个轻量级的开源库，配置简单，在6.0及其以下的�
 
 MVC是一个架构模式，它分离了表现与交互。它被分为三个核心部件：模型、视图、控制器
 
+
+
 ![img](http://img0.tuicool.com/zAnI3q.jpg!web)
+
+
 
 * 逻辑模型（M）：负责定义封装信息的数据结构。
 * 视图模型（V）：负责将Model中的信息展示给用户。
@@ -3878,7 +4311,11 @@ MVC是一个架构模式，它分离了表现与交互。它被分为三个核�
 
 调用顺序：View->Presenter->Model，不可反向调用
 
+
+
 ![MVP架构调用关系](http://www.jcodecraeer.com/uploads/userup/13953/1G020140036-F40-0.png)
+
+
 
 作为一种新的模式，MVP与MVC有着一个重大的区别：在MVP中View并不直接使用Model，它们之间的通信是通过Presenter (MVC中的Controller)来进行的，所有的交互都发生在Presenter内部，而在MVC中View会直接从Model中读取数据而不是通过 Controller。
 
@@ -4074,7 +4511,11 @@ flags：
 4. 通过一系列set方法执行界面更新
 5. 将View操作封装成Action对象（Parcelable），传输到远程进程并依次执行
 
+
+
 ![技术分享图片](http://image.bubuko.com/info/201801/20180111124332052387.png)
+
+
 
 # Service
 
@@ -4186,7 +4627,11 @@ public class MainActivity extends Activity {
 
 ## 生命周期
 
+
+
 ![img](https://upload-images.jianshu.io/upload_images/944365-cf5c1a9d2dddaaca.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/456)
+
+
 
 ## HandlerThread
 
@@ -4224,8 +4669,7 @@ private Handler mMainHandler = new Handler();
 private TextView tvMain;
 
 @Override
-protected void onCreate(Bundle savedInstanceState)
-{
+protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
@@ -4246,8 +4690,7 @@ protected void onCreate(Bundle savedInstanceState)
 }
 
 @Override
-protected void onResume()
-{
+protected void onResume() {
     super.onResume();
     //开始查询
     isUpdateInfo = true;
@@ -4255,8 +4698,7 @@ protected void onResume()
 }
 
 @Override
-protected void onPause()
-{
+protected void onPause() {
     super.onPause();
     //停止查询
     //以防退出界面后Handler还在执行
@@ -4265,34 +4707,28 @@ protected void onPause()
 }
 
 @Override
-protected void onDestroy()
-{
+protected void onDestroy() {
     super.onDestroy();
     //释放资源
     mHandlerThread.quit();
 }
 
-private void update()
-{
-    try
-    {
+private void update() {
+    try {
         //模拟耗时
         Thread.sleep(2000);
         mMainHandler.post(new Runnable() {
             @Override
-            public void run()
-            {
+            public void run() {
                 String result = "每隔2秒更新一下数据：";
                 result += Math.random();
                 tvMain.setText(result);
             }
         });
 
-    } catch (InterruptedException e)
-    {
+    } catch (InterruptedException e) {
         e.printStackTrace();
     }
-
 }
 ```
 
@@ -4574,7 +5010,11 @@ public class SurfaceViewL extends SurfaceView implements SurfaceHolder.Callback,
 
 ### DecorView
 
+
+
 ![image](http://upload-images.jianshu.io/upload_images/2397836-f1f6a200704884a2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&_=6219915)
+
+
 
 DecorView是一个应用窗口的根容器，它本质上是一个FrameLayout。DecorView有唯一一个子View，它是一个垂直LinearLayout，包含两个子元素，一个是TitleView（ActionBar的容器），另一个是ContentView（窗口内容的容器）。关于ContentView，它是一个FrameLayout（android.R.id.content)，我们平常用的setContentView就是设置它的子View。上图还表达了每个Activity都与一个Window（具体来说是PhoneWindow）相关联，用户界面则由Window所承载
 
@@ -4630,7 +5070,11 @@ SpecMode有3类：
 
 View的工作流程主要是指measure、layout、draw这三大流程，即测量、布局和绘制，其中measure确定View的测量宽/高，layout确定View的最终宽/高和四个顶点的位置，而draw则将View绘制到屏幕上
 
+
+
 ![image](http://upload-images.jianshu.io/upload_images/2397836-19c08de6439514a7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240&_=6219915)
+
+
 
 ### measure
 
@@ -4717,6 +5161,59 @@ public void draw(Canvas canvas) {
 
 默认情况下ViewGroup不启用setWillNotDraw，不绘制任何内容，系统可以进行相应的优化。如果需要绘制，需要显式关闭WILL_NOT_DRAW标记位
 
+### View为什么会执行2次onMeasure和onLayout
+
+`ViewRootImpl#performTraversals()`中，会调用一次`schedualTraversals`，从而整体上执行了2次`performTraversals`
+
+```java
+//1.由于第一次执行newSurface必定为true，需要先创建Surface
+//为true则会执行else语句，所以第一次执行并不会执行 performDraw方法，即View的onDraw方法不会得到调用
+//第二次执行则为false，并未创建新的Surface，第二次才会执行 performDraw方法
+if (!cancelDraw && !newSurface) {
+    if (!skipDraw || mReportNextDraw) {
+        if (mPendingTransitions != null && mPendingTransitions.size() > 0) {
+            for (int i = 0; i < mPendingTransitions.size(); ++i) {
+                mPendingTransitions.get(i).startChangingAnimations();
+            }
+            mPendingTransitions.clear();
+        }
+
+        performDraw();
+    }
+} else {
+    //2.viewVisibility是wm.add的那个View的属性，View的默认值都是可见的
+    if (viewVisibility == View.VISIBLE) {
+        // Try again
+        //3.再执行一次 scheduleTraversals，也就是会再执行一次performTraversals
+        scheduleTraversals();
+    } else if (mPendingTransitions != null && mPendingTransitions.size() > 0) {
+        for (int i = 0; i < mPendingTransitions.size(); ++i) {
+            mPendingTransitions.get(i).endChangingAnimations();
+        }
+        mPendingTransitions.clear();
+    }
+}
+```
+
+> measure方法的2级测量优化：
+>
+> 1. 如果flag不为forceLayout或者与上次测量规格（MeasureSpec）相比未改变，那么将不会进行重新测量（执行onMeasure方法），直接使用上次的测量值；
+> 2. 如果满足非强制测量的条件，即前后二次测量规格不一致，会先根据目前测量规格生成的key索引缓存数据，索引到就无需进行重新测量;如果targetSDK小于API 20则二级测量优化无效，依旧会重新测量，不会采用缓存测量值。
+
+第一次`performTranversals`会执行2次`performMeasure`，而未采用测量优化策略，因为前2次`performMeasure`并未经过`performLayout`，也即forceLayout的标志位一直为true，自然不会取缓存优化
+
+在API24-25上，第三次测量经过第一次performTranversals中的performLayout，强制layout的flag应该为false，即第二次performTranversals并不会导致View的onMeasure方法的调用，由于未调用onMeasure方法，也不会调用onLayout方法，即只会执行2次onMeasure、一次onLayout、一次onDraw
+
+总结：
+
+**API25-24：**执行2次onMeasure、2次onLayout、1次onDraw，理论上执行三次测量，但由于测量优化策略，第三次不会执行onMeasure。
+
+**API23-21：**执行3次onMeasure、2次onLayout、1次onDraw，forceLayout标志位被置为true，导致无测量优化。
+
+**API19-16：**执行2次onMeasure、2次onLayout、1次onDraw，原因第一次performTranversals中只会1次执行measureHierarchy中的performMeasure，forceLayout标志位被置为true，导致无测量优化
+
+[View为什么会至少进行2次onMeasure、onLayout](https://www.jianshu.com/p/733c7e9fb284)
+
 ## 自定义View
 
 ### 通常情况
@@ -4779,9 +5276,11 @@ public void draw(Canvas canvas) {
 
 ## 实例：实现自动换行的ViewGroup
 
-效果图：
+
 
 ![](http://www.jcodecraeer.com/uploads/allimg/130305/22540UU5-0.png)
+
+
 
 自定义一个viewgroup，在onlayout里面自动检测view的右边缘的横坐标值，判断是否换行显示view就可以了
 
@@ -4917,9 +5416,13 @@ public class AutoLinefeedLayout extends ViewGroup {
 
 #### postInvalidate()
 
-这个方法与invalidate方法的作用是一样的，都是使View树重绘，但两者的使用条件不同，postInvalidate是在非UI线程中调用，invalidate则是在UI线程中调用。
+这个方法与invalidate方法的作用是一样的，都是使View树重绘，但两者的使用条件不同，postInvalidate是在非UI线程中调用，invalidate则是在UI线程中调用
+
+
 
 ![requestlayout and invalidate.jpg](http://upload-images.jianshu.io/upload_images/1734948-b4493f7b0234dd69.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+
 
 [Android View 深度分析requestLayout、invalidate与postInvalidate](https://blog.csdn.net/a553181867/article/details/51583060)
 
@@ -5050,7 +5553,11 @@ public boolean dispatchTouchEvent(MotionEvent ev) {
 
 事件分发流程图分为3层，从上往下依次是Activity、ViewGroup、View
 
+
+
 ![img](https://upload-images.jianshu.io/upload_images/966283-b9cb65aceea9219b.png)
+
+
 
 * 事件从左上角开始，由Activity的`dispatchTouchEvent`做分发
 * 箭头的上面字代表方法返回值，（return true、return false、return super.xxxxx(),super 的意思是调用父类实现）
@@ -5785,7 +6292,7 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 
 ### 原理
 
-**长生命周期的对象持有了短生命周期的对象，短生命周期对象无法释放**
+**长生命周期的对象持有了短生命周期的对象，短生命周期对象无法释放，导致堆内存直升不降**
 
 内存泄漏也称作“存储渗漏”，用动态存储分配函数动态开辟的空间，在使用完毕后未释放，结果导致一直占据该内存单元。直到程序结束。即所谓内存泄漏
 
@@ -5977,81 +6484,6 @@ Android程序不可能无限制地使用内存和CPU资源，过多地使用内�
 * 避免在onReceive中做耗时操作，例如启动一个Activity
 * 尽量使用Handler等机制处理UI交互
 
-## ListView和Bitmap优化
-
-### ListView/GridView优化
-
-1. convertView的复用
-
-   在Adapter类的getView方法中通过判断convertView是否为null，是的话就需要在创建一个视图出来，然后给视图设置数据，最后将这个视图返回给底层，呈现给用户；如果不为null的话，其他新的view可以通过复用的方式使用已经消失的条目view，重新设置上数据然后展现出来
-
-2. 使用内部类ViewHolder
-
-   可以创建一个内部类ViewHolder，里面的成员变量和view中所包含的组件个数、类型相同，在convertview为null的时候，把findviewbyId找到的控件赋给ViewHolder中对应的变量，就相当于先把它们装进一个容器，下次要用的时候，直接从容器中获取
-
-3. 分段分页加载
-
-   分批加载大量数据，缓解一次性加载大量数据而导致OOM崩溃的情况
-
-4. 减少变量的使用，减少逻辑判断和加载图片等耗时操作，减少GC的执行，减少耗时操作造成的卡顿
-
-5. 根据列表滑动状态控制任务执行频率，例如快速滑动时不适合开启大量异步任务
-
-   SCROLL_STATE_FLING：快速滑动状态，不适合加载图片
-
-   SCROLL_STATE_IDLE或SCROLL_STATE_TOUCH_SCROLL：慢速或停止滑动，可以加载图片
-
-6. 开启硬件加速
-
-```java
-@Override
-public View getView(int position, View convertView, ViewGroup parent) {
-    ViewHolder holder;
-    View itemView = null;
-    if (convertView == null) {
-        itemView = View.inflate(context, R.layout.item_news_data, null);
-        holder = new ViewHolder(itemView);
-        //用setTag的方法把ViewHolder与convertView "绑定"在一起
-        itemView.setTag(holder);
-    } else {
-        //当不为null时，我们让itemView=converView，用getTag方法取出这个itemView对应的holder对象，就可以获取这个itemView对象中的组件
-        itemView = convertView;
-        holder = (ViewHolder) itemView.getTag();
-    }
-
-    NewsBean newsBean = newsListDatas.get(position);
-    holder.tvNewsTitle.setText(newsBean.title);
-    holder.tvNewsDate.setText(newsBean.pubdate);
-    mBitmapUtils.display(holder.ivNewsIcon, newsBean.listimage);
-
-    return itemView;
-}
-
-public class ViewHolder {
-    @ViewInject(R.id.iv_item_news_icon)
-    private ImageView ivNewsIcon;// 新闻图片
-    @ViewInject(R.id.tv_item_news_title)
-    private TextView tvNewsTitle;// 新闻标题
-    @ViewInject(R.id.tv_item_news_pubdate)
-    private TextView tvNewsDate;// 新闻发布时间
-    @ViewInject(R.id.tv_comment_count)
-    private TextView tvCommentIcon;// 新闻评论
-
-    public ViewHolder(View itemView) {
-        ViewUtils.inject(this, itemView);
-    }
-}
-```
-
-[ListView的四种优化方式](http://blog.csdn.net/xk632172748/article/details/51942479)
-
-[Android性能优化之提高ListView性能的技巧](http://blog.csdn.net/xk632172748/article/details/51942479)
-
-### Bitmap优化：
-
-* 使用BitmapFactory.Options根据需要对图片进行采样，控制inSampleSize
-* 使用内存缓存和磁盘缓存
-
 ## 线程优化
 
 采用线程池，避免程序中存在大量的Thread。
@@ -6084,7 +6516,8 @@ System.out.println(am.getMemoryClass());
 5. 避免使用Enum，使用ArrayMap/SparseMap等代替HashMap，减少内存占用
 6. 增加对象重复利用，利用对象池技术
 7. 避免在onDraw中创建对象
-5. 使用TraceView，heap工具，allocation tracker等工具进行筛查
+8. 使用TraceView，heap工具，allocation tracker等工具进行筛查
+9. 缓解办法：在manifest中加入`android:largeHeap="true"`
 
 [Android性能优化(一)--关于内存溢出](https://blog.csdn.net/checkiming/article/details/60480773)
 
@@ -6145,4 +6578,7 @@ px = dp * (dpi / 160)，在每英寸160像素点的屏幕上，1dp = 1px
 
 # 系统架构
 
+
+
 ![这里写图片描述](https://img-blog.csdn.net/20170123173332254?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvaXRhY2hpODU=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
+
