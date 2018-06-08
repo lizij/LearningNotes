@@ -2,16 +2,6 @@
 
 # DataBinding
 
-参考
-
-[Data Binding Library | Android Developers](https://developer.android.com/topic/libraries/data-binding/)
-
-[Android DataBinding 从入门到进阶](https://www.jianshu.com/p/bd9016418af2)
-
-[[译文] 我不使用Android Data Binding的四个理由](http://mafei.me/2016/08/14/%E8%AF%91%E6%96%87-%E6%88%91%E4%B8%8D%E4%BD%BF%E7%94%A8Android-Data-Binding%E7%9A%84%E5%9B%9B%E4%B8%AA%E7%90%86%E7%94%B1/)
-
-[MVVM 和 Android Data Binding](https://www.jianshu.com/p/2047db8df2c7)
-
 ## 概念
 
 * Google发布的数据绑定框架，可以单项或双向绑定到layout
@@ -161,9 +151,11 @@ public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, 
 ### BaseObservable
 
 * notifyChange()：会刷新所有的值域
-* notifyPropertyChanged()：只更新对应 BR 的 flag，该 BR 的生成通过注释 @Bindable 生成
+* notifyPropertyChanged()：只更新对应 BR（Binding Resource） 的 flag，该 BR 的生成通过注释 @Bindable 生成
   * 如果是 public 修饰符，则可以直接在成员变量上方加上 @Bindable 注解
   * 如果是 private 修饰符，则在成员变量的 get 方法上添加 @Bindable 注解
+
+  > 在 data 标签下声明的每一个 variable 标签 name， 都会在 BR 中自动生成对应的 variableId。比如：如果定义了一个 camnter 的 variable，就能在 BR 内看到 camnter 的 variableId。
 * OnPropertyChangedCallback()：允许注册一个监听器，当可观察对象的属性更改时就会通知这个监听器
 
 ### ObservableField
@@ -230,7 +222,7 @@ public static String conversionString(String text) {
 
 * 不使用findViewById()，减少了反射调用，提高了性能
 
-* 更快速轻量，不需要引入第三方库，可以减少方法数
+* 代码量更少，不需要引入第三方库，可以减少方法数
 * 更简单地实现MVVM模式
 
 ### 劣势
@@ -238,3 +230,19 @@ public static String conversionString(String text) {
 * 扩展性很差，目前来说可定义的内容不如ButterKnife多
 * 业务逻辑应该写在代码中而不是在layout中
 * 单元测试不能使用，layout改变时无法确定View的数据正确性
+
+## 参考
+
+[Data Binding Library | Android Developers](https://developer.android.com/topic/libraries/data-binding/)
+
+[Android DataBinding 从入门到进阶](https://www.jianshu.com/p/bd9016418af2)
+
+[[译文] 我不使用Android Data Binding的四个理由](http://mafei.me/2016/08/14/%E8%AF%91%E6%96%87-%E6%88%91%E4%B8%8D%E4%BD%BF%E7%94%A8Android-Data-Binding%E7%9A%84%E5%9B%9B%E4%B8%AA%E7%90%86%E7%94%B1/)
+
+[MVVM 和 Android Data Binding](https://www.jianshu.com/p/2047db8df2c7)
+
+[Android软件设计框架——MVC、MVP、MVVM](https://mp.weixin.qq.com/s/qk9vJcPgcVPYDn2rTTCJ1A)
+
+[Android Data Binding从抵触到爱不释手](https://www.jianshu.com/p/eb29c691d370)
+
+[Android：DataBinding的一二事](http://www.iamxiarui.com/)
