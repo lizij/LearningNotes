@@ -785,7 +785,8 @@ public class UserProfileViewModel extends ViewModel {
 
 * 继承自RecyclerView.Adapter
 * 用于在RecyclerView中展示PagedList
-* 可以使用LiveData\<PagedList>通知adapter数据改变，也可以使用`submitList(PagedList)`
+* 需要传入DiffUtils.ItemCallback\<T>，判断数据改变
+* 可以使用LiveData\<PagedList>通知adapter数据改变，使用`submitList(PagedList)`
 
 ##  LivePagedListBuilder
 
