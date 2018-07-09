@@ -1867,11 +1867,11 @@ try {
 1. 应用中某个实例对象需要频繁的被访问
 2. 应用中每次启动只会存在一个实例。如账号系统，数据库系统
 
-### 懒汉式
+### 懒汉式——延迟加载
 
-实名一个静态对象，并且在用户第一次调用getInstance 时进行初始化
+#### 标准形式
 
-优点：单例只有在使用时才会被实例化，一定程度上节约了资源
+优点：单例只有在使用时才会被实例化，一定程度上节约了资源，可以延迟加载
 
 缺点：第一次加载时需要及时进行实例化，反应稍慢，最大的问题是每次调用getInstance 都进行同步，造成不必要的同步开销
 
@@ -1879,7 +1879,7 @@ try {
 public class Singleton {  
     private static Singleton instance = null;  
     private Singleton() {}  
-    public static Singleton getInstance() {  
+    public static synchronized Singleton getInstance() {  
         if (instance == null) {  
             instance = new Singleton();  
         }  
@@ -1888,27 +1888,11 @@ public class Singleton {
 }
 ```
 
-### 饿汉式
-
-在声明静态对象时就已经初始化
-
-```java
-public class Singleton {  
-    private static Singleton instance = new Singleton();  
-    private Singleton() {}  
-    public static synchronized Singleton getInstance() {  
-        return instance;  
-    }  
-}
-```
-
-### Double Check Lock
+#### Double Check形式
 
 第一个判空是为了避免不必要的同步，第二层判断是为了在null 情况下创建实例
 
-优点：资源利用率高，第一次执行getInstance 时才会被实例化，效率高
-
-缺点：第一次加载反应慢，也由于java内存模型的原因偶尔会失败，在高并发环境下，有一定缺陷，虽然发生概率很小
+能够实现的关键在于volatile关键字，禁止指令重排序优化，这样可以保证对象按照[既定过程](#创建过程)创建
 
 ```java
 public class Singleton {  
@@ -1927,17 +1911,35 @@ public class Singleton {
 }
 ```
 
-### 静态内部类单例模式
+### 饿汉式——即时加载
 
-加载singleton 类时不会初始化instance 。只有在调用getInstance 方法时，才会导致instance 被初始化。由于SingletonHolder只会被类加载器加载一次，所以静态常量instance只会被初始化一次且不能再被更改。这个方法不仅能够确保线程安全，也能够保证单例对象的唯一性,同时也延迟了单例的实例化，是推荐使用的单例模式实现方式。
+#### 标准形式
+
+优点：类加载时就创建了一次实例，不会存在多线程创建多个实例的问题
+
+缺点：即使没有被使用也会创建，占用内存
+
+```java
+public class Singleton {  
+    private static Singleton instance = new Singleton();  
+    private Singleton() {}  
+    public static Singleton getInstance() {  
+        return instance;  
+    }  
+}
+```
+
+#### 静态内部类形式
+
+利用了类加载机制的单线程操作特点保证单例，同时加载Singleton类时不会加载Holder内部类，因此调用getInstance时才会唯一一次加载Holder类并初始化instance，从而同时保证了单例和延迟加载
 
 ```java
 public class Singleton {
     private Singleton(){}
-    public static final Singleton getInstance() {
-        return SingletonHolder.instance;
+    public static Singleton getInstance() {
+        return Holder.instance;
     }
-    private static class SingletonHolder {
+    private static class Holder {
         private static final Singleton instance = new Singleton();
     }
 }
@@ -1953,7 +1955,7 @@ public enum Singleton {
 }
 ```
 
-它在任何情况下都是单例的，也是最简单的。在上述的几种单例模式下，都会有一种情况，它们会出现重新创建对象的情况，那就是反序列化。要杜绝单例对象在反序列化时重新生成对象，那么必须加入如下方法
+优点：它在任何情况下都是单例的，也是最简单的。在上述的几种单例模式下，都会有一种情况，它们会出现重新创建对象的情况，那就是反序列化。要杜绝单例对象在反序列化时重新生成对象，那么必须加入如下方法
 
 ```java
 private Object readResolve() throws ObjectStreamException {
@@ -1961,7 +1963,9 @@ private Object readResolve() throws ObjectStreamException {
 }
 ```
 
-但是枚举就不必要加这个方法，因为反序列话它也不会生成新的实例
+但是枚举就不必要加这个方法，因为反序列化它也不会生成新的实例，同时也可以防止构造方法被反射调用创建新实例
+
+缺点：内存占用大
 
 ### 使用容器模式实现单例
 
