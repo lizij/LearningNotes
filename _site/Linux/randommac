@@ -1,0 +1,47 @@
+#!/bin/bash
+
+if [ $# != 1 ];then
+	echo "Usage:"
+	echo "	$0 adapter"
+	echo "Example:"
+	echo "	$0 eth0"
+	exit 0
+fi
+
+mac=""
+
+function genRandomMac(){
+	length=17
+
+	i=1
+
+	pool=(0 1 2 3 4 5 6 7 8 9 a b c d e f)
+
+	num_pool=${#pool[@]}
+
+	while [ $i -le $length ]
+	do
+		if [ $(($i%3)) -eq 0 ];then
+			# poolrand[$i]=":"
+			mac+=":"
+		elif [ $i -eq 2 ];then
+			mac+="0"
+		else
+			# poolrand[$i]=${pool[$((RANDOM%num_pool))]}
+			mac+=${pool[$((RANDOM%num_pool))]}
+		fi
+		let i=i+1
+	done
+}
+
+genRandomMac
+
+sudo /sbin/ifconfig $1 down
+sudo /sbin/ifconfig $1 hw ether $mac
+sudo /sbin/ifconfig $1 up
+echo "Expected: "$mac
+ifconfigNow=$(ifconfig|grep $1)
+echo "Result:   "${ifconfigNow#*HWaddr }
+
+
+exit 0

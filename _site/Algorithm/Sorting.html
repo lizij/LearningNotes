@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>Sorting | Lizij’s Blog</title>
+<meta name="generator" content="Jekyll v3.8.3" />
+<meta property="og:title" content="Sorting" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This repository includes my personal learning notes" />
+<meta property="og:description" content="This repository includes my personal learning notes" />
+<link rel="canonical" href="http://localhost:8080/Algorithm/Sorting.html" />
+<meta property="og:url" content="http://localhost:8080/Algorithm/Sorting.html" />
+<meta property="og:site_name" content="Lizij’s Blog" />
+<script type="application/ld+json">
+{"description":"This repository includes my personal learning notes","@type":"WebPage","url":"http://localhost:8080/Algorithm/Sorting.html","headline":"Sorting","@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:8080/feed.xml" title="Lizij's Blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Lizij&#39;s Blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/Algorithm/Sorting.html">Sorting</a><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <script type="text/javascript" async
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+<article class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Sorting</h1>
+  </header>
+
+  <div class="post-content">
+    <h1 id="sorting-alogrithms">Sorting Alogrithms</h1>
+
+<p>[TOC]</p>
+
+<ul id="markdown-toc">
+  <li><a href="#sorting-alogrithms" id="markdown-toc-sorting-alogrithms">Sorting Alogrithms</a>    <ul>
+      <li><a href="#time-complexity" id="markdown-toc-time-complexity">Time complexity</a>        <ul>
+          <li><a href="#definition" id="markdown-toc-definition">Definition</a></li>
+          <li><a href="#master-theorem" id="markdown-toc-master-theorem">Master Theorem</a></li>
+        </ul>
+      </li>
+      <li><a href="#sorting-algorithms" id="markdown-toc-sorting-algorithms">Sorting Algorithms</a>        <ul>
+          <li><a href="#bubblesort" id="markdown-toc-bubblesort">BubbleSort</a></li>
+          <li><a href="#insertionsort" id="markdown-toc-insertionsort">InsertionSort</a></li>
+          <li><a href="#selectionsort" id="markdown-toc-selectionsort">SelectionSort</a></li>
+          <li><a href="#quicksort" id="markdown-toc-quicksort">QuickSort</a></li>
+          <li><a href="#mergesort" id="markdown-toc-mergesort">MergeSort</a></li>
+          <li><a href="#heapsort" id="markdown-toc-heapsort">HeapSort</a>            <ul>
+              <li><a href="#basic-concepts" id="markdown-toc-basic-concepts">Basic concepts</a>                <ul>
+                  <li><a href="#complete-binary-tree" id="markdown-toc-complete-binary-tree">Complete binary tree</a></li>
+                  <li><a href="#binary-tree-to-array" id="markdown-toc-binary-tree-to-array">Binary tree to array</a></li>
+                  <li><a href="#min-heap--max-heap" id="markdown-toc-min-heap--max-heap">Min heap &amp; max heap</a></li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li><a href="#bucketsort" id="markdown-toc-bucketsort">BucketSort</a></li>
+          <li><a href="#radixsort" id="markdown-toc-radixsort">RadixSort</a></li>
+          <li><a href="#shellsort" id="markdown-toc-shellsort">ShellSort</a></li>
+        </ul>
+      </li>
+      <li><a href="#tips" id="markdown-toc-tips">Tips</a>        <ul>
+          <li><a href="#swap-without-extra-space" id="markdown-toc-swap-without-extra-space">Swap without extra space</a></li>
+          <li><a href="#get-mid-without-probability-of-overflow" id="markdown-toc-get-mid-without-probability-of-overflow">Get mid without probability of overflow</a></li>
+          <li><a href="#a-random-number-from-lo-to-hi" id="markdown-toc-a-random-number-from-lo-to-hi">A random number from lo to hi</a></li>
+          <li><a href="#arrayssort" id="markdown-toc-arrayssort">Arrays.sort()</a></li>
+          <li><a href="#recursion-vs-non-recursion" id="markdown-toc-recursion-vs-non-recursion">Recursion vs non-recursion</a></li>
+        </ul>
+      </li>
+      <li><a href="#practice" id="markdown-toc-practice">Practice</a>        <ul>
+          <li><a href="#partition-odd--even" id="markdown-toc-partition-odd--even">Partition odd &amp; even</a></li>
+          <li><a href="#small-sum" id="markdown-toc-small-sum">Small sum</a></li>
+          <li><a href="#reverse-order-pair" id="markdown-toc-reverse-order-pair">Reverse order pair</a></li>
+          <li><a href="#max-gap" id="markdown-toc-max-gap">Max gap</a></li>
+          <li><a href="#bestarrange" id="markdown-toc-bestarrange">BestArrange</a></li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="time-complexity">Time complexity</h2>
+
+<h3 id="definition">Definition</h3>
+
+<p><script type="math/tex">O(n)</script>：In an algorithm procedure,  the metrics of constant operations</p>
+
+<p>For example, BubbleSort：</p>
+
+<p>From 0 to N - 1, the bigger one will move forward. The time complexity of BubbleSort is</p>
+
+<script type="math/tex; mode=display">O(n-1+n-2+...+1)=O(n^2)</script>
+
+<h3 id="master-theorem">Master Theorem</h3>
+
+<script type="math/tex; mode=display">T(n) = aT(\frac{n}{b}) + O(n^d)</script>
+
+<p>if <script type="math/tex">% <![CDATA[
+log^a_b < d %]]></script>, <script type="math/tex">T(n) = O(n^d)</script></p>
+
+<p>if <script type="math/tex">log^a_b = d</script>, <script type="math/tex">T(n) = O(n^{d}log^n)</script></p>
+
+<p>if <script type="math/tex">log^a_b > d</script>, <script type="math/tex">T(n) = O(n^{log_b^a})</script></p>
+
+<p>More about <a href="http://www.gocalf.com/blog/algorithm-complexity-and-master-theorem.html">Master Theorem</a></p>
+
+<h2 id="sorting-algorithms">Sorting Algorithms</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Time Complexity</th>
+      <th>Space Complexiy</th>
+      <th>Stable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>BubbleSort</td>
+      <td><script type="math/tex">O(n^2)</script></td>
+      <td><script type="math/tex">O(1)</script></td>
+      <td>can be true</td>
+    </tr>
+    <tr>
+      <td>InsertionSort</td>
+      <td><script type="math/tex">O(n^2)</script></td>
+      <td><script type="math/tex">O(1)</script></td>
+      <td>can be true</td>
+    </tr>
+    <tr>
+      <td>SelectionSort</td>
+      <td><script type="math/tex">O(n^2)</script></td>
+      <td><script type="math/tex">O(1)</script></td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>QuickSort</td>
+      <td><script type="math/tex">O(nlogn)</script></td>
+      <td><script type="math/tex">O(log^n)</script></td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>MergeSort</td>
+      <td><script type="math/tex">O(nlogn)</script></td>
+      <td><script type="math/tex">O(n)</script></td>
+      <td>true</td>
+    </tr>
+    <tr>
+      <td>HeapSort</td>
+      <td><script type="math/tex">O(nlogn)</script></td>
+      <td><script type="math/tex">O(1)</script></td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>BucketSort</td>
+      <td><script type="math/tex">O(n)</script></td>
+      <td><script type="math/tex">O(n)</script>+</td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>RadixSort</td>
+      <td><script type="math/tex">O(n)</script></td>
+      <td><script type="math/tex">O(n)</script>+</td>
+      <td>false</td>
+    </tr>
+    <tr>
+      <td>ShellSort</td>
+      <td><script type="math/tex">O(nlogn)</script></td>
+      <td><script type="math/tex">O(1)</script></td>
+      <td>false</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="bubblesort">BubbleSort</h3>
+
+<p>In every loop, the last part is sorted. Move the larger ones backwards</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">bubbleSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">e</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span> <span class="n">e</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">;</span> <span class="n">e</span><span class="o">--)</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">e</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">&gt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="o">])</span> <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="o">);</span><span class="c1">//stable</span>
+            <span class="c1">// if (arr[i] &gt;= arr[i + 1]) swap(arr, i, i + 1); // not stable</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="insertionsort">InsertionSort</h3>
+
+<p>Similiar with BubbleSort, in every loop, the first part is sorted. Move the smaller ones forward</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">insertionSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="n">i</span><span class="o">;</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">arr</span><span class="o">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="o">]</span> <span class="o">&gt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">j</span><span class="o">];</span> <span class="n">j</span><span class="o">--)</span> <span class="o">{</span><span class="c1">//stable</span>
+            <span class="c1">// for (int j = i - 1; j &gt;= 0 &amp;&amp; arr[j] &gt;= arr[j + 1]; j--) { //not stable</span>
+            <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">j</span><span class="o">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="selectionsort">SelectionSort</h3>
+
+<p>In every loop, find the min one and put it in the right place</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">selectionSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="kt">int</span> <span class="n">minIndex</span> <span class="o">=</span> <span class="n">i</span><span class="o">;</span>
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="n">minIndex</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">minIndex</span><span class="o">]</span> <span class="o">?</span> <span class="n">i</span> <span class="o">:</span> <span class="n">minIndex</span><span class="o">;</span><span class="c1">//not stable</span>
+        <span class="o">}</span>
+        <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">i</span><span class="o">,</span> <span class="n">minIndex</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<h3 id="quicksort">QuickSort</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">quickSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="n">quickSort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kt">void</span> <span class="nf">quickSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">lo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">lo</span> <span class="o">&gt;=</span> <span class="n">hi</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">p</span> <span class="o">=</span> <span class="n">partition</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">lo</span><span class="o">,</span> <span class="n">hi</span><span class="o">);</span>
+    <span class="c1">//a[lo...p[0] - 1] &lt; a[p[0]] = a[p[0]...p[1]] &lt; a[p[1] + 1 ... hi]</span>
+    <span class="n">quicksort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">lo</span><span class="o">,</span> <span class="n">p</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">-</span> <span class="mi">1</span><span class="o">);</span>
+    <span class="n">quicksort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">p</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">hi</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kt">int</span><span class="o">[]</span> <span class="nf">partition</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">lo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">//swap pivot twice</span>
+    <span class="kt">int</span> <span class="n">pivot</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="o">(</span><span class="kt">int</span><span class="o">)(</span><span class="n">Math</span><span class="o">.</span><span class="na">random</span><span class="o">()</span> <span class="o">*</span> <span class="o">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span> <span class="o">+</span> <span class="mi">1</span><span class="o">));</span>
+    <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">pivot</span><span class="o">,</span> <span class="n">hi</span><span class="o">);</span>
+    <span class="kt">int</span> <span class="n">less</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span> <span class="c1">// the less ones</span>
+    <span class="kt">int</span> <span class="n">more</span> <span class="o">=</span> <span class="n">hi</span><span class="o">;</span> <span class="c1">// the bigger ones</span>
+    <span class="k">while</span><span class="o">(</span><span class="n">lo</span> <span class="o">&lt;</span> <span class="n">more</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">lo</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">hi</span><span class="o">])</span> <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="o">++</span><span class="n">less</span><span class="o">,</span> <span class="n">lo</span><span class="o">++);</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">lo</span><span class="o">]</span> <span class="o">&gt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">hi</span><span class="o">])</span> <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="o">--</span><span class="n">more</span><span class="o">,</span> <span class="n">lo</span><span class="o">);</span>
+        <span class="k">else</span> <span class="n">lo</span><span class="o">++;</span>
+    <span class="o">}</span>
+    <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">more</span><span class="o">,</span> <span class="n">hi</span><span class="o">);</span>
+
+    <span class="k">return</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="n">less</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">more</span><span class="o">};</span>
+<span class="o">}</span>
+
+<span class="kt">int</span><span class="o">[]</span> <span class="nf">partition</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">lo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">//not swap pivot, only for numbers</span>
+    <span class="kt">int</span> <span class="n">pivot</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">lo</span> <span class="o">+</span> <span class="o">(</span><span class="kt">int</span><span class="o">)(</span><span class="n">Math</span><span class="o">.</span><span class="na">random</span><span class="o">()</span> <span class="o">*</span> <span class="o">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span> <span class="o">+</span> <span class="mi">1</span><span class="o">))];</span>
+    <span class="kt">int</span> <span class="n">small</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">cur</span> <span class="o">=</span> <span class="n">lo</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">big</span> <span class="o">=</span> <span class="n">hi</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">cur</span> <span class="o">&lt;</span> <span class="n">big</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">cur</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">pivot</span><span class="o">)</span> <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="o">++</span><span class="n">small</span><span class="o">,</span> <span class="n">cur</span><span class="o">++);</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">cur</span><span class="o">]</span> <span class="o">&gt;</span> <span class="n">pivot</span><span class="o">)</span> <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">cur</span><span class="o">,</span> <span class="o">--</span><span class="n">big</span><span class="o">);</span>
+        <span class="k">else</span> <span class="n">cur</span><span class="o">++;</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="n">small</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">big</span> <span class="o">-</span> <span class="mi">1</span><span class="o">};</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>Explanation of Quicksort’s extra space : In the process of recursion, pivots needs to be stored. Therefore, the least extra space is <script type="math/tex">O(logn)</script>. And there is no way to make quicksort stable if the extra space is limited in <script type="math/tex">O(logn)</script> level.</p>
+</blockquote>
+
+<h3 id="mergesort">MergeSort</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">mergeSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="n">mergeSort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kt">void</span> <span class="nf">mergetSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">lo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">lo</span> <span class="o">==</span> <span class="n">hi</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">mid</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="o">((</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="o">)</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="o">);</span>
+    <span class="n">mergeSort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">lo</span><span class="o">,</span> <span class="n">mid</span><span class="o">);</span>
+    <span class="n">mergeSort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">mid</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">hi</span><span class="o">);</span>
+    <span class="n">merge</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">lo</span><span class="o">,</span> <span class="n">mid</span><span class="o">,</span> <span class="n">hi</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kt">void</span> <span class="nf">merge</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">lo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">mid</span><span class="o">,</span> <span class="kt">int</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">help</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">p1</span> <span class="o">=</span> <span class="n">lo</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">mid</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">p1</span> <span class="o">&lt;=</span> <span class="n">mid</span> <span class="o">&amp;&amp;</span> <span class="n">p2</span> <span class="o">&lt;=</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">++]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">]</span> <span class="o">?</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">++]</span> <span class="o">:</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">++];</span>
+    <span class="o">}</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">p1</span> <span class="o">&lt;=</span> <span class="n">mid</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">++]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">++];</span>
+    <span class="o">}</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">p2</span> <span class="o">&lt;=</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">++]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">++];</span>
+    <span class="o">}</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">help</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="n">arr</span><span class="o">[</span><span class="n">lo</span> <span class="o">+</span> <span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p><script type="math/tex">O(1)</script> space complexity :mergesort internal cache</p>
+</blockquote>
+
+<h3 id="heapsort">HeapSort</h3>
+
+<h4 id="basic-concepts">Basic concepts</h4>
+
+<h5 id="complete-binary-tree">Complete binary tree</h5>
+
+<p>A binary tree satisfying one of the conditions:</p>
+
+<ul>
+  <li>Every level is full</li>
+  <li>The last level is generated from left to right one by one. Other levels are full</li>
+</ul>
+
+<h5 id="binary-tree-to-array">Binary tree to array</h5>
+
+<p>In a array which represents a binary tree. For the index i:</p>
+
+<ul>
+  <li>Left node: 2 * i + 1</li>
+  <li>Right node: 2 * i + 2</li>
+  <li>Parent node: (i - 1) / 2</li>
+</ul>
+
+<h5 id="min-heap--max-heap">Min heap &amp; max heap</h5>
+
+<p>The <em>min heap or max heap</em> property is: <em>each node at a level in the tree is less or greater than all of its descendants</em></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">heapSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+
+    <span class="c1">//buiding a max heap</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="n">swim</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span>
+
+    <span class="kt">int</span> <span class="n">size</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span>
+
+    <span class="c1">//swap the root node with the last one</span>
+    <span class="c1">//make sure the largest one is in the right border</span>
+    <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="o">--</span><span class="n">size</span><span class="o">);</span>
+    <span class="k">while</span><span class="o">(</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">//adjust heap</span>
+        <span class="n">sink</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">size</span><span class="o">);</span>
+        <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="o">--</span><span class="n">size</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kt">void</span> <span class="nf">swim</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">index</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">while</span><span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">index</span><span class="o">]</span> <span class="o">&gt;</span> <span class="n">arr</span><span class="o">[(</span><span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">])</span> <span class="o">{</span>
+        <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">index</span><span class="o">,</span> <span class="o">(</span><span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">);</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="o">(</span><span class="n">index</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kt">void</span> <span class="nf">sink</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">index</span><span class="o">,</span> <span class="kt">int</span> <span class="n">size</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">left</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="k">while</span><span class="o">(</span><span class="n">left</span> <span class="o">&lt;</span> <span class="n">size</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// get the bigger one's between arr[left] and arr[left + 1]</span>
+        <span class="kt">int</span> <span class="n">largest</span> <span class="o">=</span> <span class="n">left</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="n">size</span> <span class="o">&amp;&amp;</span> <span class="n">arr</span><span class="o">[</span><span class="n">left</span> <span class="o">+</span> <span class="mi">1</span><span class="o">]</span> <span class="o">&gt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">left</span><span class="o">]</span> <span class="o">?</span> <span class="n">left</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">:</span> <span class="n">left</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">largest</span><span class="o">]</span> <span class="o">&lt;=</span> <span class="n">arr</span><span class="o">[</span><span class="n">index</span><span class="o">])</span> <span class="k">break</span><span class="o">;</span> <span class="c1">// don't need to adjust, arr[index] is bigger than or equal to its children</span>
+        <span class="n">swap</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">index</span><span class="o">,</span> <span class="n">largest</span><span class="o">);</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">largest</span><span class="o">;</span>
+        <span class="n">left</span> <span class="o">=</span> <span class="n">index</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="bucketsort">BucketSort</h3>
+
+<p>BucketSort : <em>Put every element in its right position while these basic positions already have a order</em></p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">buckertSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">max</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">MIN_VALUE</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="nl">n:</span> <span class="n">arr</span><span class="o">)</span> <span class="n">max</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">max</span><span class="o">,</span> <span class="n">n</span><span class="o">);</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">bucket</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">max</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="nl">n:</span> <span class="n">arr</span><span class="o">)</span> <span class="n">bucket</span><span class="o">[</span><span class="n">n</span><span class="o">]++;</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">bucket</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="k">while</span><span class="o">(</span><span class="n">bucket</span><span class="o">[</span><span class="n">j</span><span class="o">]--</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">++]</span> <span class="o">=</span> <span class="n">j</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="radixsort">RadixSort</h3>
+
+<p>Sort by every digit of a number, from low to high.</p>
+
+<p>RadixSort : An implement of BuckertSort based on counting integer</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// only for no-negative value</span>
+<span class="kt">void</span> <span class="nf">radixSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="n">radixSort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">,</span> <span class="n">maxbits</span><span class="o">(</span><span class="n">arr</span><span class="o">));</span>
+<span class="o">}</span>
+
+<span class="kt">int</span> <span class="nf">maxbits</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">max</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">MIN_VALUE</span><span class="o">;</span>
+    <span class="c1">//get the max of an array</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="n">max</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">max</span><span class="o">,</span> <span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">]);</span>
+    <span class="kt">int</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="c1">//count digits</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">max</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">res</span><span class="o">++;</span>
+        <span class="n">max</span> <span class="o">/=</span> <span class="mi">10</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="kt">void</span> <span class="nf">radixSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">begin</span><span class="o">,</span> <span class="kt">int</span> <span class="n">end</span><span class="o">,</span> <span class="kt">int</span> <span class="n">digit</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">final</span> <span class="kt">int</span> <span class="n">radix</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">,</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">count</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">radix</span><span class="o">];</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">bucket</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">end</span> <span class="o">-</span> <span class="n">begin</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">d</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">d</span> <span class="o">&lt;=</span> <span class="n">digit</span><span class="o">;</span> <span class="n">d</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">radix</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="n">count</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">begin</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">getDigit</span><span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">],</span> <span class="n">d</span><span class="o">);</span>
+            <span class="n">count</span><span class="o">[</span><span class="n">j</span><span class="o">]++;</span>
+        <span class="o">}</span>
+        <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">radix</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="n">count</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">count</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">+</span> <span class="n">count</span><span class="o">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="o">];</span>
+        <span class="o">}</span>
+        <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">end</span><span class="o">;</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">begin</span><span class="o">;</span> <span class="n">i</span><span class="o">--)</span> <span class="o">{</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">getDigit</span><span class="o">(</span><span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">],</span> <span class="n">d</span><span class="o">);</span>
+            <span class="n">bucket</span><span class="o">[</span><span class="n">count</span><span class="o">[</span><span class="n">j</span><span class="o">]</span> <span class="o">-</span> <span class="mi">1</span><span class="o">]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+            <span class="n">count</span><span class="o">[</span><span class="n">j</span><span class="o">]--;</span>
+        <span class="o">}</span>
+        <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">begin</span><span class="o">,</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">end</span><span class="o">;</span> <span class="n">i</span><span class="o">++,</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+            <span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">bucket</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">getDigit</span><span class="o">(</span><span class="kt">int</span> <span class="n">x</span><span class="o">,</span> <span class="kt">int</span> <span class="n">d</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="o">((</span><span class="n">x</span> <span class="o">/</span> <span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">Math</span><span class="o">.</span><span class="na">pow</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span> <span class="n">d</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)))</span> <span class="o">%</span> <span class="mi">10</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="shellsort">ShellSort</h3>
+
+<p>InsertionSort is one case of ShellSort which <em>step</em> is 1.</p>
+
+<p>In other words, use InsertionSort <em>step</em> by some number larger than 1. However, <em>step</em> == 1 is always the final part.</p>
+
+<h2 id="tips">Tips</h2>
+
+<h3 id="swap-without-extra-space">Swap without extra space</h3>
+
+<p>regular code</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">swap</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">a</span><span class="o">,</span> <span class="kt">int</span> <span class="n">b</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">a</span><span class="o">];</span>
+    <span class="n">arr</span><span class="o">[</span><span class="n">a</span><span class="o">]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">b</span><span class="o">];</span>
+    <span class="n">arr</span><span class="o">[</span><span class="n">b</span><span class="o">]</span> <span class="o">=</span> <span class="n">c</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>code with xor(only for different int a and b. If a == b, arr[a] will be 0)</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">swap</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">a</span><span class="o">,</span> <span class="kt">int</span> <span class="n">b</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">arr</span><span class="o">[</span><span class="n">a</span><span class="o">]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">a</span><span class="o">]</span> <span class="o">^</span> <span class="n">arr</span><span class="o">[</span><span class="n">b</span><span class="o">];</span> <span class="c1">// a = a ^ b</span>
+    <span class="n">arr</span><span class="o">[</span><span class="n">b</span><span class="o">]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">a</span><span class="o">]</span> <span class="o">^</span> <span class="n">arr</span><span class="o">[</span><span class="n">b</span><span class="o">];</span> <span class="c1">// b = a ^ b ^ b = a</span>
+    <span class="n">arr</span><span class="o">[</span><span class="n">a</span><span class="o">]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">a</span><span class="o">]</span> <span class="o">^</span> <span class="n">arr</span><span class="o">[</span><span class="n">b</span><span class="o">];</span> <span class="c1">// a = a ^ b ^ a = b</span>
+<span class="o">}</span>
+</code></pre></div></div>
+<h3 id="get-mid-without-probability-of-overflow">Get mid without probability of overflow</h3>
+
+<p>regular code (lo + hi may overflow)</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">mid</span> <span class="o">=</span> <span class="o">(</span><span class="n">lo</span> <span class="o">+</span> <span class="n">hi</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>
+</code></pre></div></div>
+
+<p>special way (hi - lo won’t overflow)</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">mid</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="o">((</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="o">)</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h3 id="a-random-number-from-lo-to-hi">A random number from lo to hi</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">//Math.random(): return a double satisfing [0.0, 1.0)</span>
+<span class="kt">int</span> <span class="n">pivot</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="o">(</span><span class="kt">int</span><span class="o">)(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="n">Math</span><span class="o">.</span><span class="na">random</span><span class="o">()</span>
+</code></pre></div></div>
+
+<h3 id="arrayssort">Arrays.sort()</h3>
+
+<p>In java, a combination of different sorting algorithms is used in Arrays.sort()</p>
+
+<p>For example, if n &lt; 60, InsertionSort is quicker than QuickSort. Because the constant in Master Fomula of Insertion is less than that of QuickSort. In addtion, use InsertionSort is a good way to reduce the stack depth of recursion to prevent stack overflow.</p>
+
+<p>If the input is basic value type such as int and double, QuickSort is used for saving time. However, if the input is the instances of one class, MergeSort is used instead because it’s stable.</p>
+
+<h3 id="recursion-vs-non-recursion">Recursion vs non-recursion</h3>
+
+<p>Recursion is a simple way to write code. Compared to recursion, non-recursion has its advantages:</p>
+
+<ul>
+  <li>Calling a function itself will use a lot of resources like computing time and memory storage. In most of time, the coder don’t need to store so many values. So recursion will waste those resources while non-recursion don’t have this problem.</li>
+  <li>The system has its recursion depth limit.</li>
+</ul>
+
+<p>Therefore, in production, using non-recursion is recommended.</p>
+
+<h2 id="practice">Practice</h2>
+
+<h3 id="partition-odd--even">Partition odd &amp; even</h3>
+<blockquote>
+  <p>Without extra space, is it possbile to partition odd numbers and even numbers, while the relative order of odd numbers or even numbers doesn’t change?</p>
+</blockquote>
+
+<p>This problem is like this: is there a way to make quicksort stable?</p>
+
+<p>If there is a way to partition odd &amp; even and keep them stable, there must be a way to stable quicksort.</p>
+
+<p>There is truly a way to stable quicksort. However, it’s very difficult to implement and it needs extra space (in paper:0 &amp; 1 stable sort)</p>
+
+<p>Therefore, the answer to this problem is impossble.</p>
+
+<h3 id="small-sum">Small sum</h3>
+
+<blockquote>
+  <p>In arr[], for every i in [0, arr.length - 1), the small sum of arr[i] is the sum of all numbers less than arr[i] before i. The small sum of arr[] is the sum of all small sums</p>
+
+  <p>Compute the small sum of arr[]</p>
+</blockquote>
+
+<p>Traditional way: traverse all arr[i] and find all smaller numbers before i. <script type="math/tex">O(n^2)</script></p>
+
+<p>MergeSort-like way:</p>
+
+<p>In the process of <code class="highlighter-rouge">merge()</code>, for every number in the left part, find how many numbers larger than it. Then sum them all.</p>
+
+<p>For example:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[4, 3, 6, 5]
+merge [4], [3]: 
+	4:no number larger than 4 in [3]
+merge [6], [5]: 
+	6:no number larger than 6 in [5]
+merge [3, 4], [5, 6]: 
+	3:2 numbers larger than 3 in [5, 6]
+	4:2 numbers larger than 4 in [5, 6]
+The sum of less sum is 2 * 3 + 2 * 4 = 14
+</code></pre></div></div>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">smallSum</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">arr</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="k">return</span> <span class="nf">mergeSort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">arr</span><span class="o">.</span><span class="na">length</span> <span class="o">-</span> <span class="mi">1</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kt">int</span> <span class="nf">mergeSort</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">lo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">lo</span> <span class="o">&gt;=</span> <span class="n">hi</span><span class="o">)</span> <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">mid</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="o">((</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="o">)</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="o">);</span>
+    <span class="k">return</span> <span class="nf">mergeSort</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">lo</span><span class="o">,</span> <span class="n">mid</span><span class="o">)</span> <span class="o">+</span> <span class="n">mergeSort</span><span class="o">(</span><span class="n">mid</span> <span class="o">+</span> <span class="mi">1</span><span class="o">,</span> <span class="n">hi</span><span class="o">)</span> <span class="o">+</span> <span class="n">merge</span><span class="o">(</span><span class="n">arr</span><span class="o">,</span> <span class="n">lo</span><span class="o">,</span> <span class="n">mid</span><span class="o">,</span> <span class="n">hi</span><span class="o">);</span>
+<span class="o">}</span>
+
+<span class="kt">int</span> <span class="nf">merge</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">arr</span><span class="o">,</span> <span class="kt">int</span> <span class="n">lo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">mid</span><span class="o">,</span> <span class="kt">int</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">help</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">,</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">p1</span> <span class="o">=</span> <span class="n">lo</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">mid</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">p1</span> <span class="o">&lt;=</span> <span class="n">mid</span> <span class="o">&amp;&amp;</span> <span class="n">p2</span> <span class="o">&lt;=</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// [p2...hi] is sorted, so if arr[p1] &lt; arr[p2] there will be hi - p2 + 1 of numbers larger than arr[p1]</span>
+        <span class="n">res</span> <span class="o">+=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">]</span> <span class="o">?</span> <span class="o">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">p2</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">]</span> <span class="o">:</span> <span class="mi">0</span><span class="o">;</span>
+        <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">++]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">]</span> <span class="o">?</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">++]</span> <span class="o">:</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">++];</span>
+    <span class="o">}</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">p1</span> <span class="o">&lt;=</span> <span class="n">mid</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">++]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">++];</span>
+    <span class="o">}</span>
+    <span class="k">while</span> <span class="o">(</span><span class="n">p2</span> <span class="o">&lt;=</span> <span class="n">hi</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">++]</span> <span class="o">=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">++];</span>
+    <span class="o">}</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">help</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="n">arr</span><span class="o">[</span><span class="n">lo</span> <span class="o">+</span> <span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">help</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="reverse-order-pair">Reverse order pair</h3>
+
+<blockquote>
+  <p>find the amount of all pairs which satisfying:</p>
+
+  <p>for i and j, if i &lt; j and arr[i] &gt; arr[j], (i, j) is a reverse order pair</p>
+</blockquote>
+
+<p>Similar with small sum, the difference is in <code class="highlighter-rouge">merge()</code>  :</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">res</span> <span class="o">+=</span> <span class="n">arr</span><span class="o">[</span><span class="n">p1</span><span class="o">]</span> <span class="o">&lt;</span> <span class="n">arr</span><span class="o">[</span><span class="n">p2</span><span class="o">]</span> <span class="o">?</span> <span class="n">hi</span> <span class="o">-</span> <span class="n">p2</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">0</span><span class="o">;</span>
+</code></pre></div></div>
+
+<h3 id="max-gap">Max gap</h3>
+
+<blockquote>
+  <p>In an inordered integer array, compute the max gap of two numbers in a sorted version of this array.</p>
+
+  <p>Time complexiy: <script type="math/tex">\le O(n)</script> Space complexiy: <script type="math/tex">\le O(n)</script></p>
+
+  <p>eg. [8, 1, 7, 4, 2], the sorted version is [1, 2, 4, 7, 8], the max gap is 3 (between 4 and 7)</p>
+</blockquote>
+
+<p>If the length of the array is <em>n</em>, prepare <em>n+1</em> buckets (double)</p>
+
+<p>Find the <em>max</em> and the <em>min</em>, then seperate the array into <em>n+1</em> fields with <script type="math/tex">\frac{max-min}{n}</script></p>
+
+<p>Put every number in their buckets. Then the greatest difference is the maximum of every non-empty neighbored buckets’ difference. This difference is equal to this bucket’s min minus the last bucket’s max.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">maxGap</span><span class="o">(</span><span class="kt">int</span><span class="o">[]</span> <span class="n">nums</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">nums</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="n">nums</span><span class="o">.</span><span class="na">length</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">min</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">MAX_VALUE</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">max</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">MIN_VALUE</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="nl">num:</span> <span class="n">nums</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">min</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">min</span><span class="o">(</span><span class="n">min</span><span class="o">,</span> <span class="n">num</span><span class="o">);</span>
+        <span class="n">max</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">max</span><span class="o">,</span> <span class="n">num</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">min</span> <span class="o">==</span> <span class="n">max</span><span class="o">)</span> <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="kt">boolean</span> <span class="n">hasNum</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">boolean</span><span class="o">[</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">maxs</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+    <span class="kt">int</span><span class="o">[]</span> <span class="n">mins</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="o">];</span>
+    <span class="kt">int</span> <span class="n">bid</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="nl">num:</span> <span class="n">nums</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">bid</span> <span class="o">=</span> <span class="n">bucket</span><span class="o">(</span><span class="n">num</span><span class="o">,</span> <span class="n">n</span><span class="o">,</span> <span class="n">min</span><span class="o">,</span> <span class="n">max</span><span class="o">);</span>
+        <span class="n">mins</span><span class="o">[</span><span class="n">bid</span><span class="o">]</span> <span class="o">=</span> <span class="n">hasNum</span><span class="o">[</span><span class="n">bid</span><span class="o">]</span> <span class="o">?</span> <span class="n">Math</span><span class="o">.</span><span class="na">min</span><span class="o">(</span><span class="n">mins</span><span class="o">[</span><span class="n">bid</span><span class="o">],</span> <span class="n">num</span><span class="o">)</span> <span class="o">:</span> <span class="n">num</span><span class="o">;</span>
+        <span class="n">maxs</span><span class="o">[</span><span class="n">bid</span><span class="o">]</span> <span class="o">=</span> <span class="n">hasNum</span><span class="o">[</span><span class="n">bid</span><span class="o">]</span> <span class="o">?</span> <span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">maxs</span><span class="o">[</span><span class="n">bid</span><span class="o">],</span> <span class="n">num</span><span class="o">)</span> <span class="o">:</span> <span class="n">num</span><span class="o">;</span>
+        <span class="n">hasNum</span><span class="o">[</span><span class="n">bid</span><span class="o">]</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="kt">int</span> <span class="n">res</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">lastMax</span> <span class="o">=</span> <span class="n">maxs</span><span class="o">[</span><span class="mi">0</span><span class="o">];</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">hasNum</span><span class="o">[</span><span class="n">i</span><span class="o">])</span> <span class="o">{</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">res</span><span class="o">,</span> <span class="n">mins</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">-</span> <span class="n">lastMax</span><span class="o">);</span>
+            <span class="n">lastMax</span> <span class="o">=</span> <span class="n">maxs</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+<span class="o">}</span>
+<span class="kt">int</span> <span class="nf">bucket</span><span class="o">(</span><span class="kt">int</span> <span class="n">num</span><span class="o">,</span> <span class="kt">int</span> <span class="n">len</span><span class="o">,</span> <span class="kt">int</span> <span class="n">min</span><span class="o">,</span> <span class="kt">int</span> <span class="n">max</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="o">(</span><span class="kt">int</span><span class="o">)(</span><span class="n">num</span> <span class="o">-</span> <span class="n">min</span><span class="o">)</span> <span class="o">*</span> <span class="n">len</span> <span class="o">/</span> <span class="o">(</span><span class="n">max</span> <span class="o">-</span> <span class="n">min</span><span class="o">);</span>    
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="bestarrange">BestArrange</h3>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">class</span> <span class="nc">Program</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">start</span><span class="o">;</span>
+    <span class="kt">int</span> <span class="n">end</span><span class="o">;</span>
+
+    <span class="n">Program</span><span class="o">(</span><span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">end</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">start</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">end</span> <span class="o">=</span> <span class="n">end</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>Every program has its start time and end time</p>
+
+  <p>Arrange programs from a given start time as many as possible</p>
+</blockquote>
+
+<p>Greedy solution: sort the array by the end time of a program</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="nf">bestArrange</span><span class="o">(</span><span class="n">Program</span><span class="o">[]</span> <span class="n">programs</span><span class="o">,</span> <span class="kt">int</span> <span class="n">start</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">Arrays</span><span class="o">.</span><span class="na">sort</span><span class="o">(</span><span class="n">programs</span><span class="o">,</span> <span class="n">o</span> <span class="o">-&gt;</span> <span class="n">o</span><span class="o">.</span><span class="na">end</span><span class="o">);</span>
+    <span class="kt">int</span> <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">programs</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">start</span> <span class="o">&lt;=</span> <span class="n">programs</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">start</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">result</span><span class="o">++;</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">programs</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">end</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+
+  </div>
+
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Lizij&#39;s Blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Lizij&#39;s Blog</li><li><a class="u-email" href="mailto:lizij@163.com">lizij@163.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/lizij"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">lizij</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>This repository includes my personal learning notes</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
