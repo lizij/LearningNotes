@@ -1,7 +1,14 @@
+---
+layout: page
+title: Sorting
+category: Algorithm
+---
 # Sorting Alogrithms
 
 [TOC]
 
+* 
+{:toc}
 
 ## Time complexity
 
