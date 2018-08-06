@@ -24,7 +24,10 @@
   - 可以是任意类型。
 - Subscriber 事件订阅者
   - 3.0之前我们必须定义以onEvent开头的那几个方法，分别是onEvent、onEventMainThread、onEventBackgroundThread和onEventAsync
+
   - 3.0之后事件处理的方法名可以随意取，不过需要加上注解@subscribe()，并且指定线程模型，默认是POSTING。
+
+    > 即使在抽象类中，只要执行了register，就必须保证所有的子类都有对应的onEvent方法或@Subscribe注解，否则会提示找不到onEvent方法而崩溃
 - Publisher 事件的发布者
   - 可以在任意线程里发布事件，一般情况下，使用EventBus.getDefault()就可以得到一个EventBus对象，然后再调用post(Object)方法即可。
 

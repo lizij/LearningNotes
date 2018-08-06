@@ -380,33 +380,37 @@ void replaceFragment(Fragment fragment) {
 
 ## 常见问题
 
-1. Fragment跟Activity如何传值
+### Fragment跟Activity如何传值
 
-   使用`getActivity()`从Fragment获取Ativity的信息，就可以调用Ativity的方法了
+使用`getActivity()`从Fragment获取Ativity的信息，就可以调用Ativity的方法了
 
-2. FragmentPagerAdapter与FragmentStatePagerAdapter区别
+### FragmentPagerAdapter与FragmentStatePagerAdapter区别
 
-   - FragmentPagerAdapter适合用于页面较少的情况，切换时不回收内存，只是把UI和Activity分离，页面少时对内存影响不明显
-   - FragmentStatePagerAdapter适合用于页面较多的情况，切换时回收内存
+- FragmentPagerAdapter适合用于页面较少的情况，切换时不回收内存，只是把UI和Activity分离，页面少时对内存影响不明显
+- FragmentStatePagerAdapter适合用于页面较多的情况，切换时回收内存
 
-3. Fragment的replace和add方法的区别
+### replace和add方法的区别
 
-   - add的时候可以把Fragment 一层层添加到FrameLayout上面,而replace是删掉其他并替换掉最上层的fragment
-   - 一个FrameLayout只能添加一个Fragment种类,多次添加会报异常,replace则随便替换 
-   - 替换上一个fragment会->destroyView和destroy,新的Fragmetnon:三个Create(create+view+activity)->onStart->onResume)
-   - 因FrameLayout容器对每个Fragment只能添加一次,所以达到隐藏效果可用fragment的hide和show方法结合
+- add的时候可以把Fragment 一层层添加到FrameLayout上面,而replace是删掉其他并替换掉最上层的fragment
+- 一个FrameLayout只能添加一个Fragment种类,多次添加会报异常,replace则随便替换 
+- 替换上一个fragment会->destroyView和destroy,新的Fragmetnon:三个Create(create+view+activity)->onStart->onResume)
+- 因FrameLayout容器对每个Fragment只能添加一次,所以达到隐藏效果可用fragment的hide和show方法结合
 
-4. Fragment如何实现类似Activity的压栈和出栈效果`FragmentTransaction.addToBackStack`
+### Fragment如何实现类似Activity的压栈和出栈效果`FragmentTransaction.addToBackStack`
 
-   - 内部维持的是双向链表结构
-   - 该结构可记录我们每次的add和replace我们的Fragment;
-   - 当点击back按钮会自动帮我们实现退栈按钮
+- 内部维持的是双向链表结构
+- 该结构可记录我们每次的add和replace我们的Fragment;
+- 当点击back按钮会自动帮我们实现退栈按钮
 
-5. Fragment之间通信
+### Fragment之间通信
 
-   - 在fragment中调用activity中的方法getActivity();
-   - 在Activity中调用Fragment中的方法，接口回调；
-   - 在Fragment中调用Fragment中的方法findFragmentById/Tag
+- 在fragment中调用activity中的方法getActivity();
+- 在Activity中调用Fragment中的方法，接口回调；
+- 在Fragment中调用Fragment中的方法findFragmentById/Tag
+
+### commit()和commitAllowingStateLoss()
+
+### commit(), commitNow() 和 executePendingTransactions()
 
 # ListView和RecyclerView
 
