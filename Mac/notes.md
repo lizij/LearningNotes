@@ -31,3 +31,27 @@
 `option` + `shift` + `上` / `下`: 向上/下移动一行代码（不包括括号内的部分）
 
 `command` + `,`: 打开设置
+
+# 搭建Gitbook
+
+安装HomeBrew
+
+```shell
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+
+安装npm
+
+```shell
+brew install node
+```
+
+安装gitbook-cli和gitbook-summary
+
+```shell
+sudo npm install -g gitbook-cli gitbook-summary
+```
+
+切换到书籍目录，运行`book sm`自动寻找md文件并生产`SUMMARY.md`，之后运行`gitbook serve`，访问http://127.0.0.1:4000预览
+
+> 注意`gitbook serve`将生产_book目录，记得将该目录添加到.gitignore中
