@@ -378,6 +378,45 @@ void replaceFragment(Fragment fragment) {
 
 ![img](assets/UuHkyPDMSG2vvrh1pM1E_0_1326006184miBx.gif)
 
+## FragmentTransaction
+
+### commit(), commitAllowingStateLoss()
+
+`commit()`和`commitAllowingStateLoss()`在实现上唯一的不同就是当调用`commit()`的时候，FragmentManger会检查是否已经存储了它自己的状态，如果已经存了, 就抛出`IllegalStateException`. 那么如果你调用的是`commitAllowingStateLoss()`，并且是在`onSaveInstanceState()`之后，可能会丢失掉状态
+
+举例说明，在Activity里显示一个FragmentA，Activity进入后台, `onStop()`和`onSaveInstanceState()`被调用，此时用FragmentB replace FragmentA
+
+* 如果使用的是`commit()`，就抛出`IllegalStateException`
+* 如果使用的是 `commitAllowingStateLoss()`，用户再返回应用，可能会有两种情况发生: 
+  * activity被杀死重建，使用了保存的状态, A会显示, B不会显示
+  * activity没有被杀死重建，它会被提到前台，FragmentB就会显示出来，到下次Activity stop的时候，这个包含了B的状态就会被存下来
+
+### commit(), commitNow(), executePendingTransactions()
+
+|                    | commit                                   | commitNow                                    |
+| ------------------ | ---------------------------------------- | -------------------------------------------- |
+| 执行时机           | 非立即执行，发送主线程任务队列中等待执行 | 立即执行                                     |
+| 能否加入back stack | 可以，顺序加入                           | 不可以，否则可能使back stack处于不确定的状态 |
+
+```java
+/**
+     * After a {@link FragmentTransaction} is committed with
+     * {@link FragmentTransaction#commit FragmentTransaction.commit()}, it
+     * is scheduled to be executed asynchronously on the process's main thread.
+     * If you want to immediately executing any such pending operations, you
+     * can call this function (only from the main thread) to do so.  Note that
+     * all callbacks and other related behavior will be done from within this
+     * call, so be careful about where this is called from.
+     * <p>
+     * This also forces the start of any postponed Transactions where
+     * {@link Fragment#postponeEnterTransition()} has been called.
+     *
+     * @return Returns true if there were any pending transactions to be
+     * executed.
+     */
+public abstract boolean executePendingTransactions();
+```
+
 ## 常见问题
 
 ### Fragment跟Activity如何传值
@@ -407,10 +446,6 @@ void replaceFragment(Fragment fragment) {
 - 在fragment中调用activity中的方法getActivity();
 - 在Activity中调用Fragment中的方法，接口回调；
 - 在Fragment中调用Fragment中的方法findFragmentById/Tag
-
-### commit()和commitAllowingStateLoss()
-
-### commit(), commitNow() 和 executePendingTransactions()
 
 # ListView和RecyclerView
 
