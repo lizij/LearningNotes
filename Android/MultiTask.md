@@ -598,9 +598,7 @@ public class BinderPool {
 }
 ```
 
-# 线程和消息机制
-
-## 消息机制
+# 消息机制
 
 Handler运行机制及Handler附带的MessageQueue和Looper工作过程
 
@@ -610,7 +608,7 @@ Handler的主要作用是将一个任务切换到某个指定的线程中执行
 >
 > 通常在子线程中执行耗时操作，切换到主线程更新UI
 
-### MessageQueue
+## MessageQueue
 
 单链表结构存储
 
@@ -618,7 +616,7 @@ Handler的主要作用是将一个任务切换到某个指定的线程中执行
 
 `next`：无限循环，直到从消息队列中取出一条消息并将其从消息队列中移除
 
-### Looper
+## Looper
 
 ### 主要函数
 
@@ -668,7 +666,7 @@ public static void loop() {
 >
 > 退出Looper后，线程会立刻终止
 
-#### Android系统是如何保证一个线程只有一个Looper的
+### 线程唯一性
 
 `Looper.prepare()`使用了ThreadLocal来保证一个线程只有一个Looper
 
@@ -680,37 +678,61 @@ ThreadLocal为每个线程存储当前线程的Looper，线程默认没有Looper
 >
 > 不同线程访问同一个ThreadLocal的get方法，ThreadLocal内部会从各自的线程中取出一个数据，然后根据当前ThreadLocal的索引去查找对应的value，而不同线程的数据是不同的
 >
-> ![这里写图片描述](http://img.blog.csdn.net/20160401173413434)
+> ![这里写图片描述](assets/20160401173413434)
 >
 > ```java
-> public void set(T value) {
->     Thread currentThread = Thread.currentThread();
->     Values values = values(currentThread);
->     if (values == null) {
->         values = initializeValues(currentThread);
+> // java.lang.ThreadLocal
+> /**
+>  * Sets the current thread's copy of this thread-local variable
+>  * to the specified value.  Most subclasses will have no need to
+>  * override this method, relying solely on the {@link #initialValue}
+>  * method to set the values of thread-locals.
+>  *
+>  * @param value the value to be stored in the current thread's copy of
+>  *        this thread-local.
+>  */
+> public T get() {
+>     //1. 获取当前的线程
+>     Thread t = Thread.currentThread();
+>     //2. 以当前线程为参数，获取一个 ThreadLocalMap 对象
+>     ThreadLocalMap map = getMap(t);
+>     if (map != null) {
+>         //3. map 不为空，则以当前 ThreadLocal 对象实例作为key值，去map中取值，有找到直接返回
+>         ThreadLocalMap.Entry e = map.getEntry(this);
+>         if (e != null)
+>             return (T)e.value;
 >     }
->     values.put(this, value);
+>     //4. map 为空或者在map中取不到值，那么走这里，返回默认初始值
+>     return setInitialValue();
 > }
 > 
-> public void get() {
->     Thread currentThread = Thread.currentThread();
->     Values values = values(currentThread);
->     if (values != null) {
->         Object[] table = values.table;
->         int index = hash & values.mask;
->         if (this.reference == table[index]) {
->             return (T) table[index + 1];
->         }
->     } else {
->         values = initializeValues(currentThread);
->     }
->     return (T) values.getAfterMiss(this);
+> /**
+>  * Returns the value in the current thread's copy of this
+>  * thread-local variable.  If the variable has no value for the
+>  * current thread, it is first initialized to the value returned
+>  * by an invocation of the {@link #initialValue} method.
+>  *
+>  * @return the current thread's value of this thread-local
+>  */
+> public void set(T value) {
+>     //1. 取当前线程对象
+>     Thread t = Thread.currentThread();
+>     //2. 取当前线程的数据存储容器
+>     ThreadLocalMap map = getMap(t);
+>     if (map != null)
+>         //3. 以当前ThreadLocal实例对象为key，存值
+>         map.set(this, value);
+>     else
+>         //4. 新建个当前线程的数据存储容器，并以当前ThreadLocal实例对象为key，存值
+>         createMap(t, value);
 > }
 > ```
 
 [Android如何保证一个线程最多只能有一个Looper？](http://blog.csdn.net/sun927/article/details/51031268)
 
-#### 主线程消息循环——为什么主线程不会因为Looper.loop()方法造成阻塞
+[带你了解源码中的 ThreadLocal](https://www.jianshu.com/p/4167d7ff5ec1)
+
+### 主线程消息循环——为什么主线程不会因为Looper.loop()方法造成阻塞
 
 ActivityThread通过ApplicationThread和AMS进行进程间通信，AMS以进程间通信的方式完成ActivityThread的请求后回调ApplicationThread的Binder方法，然后ApplicationThread会向H发送消息，H收到消息后将ApplicationThread中的逻辑切换到ActivityThread中执行，即主线程
 
@@ -775,7 +797,7 @@ Activity的生命周期都是依靠主线程的`Looper.loop`，当收到不同Me
 
 [Android中为什么主线程不会因为Looper.loop()里的死循环卡死](https://www.zhihu.com/question/34652589)
 
-#### 手动创建Looper
+### 手动创建Looper
 
 实现一个类似于HandlerThread的类，即具有Looper的Thread，同时提供管理Looper的功能
 
@@ -806,13 +828,13 @@ class LooperThread extends Thread {
 } 
 ```
 
-### Handler
+## Handler
 
 ![](assets/20140805002935859.png)
 
 
 
-#### 常用函数
+### 常用函数
 
 `Handler(Callback callback)`：使用特定Callback接口创建Handler，需要实现`handleMessage(Message msg)`
 
@@ -828,13 +850,13 @@ class LooperThread extends Thread {
 
 ![andler消息处理流程图](assets/Handler消息处理流程图1.png)
 
-#### postDelayed的原理
+### postDelayed的原理
 
-##### 精确计时
+#### 精确计时
 
 在`MessageQueue.next()`中，如果头部的这个Message是有延迟而且延迟时间没到的（now < msg.when），会计算一下时间（保存为变量`nextPollTimeoutMillis`），然后在循环开始的时候判断如果这个Message有延迟，就调用`nativePollOnce(ptr, nextPollTimeoutMillis)`进行阻塞。`nativePollOnce()`的作用类似与`object.wait()`，只不过是使用了Native的方法对这个线程精确时间的唤醒
 
-##### 多个带有时延Runnable的执行顺序
+#### 多个带有时延Runnable的执行顺序
 
 如果Message会阻塞MessageQueue的话，那么先postDelay10秒一个Runnable A，消息队列会一直阻塞，然后我再post一个Runnable B，B并不会等A执行完了再执行
 
@@ -845,6 +867,8 @@ class LooperThread extends Thread {
 3. `MessageQueue.next()`方法被唤醒后，重新开始读取消息链表，第一个消息B无延时，直接返回给Looper；
 4. Looper处理完这个消息再次调用`next()`方法，MessageQueue继续读取消息链表，第二个消息A还没到时间，计算一下剩余时间（假如还剩9秒）继续调用`nativePollOnce()`阻塞；
 5. 直到阻塞时间到或者下一次有Message进队；
+
+# 线程
 
 ## 线程间通信
 
