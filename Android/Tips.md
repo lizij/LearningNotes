@@ -68,3 +68,10 @@
 int myViewId = R.id.my_view;
 ```
 
+# XML中Visibility的定义
+
+`tools:visibility = "visible"` is used to manipulate view visibility on the IDE.It wont affect the view in the real time.It just used for Designing purpose in Android Studio
+
+`android:visibility = "visible"` is the actual code which will be executed in run-time and will make changes to your views
+
+[Objects visibility](https://stackoverflow.com/questions/38992825/objects-visibility)

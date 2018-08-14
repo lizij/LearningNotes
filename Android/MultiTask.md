@@ -666,67 +666,54 @@ public static void loop() {
 >
 > 退出Looper后，线程会立刻终止
 
-### 线程唯一性
+### ThreadLocal
+
+#### 与Looper的关系
 
 `Looper.prepare()`使用了ThreadLocal来保证一个线程只有一个Looper
 
 ThreadLocal为每个线程存储当前线程的Looper，线程默认没有Looper，需要创建
 
-> ThreadLocal实现了线程本地存储。所有线程共享同一个ThreadLocal对象，但不同线程仅能访问与其线程相关联的值，一个线程修改ThreadLocal对象对其他线程没有影响，而其他线程也无法获取该线程的数据
->
-> 当使用ThreadLocal维护变量时，ThreadLocal为每个使用该变量的线程提供独立的变量副本，所以每一个线程都可以独立地改变自己的副本，而不会影响其它线程所对应的副本
->
-> 不同线程访问同一个ThreadLocal的get方法，ThreadLocal内部会从各自的线程中取出一个数据，然后根据当前ThreadLocal的索引去查找对应的value，而不同线程的数据是不同的
->
-> ![这里写图片描述](assets/20160401173413434)
->
-> ```java
-> // java.lang.ThreadLocal
-> /**
->  * Sets the current thread's copy of this thread-local variable
->  * to the specified value.  Most subclasses will have no need to
->  * override this method, relying solely on the {@link #initialValue}
->  * method to set the values of thread-locals.
->  *
->  * @param value the value to be stored in the current thread's copy of
->  *        this thread-local.
->  */
-> public T get() {
->     //1. 获取当前的线程
->     Thread t = Thread.currentThread();
->     //2. 以当前线程为参数，获取一个 ThreadLocalMap 对象
->     ThreadLocalMap map = getMap(t);
->     if (map != null) {
->         //3. map 不为空，则以当前 ThreadLocal 对象实例作为key值，去map中取值，有找到直接返回
->         ThreadLocalMap.Entry e = map.getEntry(this);
->         if (e != null)
->             return (T)e.value;
->     }
->     //4. map 为空或者在map中取不到值，那么走这里，返回默认初始值
->     return setInitialValue();
-> }
-> 
-> /**
->  * Returns the value in the current thread's copy of this
->  * thread-local variable.  If the variable has no value for the
->  * current thread, it is first initialized to the value returned
->  * by an invocation of the {@link #initialValue} method.
->  *
->  * @return the current thread's value of this thread-local
->  */
-> public void set(T value) {
->     //1. 取当前线程对象
->     Thread t = Thread.currentThread();
->     //2. 取当前线程的数据存储容器
->     ThreadLocalMap map = getMap(t);
->     if (map != null)
->         //3. 以当前ThreadLocal实例对象为key，存值
->         map.set(this, value);
->     else
->         //4. 新建个当前线程的数据存储容器，并以当前ThreadLocal实例对象为key，存值
->         createMap(t, value);
-> }
-> ```
+#### 原理（API 27）
+
+ThreadLocal实现了线程本地存储。所有线程共享同一个ThreadLocal对象，但不同线程仅能访问与其线程相关联的值，一个线程修改ThreadLocal对象对其他线程没有影响，而其他线程也无法获取该线程的数据
+
+当使用ThreadLocal维护变量时，ThreadLocal为每个使用该变量的线程提供独立的变量副本，所以每一个线程都可以独立地改变自己的副本，而不会影响其它线程所对应的副本
+
+不同线程访问同一个ThreadLocal的get方法，ThreadLocal内部会从各自的线程中取出一个数据，然后根据当前ThreadLocal的索引去查找对应的value，而不同线程的数据是不同的
+
+![这里写图片描述](assets/20160401173413434)
+
+```java
+// java.lang.ThreadLocal
+public T get() {
+    //1. 获取当前的线程
+    Thread t = Thread.currentThread();
+    //2. 以当前线程为参数，获取一个 ThreadLocalMap 对象
+    ThreadLocalMap map = getMap(t);
+    if (map != null) {
+        //3. map 不为空，则以当前 ThreadLocal 对象实例作为key值，去map中取值，有找到直接返回
+        ThreadLocalMap.Entry e = map.getEntry(this);
+        if (e != null)
+            return (T)e.value;
+    }
+    //4. map 为空或者在map中取不到值，那么走这里，返回默认初始值
+    return setInitialValue();
+}
+
+public void set(T value) {
+    //1. 取当前线程对象
+    Thread t = Thread.currentThread();
+    //2. 取当前线程的数据存储容器
+    ThreadLocalMap map = getMap(t);
+    if (map != null)
+        //3. 以当前ThreadLocal实例对象为key，存值
+        map.set(this, value);
+    else
+        //4. 新建个当前线程的数据存储容器，并以当前ThreadLocal实例对象为key，存值
+        createMap(t, value);
+}
+```
 
 [Android如何保证一个线程最多只能有一个Looper？](http://blog.csdn.net/sun927/article/details/51031268)
 
