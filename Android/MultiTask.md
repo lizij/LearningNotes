@@ -715,6 +715,104 @@ public void set(T value) {
 }
 ```
 
+#### 应用——线程单例
+
+```java
+// Choreographer.java(API 27)
+
+// Thread local storage for the choreographer.
+private static final ThreadLocal<Choreographer> sThreadInstance =
+    new ThreadLocal<Choreographer>() {
+    @Override
+    protected Choreographer initialValue() {
+        Looper looper = Looper.myLooper();
+        if (looper == null) {
+            throw new IllegalStateException("The current thread must have a looper!");
+        }
+        return new Choreographer(looper, VSYNC_SOURCE_APP);
+    }
+};
+
+/**
+     * Gets the choreographer for the calling thread.  Must be called from
+     * a thread that already has a {@link android.os.Looper} associated with it.
+     *
+     * @return The choreographer for this thread.
+     * @throws IllegalStateException if the thread does not have a looper.
+     */
+public static Choreographer getInstance() {
+    return sThreadInstance.get();
+}
+```
+
+#### 应用——View#post
+
+在API 24之前，View#post实现是
+
+```java
+// View.java
+public boolean post(Runnable action) {
+    final AttachInfo attachInfo = mAttachInfo;
+    if (attachInfo != null) {
+        return attachInfo.mHandler.post(action);
+    }
+    // Assume that post will succeed later
+    ViewRootImpl.getRunQueue().post(action);
+    return true;
+}
+
+// ViewRootImpl.java
+static RunQueue getRunQueue() {
+    RunQueue rq = sRunQueues.get();
+    if (rq != null) {
+        return rq;
+    }
+    rq = new RunQueue();
+    sRunQueues.set(rq);
+    return rq;
+}
+
+static final ThreadLocal<RunQueue> sRunQueues = new ThreadLocal<RunQueue>();
+```
+
+在performTraversal()中，从主线程获取不到子线程的Runnable，子线程post的Runnable会丢失
+
+在API 24及其之后变成了
+
+```java
+public boolean post(Runnable action) {
+    final AttachInfo attachInfo = mAttachInfo;
+    if (attachInfo != null) {
+        return attachInfo.mHandler.post(action);
+    }
+
+    // Postpone the runnable until we know on which thread it needs to run.
+    // Assume that the runnable will be successfully placed after attach.
+    getRunQueue().post(action);
+    return true;
+}
+
+private HandlerActionQueue getRunQueue() {
+    if (mRunQueue == null) {
+        mRunQueue = new HandlerActionQueue();
+    }
+    return mRunQueue;
+}
+
+// 由ViewGroup.dispatchAttachedToWindow调用，类似于绘制过程或事件分发
+void dispatchAttachedToWindow(AttachInfo info, int visibility) {
+    // ...
+    // Transfer all pending runnables.
+    if (mRunQueue != null) {
+        mRunQueue.executeActions(info.mHandler);
+        mRunQueue = null;
+    }
+    // ...
+}
+```
+
+
+
 [Android如何保证一个线程最多只能有一个Looper？](http://blog.csdn.net/sun927/article/details/51031268)
 
 [带你了解源码中的 ThreadLocal](https://www.jianshu.com/p/4167d7ff5ec1)
