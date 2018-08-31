@@ -51,10 +51,16 @@ flutter doctor
 
 - StatefulWidget：同样不可修改，不过在生命周期内可以包含一个可变的State的类
 - State\<T\>：提供给`StatefulWidget#createState`，只能在其生命周期内存在
+- ListView：列表，主要调用`ListView.builder`返回`ListView`
+- ListTile：用于构建LiveView中一行的Widget
+- Divider：1px高的分隔线
+- Navigator：用于管理子Widget的返回栈
 
 ### 常见方法
 
 * build：用于描述如何构造页面
+* setState：类似于notifyDataSetChanged()，提醒State的信息有改变
+* ListTile#divideTiles：用于构造List\<ListTile\>，在每两个元素中插入Divider
 
 ### 常见语法
 
@@ -88,11 +94,12 @@ class MyApp extends StatelessWidget {
     // build方法提供一个
     @override
     Widget build(BuildContext context) {
-        final wordPair = WordPair.random();
         // 默认Material主题
         return MaterialApp(
             title: 'Welcome to Flutter',
-            // Material库中的Widget，包含app bar，title和body用于显示主屏幕内容
+            theme: ThemeData(          // Add the 3 lines from here...
+                primaryColor: Colors.red,
+            ),
             home: RandomWords(),
         );
     }
@@ -107,10 +114,27 @@ class RandomWords extends StatefulWidget {
 // 提供给StatefulWidget的State
 class RandomWordsState extends State<RandomWords> {
     // 前缀加_表示是private类型
-    final _suggestions = <WordPair>[];
+    final List<WordPair> _suggestions = <WordPair>[];
+
+    final Set<WordPair> _saved = new Set<WordPair>();
 
     // const表示常量
-    final _biggerFont = const TextStyle(fontSize: 18.0);
+    final TextStyle _biggerFont = const TextStyle(fontSize: 18.0);
+
+    @override
+    Widget build(BuildContext context) {
+        // Material库中的Widget，包含app bar，title和body用于显示主屏幕内容
+        return Scaffold(
+            appBar: AppBar(
+                title: Text("Flutter Demo"),
+                actions: <Widget>[
+                    // 点击触发_pushSaved
+                    IconButton(icon: Icon(Icons.list), onPressed: _pushSaved)
+                ],
+            ),
+            body: _buildSuggestions(),
+        );
+    }
 
     Widget _buildSuggestions() {
         return ListView.builder(
@@ -129,28 +153,62 @@ class RandomWordsState extends State<RandomWords> {
                     _suggestions.addAll(generateWordPairs().take(10));
                 }
                 return _buildRow(_suggestions[index]);
-            }
-        );
+            });
     }
 
     Widget _buildRow(WordPair pair) {
+        final bool alreadySaved = _saved.contains(pair);
+
+        // ListTile
         return ListTile(
             title: Text(
                 pair.asPascalCase,
                 style: _biggerFont,
             ),
+            trailing: Icon(
+                alreadySaved ? Icons.favorite : Icons.favorite_border,
+                color: alreadySaved ? Colors.red : null,
+            ),
+            // (){...} => setOnClickListener(new GestureTapCallback(){...})
+            onTap: () {
+                // setState => notifyDataSetChanged() in Android
+                setState(() {
+                    if (alreadySaved) {
+                        _saved.remove(pair);
+                    } else {
+                        _saved.add(pair);
+                    }
+                });
+            },
         );
     }
 
-    @override
-    Widget build(BuildContext context) {
-        //    final wordPair = WordPair.random();
-        //    return Text(wordPair.asPascalCase);
-        return Scaffold(
-            appBar: AppBar(
-                title: Text("Name generator"),
-            ),
-            body: _buildSuggestions(),
+    void _pushSaved() {
+        // 将一个route压入Navigator的返回栈
+        Navigator.of(context).push(
+            new MaterialPageRoute(builder: (BuildContext context) {
+                // 构造ListTile
+                final List<Widget> divided = ListTile.divideTiles(
+                    context: context,
+                    tiles: _saved.map((WordPair pair) {
+                        return ListTile(
+                            title: Text(
+                                pair.asPascalCase,
+                                style: _biggerFont,
+                            ),
+                        );
+                    })
+                ).toList();
+
+                return Scaffold(
+                    appBar: AppBar(
+                        title: const Text("Saved Suggestions"),
+                    ),
+                    body: ListView(
+                        children: divided,
+                    ),
+                );
+            }),
         );
     }
 }
