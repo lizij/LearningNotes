@@ -12,6 +12,7 @@
     * [Android Architecture Components](Android/library/Android Architecture Components.md)
     * [Data Binding](Android/library/DataBinding.md)
     * [Event Bus](Android/library/EventBus.md)
+    * [Flutter](Android/library/Flutter.md)
     * [Retrofit](Android/library/Retrofit.md)
   * [Components](Android/Components.md)
   * [Gradle](Android/gradle.md)
