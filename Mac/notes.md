@@ -73,3 +73,17 @@ gitbook最大的好处就是可以直接关联github仓库，便于管理，将�
 之后在Integration中关联github，即可同步相关仓库内容到gitbook中
 
 ![image-20180806165823298](assets/image-20180806165823298.png)
+
+# IStat Menus
+
+[官网](https://bjango.com/mac/istatmenus/)
+
+[破解版6.20](http://www.pc6.com/mac/111587.html)
+
+## 温度调节
+
+系统默认的温度调节是比较滞后的，一般是在温度明显变化以后才会提高风扇转速，会造成烫手的问题，可以使用IStat Menus的风扇调节功能设置自定义的温度调节
+
+具体可以参考一下配置（仍在实验中，可能随时调节）
+
+![image-20180902164229981](assets/image-20180902164229981.png)
