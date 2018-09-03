@@ -934,7 +934,169 @@ class UserAdapter extends PagedListAdapter<User, UserViewHolder> {
 }
 ```
 
+# WorkManager
 
+* 即使应用程序退出，系统也能保证这个任务正常运行
+
+  > 如果需要应用进程消失时后台任务可以安全终止，应该使用[线程池](https://developer.android.google.cn/training/multiple-threads/create-threadpool#ThreadPool)。
+
+* 运行方式与应用程序状态有关
+
+  * 如果应用程序已经在运行，则开启一个新线程运行这个任务
+  * 如果应用程序未运行，则根据设备API级别和应用包含的依赖关系，WorkManager自动选择[JobScheduler](https://developer.android.google.cn/reference/android/app/job/JobScheduler)，[Firebase JobDispatcher](https://github.com/firebase/firebase-jobdispatcher-android#user-content-firebase-jobdispatcher-)或[AlarmManager](https://developer.android.google.cn/reference/android/app/AlarmManager)其中之一来运行
+
+## 引入
+
+```groovy
+dependencies {
+    def work_version = "1.0.0-alpha01"
+
+    implementation "android.arch.work:work-runtime:$work_version" // use -ktx for Kotlin
+
+    // optional - Firebase JobDispatcher support
+    implementation "android.arch.work:work-firebase:$work_version"
+
+    // optional - Test helpers
+    androidTestImplementation "android.arch.work:work-testing:$work_version"
+}
+```
+
+## API
+
+### 基本类
+
+#### [Worker](https://developer.android.google.cn/reference/androidx/work/Worker)
+
+需要执行的任务，需要继承并重写`doWork`
+
+#### [WorkRequest](https://developer.android.google.cn/reference/androidx/work/WorkRequest)
+
+* 指定执行任务的Worker类和其他信息
+* 包含自动生成的唯一ID，可以用来取消排队和获取任务状态
+* 不能直接使用，需要使用子类OneTimeWorkRequest或 PeriodicWorkRequest
+
+- WorkRequest.Builder：用于创建`WorkRequest`对象的辅助类，同样需要使用子类OneTimeWorkRequest.Builder 和 PeriodicWorkRequest.Builder 。
+- Constraints：指定任务在何时运行（例如，“仅在连接到网络时”），可以通过`Constraints.Builder`来创建`Constraints`对象
+
+#### [WorkManager](https://developer.android.google.cn/reference/androidx/work/WorkManager)
+
+将`WorkRequest`入队和管理`WorkRequest`
+
+#### [WorkStatus](https://developer.android.google.cn/reference/androidx/work/WorkStatus)
+
+包含有关特定任务的信息。[WorkManager](https://juejin.im/entry/5b05a2315188254284526ac9) 为每个 [WorkRequest](https://link.juejin.im/?target=https%3A%2F%2Fdeveloper.android.google.cn%2Freference%2Fandroidx%2Fwork%2FWorkRequest) 对象提供一个[LiveData](#LiveData)，`LiveData`持有一个`WorkStatus`对象，通过观察`LiveData`，我们可以确定任务的当前状态，并在任务完成后获取返回的任何值。
+
+### 工作过程
+
+以OneTimeWorkRequest为例
+
+#### 创建Worker
+
+```kotlin
+class MyWorker : Worker() {
+    private val TAG = javaClass.simpleName
+
+    override fun doWork(): Result {
+        // get input data
+        val name = inputData.getString(COMPONENT_NAME)
+        val dateFormat = DateFormat.getDateTimeInstance()
+
+        // set output data
+        val msg = "%s is running at %s".format(name, dateFormat.format(System.currentTimeMillis()))
+        outputData = Data.Builder()
+        .putString(MESSAGE, msg)
+        .build()
+
+        return Result.SUCCESS
+    }
+
+    companion object {
+        val COMPONENT_NAME = "component_name"
+        val MESSAGE = "running_time"
+    }
+}
+```
+
+#### 创建Request
+
+```kotlin
+// 创建Request
+val workRequest = OneTimeWorkRequestBuilder<MyWorker>()
+// 设置输入数据
+.setInputData(Data.Builder()
+              .putString(MyWorker.COMPONENT_NAME, javaClass.simpleName)
+              .build())
+.build()
+
+// 添加workRequest
+WorkManager.getInstance().enqueue(workRequest)
+
+// 添加监控，获取结果
+WorkManager.getInstance().getStatusById(workRequest.id)
+.observe(this, Observer<WorkStatus> { it ->
+                                     it.let {
+                                         Log.d(TAG, "status: %s, msg: %s".format(it?.state.toString(), it?.outputData?.getString(MyWorker.MESSAGE) ?: "null"))
+                                     }
+                                    })
+```
+
+输出示例
+
+```shell
+09-03 14:24:10.706 23699-23699/? D/MainActivity: status: ENQUEUED, msg: null
+09-03 14:24:10.708 23699-23699/? D/MainActivity: status: SUCCEEDED, msg: MainActivity is running at 2018年9月3日 下午2:24:10
+```
+
+### PeriodicWorkRequest周期问题
+
+PeriodicWorkRequest要求最短必须大于15分钟执行一次
+
+```kotlin
+// PeriodicWorkRequest.java
+/**
+ * Creates a [PeriodicWorkRequest.Builder] with a given [Worker].
+ *
+ * @param repeatInterval @see [androidx.work.PeriodicWorkRequest.Builder]
+ * @param repeatIntervalTimeUnit @see [androidx.work.PeriodicWorkRequest.Builder]
+ */
+inline fun <reified W : Worker> PeriodicWorkRequestBuilder(
+    repeatInterval: Long,
+    repeatIntervalTimeUnit: TimeUnit): PeriodicWorkRequest.Builder {
+    return PeriodicWorkRequest.Builder(W::class.java, repeatInterval, repeatIntervalTimeUnit)
+}
+
+/**
+ * Creates a [PeriodicWorkRequest.Builder] with a given [Worker].
+ *
+ * @param repeatInterval @see [androidx.work.PeriodicWorkRequest.Builder]
+ */
+@RequiresApi(26)
+inline fun <reified W : Worker> PeriodicWorkRequestBuilder(
+    repeatInterval: Duration): PeriodicWorkRequest.Builder {
+    return PeriodicWorkRequest.Builder(W::class.java, repeatInterval)
+}
+
+
+// WorkSpec.java
+/**
+     * Sets the periodic interval for this unit of work.
+     *
+     * @param intervalDuration The interval in milliseconds
+     */
+public void setPeriodic(long intervalDuration) {
+    if (intervalDuration < MIN_PERIODIC_INTERVAL_MILLIS) {
+        Logger.warning(TAG, String.format(
+            "Interval duration lesser than minimum allowed value; Changed to %s",
+            MIN_PERIODIC_INTERVAL_MILLIS));
+        intervalDuration = MIN_PERIODIC_INTERVAL_MILLIS;
+    }
+    setPeriodic(intervalDuration, intervalDuration);
+}
+```
+
+## TODO
+
+[Android架构组件-WorkManager](https://juejin.im/entry/5b05a2315188254284526ac9)
 
 # 参考
 
@@ -945,3 +1107,5 @@ class UserAdapter extends PagedListAdapter<User, UserViewHolder> {
 [理解Android Architecture Components系列](https://www.jianshu.com/p/42eb71ec4a19)
 
 [感受LiveData 与 ViewModel结合之美](https://blog.csdn.net/qq_17766199/article/details/80732836)
+
+[Android架构组件-WorkManager](https://juejin.im/entry/5b05a2315188254284526ac9)
