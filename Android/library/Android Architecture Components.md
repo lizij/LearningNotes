@@ -936,6 +936,10 @@ class UserAdapter extends PagedListAdapter<User, UserViewHolder> {
 
 # WorkManager
 
+## 简介
+
+### WorkManager的特性
+
 * 即使应用程序退出，系统也能保证这个任务正常运行
 
   > 如果需要应用进程消失时后台任务可以安全终止，应该使用[线程池](https://developer.android.google.cn/training/multiple-threads/create-threadpool#ThreadPool)。
@@ -944,6 +948,24 @@ class UserAdapter extends PagedListAdapter<User, UserViewHolder> {
 
   * 如果应用程序已经在运行，则开启一个新线程运行这个任务
   * 如果应用程序未运行，则根据设备API级别和应用包含的依赖关系，WorkManager自动选择[JobScheduler](https://developer.android.google.cn/reference/android/app/job/JobScheduler)，[Firebase JobDispatcher](https://github.com/firebase/firebase-jobdispatcher-android#user-content-firebase-jobdispatcher-)或[AlarmManager](https://developer.android.google.cn/reference/android/app/AlarmManager)其中之一来运行
+
+> Service + Broadcast
+>
+> - 不受生命周期影响
+> - 8.0后
+>   - 5秒后不转换为前台服务会ANR
+>   - 无法在Manifest中注册隐式广播接收器
+
+### 官方推荐做法
+
+| 场景                           | 推荐                          |
+| ------------------------------ | ----------------------------- |
+| 需系统触发，不必完成           | ThreadPool + Broadcast        |
+| 需系统触发，必须完成，可推迟   | WorkManager                   |
+| 需系统触发，必须完成，立即     | ForegroundService + Broadcast |
+| 不需系统触发，不必完成         | ThreadPool                    |
+| 不需系统触发，必须完成，可推迟 | WorkManager                   |
+| 不需系统触发，必须完成，立即   | ForegroundService             |
 
 ## 引入
 
@@ -967,7 +989,37 @@ dependencies {
 
 #### [Worker](https://developer.android.google.cn/reference/androidx/work/Worker)
 
-需要执行的任务，需要继承并重写`doWork`
+需要执行的任务，需要继承并重写`doWork`，`dowork`会返回任务结果Result，定义如下
+
+```java
+/**
+     * The result of the Worker's computation that is returned in the {@link #doWork()} method.
+     */
+public enum Result {
+    /**
+         * Used to indicate that the work completed successfully.  Any work that depends on this
+         * can be executed as long as all of its other dependencies and constraints are met.
+         */
+    SUCCESS,
+
+    /**
+         * Used to indicate that the work completed with a permanent failure.  Any work that depends
+         * on this will also be marked as failed and will not be run.
+         */
+    FAILURE,
+
+    /**
+         * Used to indicate that the work encountered a transient failure and should be retried with
+         * backoff specified in
+         * {@link WorkRequest.Builder#setBackoffCriteria(BackoffPolicy, long, TimeUnit)}.
+         */
+    RETRY
+}
+```
+
+
+
+> Worker类继承自NonBlockingWorker，其中有很多已经声明为@hide的方法在9.0后都无法调用，而且随着API更新有很多修改，不能盲目跟着网上的教程做
 
 #### [WorkRequest](https://developer.android.google.cn/reference/androidx/work/WorkRequest)
 
@@ -985,6 +1037,10 @@ dependencies {
 #### [WorkStatus](https://developer.android.google.cn/reference/androidx/work/WorkStatus)
 
 包含有关特定任务的信息。[WorkManager](https://juejin.im/entry/5b05a2315188254284526ac9) 为每个 [WorkRequest](https://link.juejin.im/?target=https%3A%2F%2Fdeveloper.android.google.cn%2Freference%2Fandroidx%2Fwork%2FWorkRequest) 对象提供一个[LiveData](#LiveData)，`LiveData`持有一个`WorkStatus`对象，通过观察`LiveData`，我们可以确定任务的当前状态，并在任务完成后获取返回的任何值。
+
+#### [Data](https://developer.android.google.cn/reference/androidx/work/Data)
+
+提供Worker作为输入和输出数据，限制最大[MAX_DATA_BYTES](https://developer.android.google.cn/reference/androidx/work/Data.html#MAX_DATA_BYTES)，只支持有限的数据类型，目前不支持序列化数据
 
 ### 工作过程
 
@@ -1097,6 +1153,8 @@ public void setPeriodic(long intervalDuration) {
 ## TODO
 
 [Android架构组件-WorkManager](https://juejin.im/entry/5b05a2315188254284526ac9)
+
+[Android8.0后时代的后台任务JetPack-WorkManager详解](https://my.oschina.net/JiangTun/blog/1923680)
 
 # 参考
 
