@@ -122,7 +122,6 @@ public class CustomWebChromeClient extends WebChromeClient {
 * 加载调用`javascript:func(params)`
   * `WebView.loadUrl()`：保底方式
   * `WebView.evaluateJavascript()`：API 19以上可以使用
-* 必须在主线程执行，否则会报
 
 # 简单Demo
 
@@ -227,12 +226,6 @@ public class MyWebViewClient extends WebViewClient {
 
 ```java
 public class MyJsBridge {
-    private static final String DEFAULT_SCHEMA = "jsbridge";
-
-    public static final String RESULT_CODE = "code";
-
-    public static final String RESULT_SUCCESS = "1";
-    public static final String RESULT_FAILED = "0";
 
     private String mSchema = DEFAULT_SCHEMA;
 
@@ -318,7 +311,7 @@ public class MyJsBridge {
 
 # [lzyzsd/JsBridge](https://github.com/lzyzsd/JsBridge)原理
 
-这是github上一个非常流行的JsBridge仓库
+这是github上一个非常流行的JsBridge仓库，引入了消息队列，可以参考实现一个更规范的JsBridge框架
 
 ![img](assets/2608779-9a44c64c5a415e1b.png)
 
@@ -328,7 +321,7 @@ public class MyJsBridge {
 
 ### 介绍
 
-目前有很多App采用了独立进程WebView，原因无非是以下两点
+目前有很多App采用了独立进程WebView，原因一般是以下两点
 
 * 大量Web页面的使用容易导致OOM
 * Android版本不同，采用了不同的内核，或网页版本不同，都可能导致兼容性Crash
@@ -354,7 +347,7 @@ public class MyJsBridge {
 </activity>
 ```
 
-> 也可以声明 intent-filter 部分，action用于指定需要调起的Activity，scheme用于拼接Uri传值
+> 也可以声明 intent-filter 部分通过Uri传值，action用于指定需要调起的Activity，scheme用于拼接Uri传值
 >
 > ```xml
 > <intent-filter>
@@ -372,13 +365,13 @@ public class MyJsBridge {
 
 以下是基于简单Demo的JsBridge设计，核心思路是分离简单Demo中JsBridge的功能，主要包括3部分：
 
-1. 在remote进程中检查schema
-2. 在主进程中触发JsBridge回调
+1. 在remote进程中检查schema和回调js
+2. 在主进程中触发Java方法
 3. 两个进程间的AIDL通信
 
 ## BinderPool设计
 
-首先需要设计的是基本的Binder池部分，保证进程间的通信，这样才能继续后面的工作
+首先需要设计的是基本的Binder池部分，保证进程间的通信，这样才能继续后面的工作，同时也方便扩展
 
 ### Binder查询模块
 
@@ -393,16 +386,20 @@ interface IBinderManager {
 BinderManager.java
 
 ```java
+/**
+ * query binder service by binderCode
+ * @author lizijian
+ */
 public class BinderManager extends IBinderManager.Stub {
 
-    public static final int BINDER_WEB_AIDL_CODE = 0x101;
+    public static final int BINDER_JSBRIDGE_CODE = 0x101;
 
     @Override
     public IBinder queryBinder(int binderCode) {
         IBinder binder = null;
         switch (binderCode) {
-            case BINDER_WEB_AIDL_CODE:
-                binder = new WebBinder();
+            case BINDER_JSBRIDGE_CODE:
+                binder = new JsBridgeBinder();
                 break;
             default:
                 break;
@@ -491,11 +488,11 @@ public class BinderPool {
         }
     }
     
-    public IBinder getWebBinder() {
+    public IBinder getJsBridgeBinder() {
         IBinder binder = null;
         try {
             if (binderManager != null) {
-                binder = binderManager.queryBinder(BinderManager.BINDER_WEB_AIDL_CODE);
+                binder = binderManager.queryBinder(BinderManager.BINDER_JSBRIDGE_CODE);
             }
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -510,22 +507,29 @@ public class BinderPool {
 
 ### JsBridge Binder
 
-IWebBinder调用，其中params和return结果都默认是json字符串
+IJsBridgeBinder调用，其中params和return结果都默认是json字符串
 
 ```java
-interface IWebBinder {
+interface IJsBridgeBinder {
     String invokeJavaMethod(in String methodName, in String params);
 }
 ```
 
-WebBinder实现，返回Java方法执行结果的json字符串
+IJsBridgeBinder实现，返回预注册Java方法执行结果的json字符串
 
 ```java
 /**
  * For remote web process call java method in main process
  * @author lizijian
  */
-public class WebBinder extends IWebBinder.Stub {
+public class JsBridgeBinder extends IJsBridgeBinder.Stub {
+
+    private Map<String, IJavaMethod> mRegisteredMethods = new HashMap<>();
+
+    public JsBridgeBinder() {
+        // register jsbridge function for remote process usage
+        registerJavaMethod("testJsBridge", new TestJsBridge());
+    }
 
     /**
      * Call java method registered in main process
@@ -534,40 +538,6 @@ public class WebBinder extends IWebBinder.Stub {
      * @return result json string
      */
     @Override
-    public String invokeJavaMethod(String func, String params) {
-        return MyRemoteJsBridge.inst().invokeJavaMethod(func, params);
-    }
-}
-```
-
-MyRemoteJsBridge，只保留了之前注册和实现方法的设计，唯一不同的是将执行结果作为json字符串返回
-
-```java
-public class MyRemoteJsBridge {
-    private static volatile MyRemoteJsBridge bridge;
-
-    private Map<String, IJavaMethod> mRegisteredMethods = new HashMap<>();
-
-    private MyRemoteJsBridge() {
-    }
-
-    public static MyRemoteJsBridge inst() {
-        if (bridge == null) {
-            synchronized (MyRemoteJsBridge.class) {
-                if (bridge == null) {
-                    bridge = new MyRemoteJsBridge();
-                }
-            }
-        }
-        return bridge;
-    }
-
-    public void registerJavaMethod(String func, IJavaMethod method) {
-        if (!TextUtils.isEmpty(func) && method != null) {
-            mRegisteredMethods.put(func, method);
-        }
-    }
-
     public String invokeJavaMethod(String func, String params) {
         try {
             JSONObject res = new JSONObject();
@@ -582,15 +552,13 @@ public class MyRemoteJsBridge {
         }
         return null;
     }
+
+    public void registerJavaMethod(String func, IJavaMethod method) {
+        if (!TextUtils.isEmpty(func) && method != null) {
+            mRegisteredMethods.put(func, method);
+        }
+    }
 }
-```
-
-### 主进程注册JsBridge方法
-
-```java
-// MainActivity#onCreate()
-// register jsbridge function for remote process usage
-MyRemoteJsBridge.inst().registerJavaMethod("testJsBridge", new TestJsBridge());
 ```
 
 ## Remote进程部分
@@ -646,7 +614,7 @@ public class MyRemoteWebViewClient extends WebViewClient {
 
 ```
 
-### 初始化WebView
+### 绑定JsBridge Binder服务并初始化WebView
 
 ```java
 private void initWebViewWithRemoteJsBridge() {
