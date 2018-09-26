@@ -11,14 +11,19 @@
 
 # 原理
 
-## Js调用Java
+![img](assets/68747470733a2f2f717569636b6879627269642e6769746875622e696f2f7374617469637265736f757263652f696d616765732f4a534272696467655f626173657072696e6369706c652e706e67.png)
+
+<p align='center'>url scheme方式原理图</p>
+
+## Js调用Native
 
 ### `WebView.addJavascriptInterface()`
 
 * 实现方案最简单，直接向网页中注入Java对象，Js可以直接引用该对象并执行方法
+* 可以传输大量数据
 * 安全性有问题
   * API 16（4.1.2）以下，WebView使用WebKit浏览器引擎，并未正确限制`addJavascriptInterface`的使用方法，在应用权限范围内，攻击者可以通过Java反射机制实现任意命令执行
-  * API 17（4.2）以上，WebView使用Chromium浏览器引擎，并且限制了Javascript对Java对象方法的调用权限，只有声明了@JavascriptInterace注解的方法才能被Web页面调用，但仍然可能被不可信的Js调用
+  * API 17（4.2）以上，WebView使用Chromium浏览器引擎，并且限制了Javascript对Java对象方法的调用权限，只有声明了`@JavascriptInterace`注解的方法才能被Web页面调用，但仍然可能被不可信的Js调用
 
 ```java
 WebView webView = new WebView (R.id.webView);
@@ -117,11 +122,16 @@ public class CustomWebChromeClient extends WebChromeClient {
 
 > 个人认为这2种方式原理上可以实现，但最好封装一下，不然可能会在代码中埋坑，看起来只是打了log或者发送了提示信息
 
-## Java调用Js
+## Native调用Js
 
-* 加载调用`javascript:func(params)`
-  * `WebView.loadUrl()`：保底方式
-  * `WebView.evaluateJavascript()`：API 19以上可以使用
+* 加载调用`javascript:func('params')`
+  * `WebView.loadUrl()`：只能让某个具体的js方法执行，并且无法获取到返回值
+
+    > 只能在UI线程运行，因为WebView是UI控件
+
+  * `WebView.evaluateJavascript()`：API 19以上可以使用，可以拿到返回值
+
+* 不适合传输大量数据
 
 # 简单Demo
 
@@ -676,3 +686,5 @@ private void initWebViewWithRemoteJsBridge() {
 [Android WebView独立进程解决方案](https://www.jianshu.com/p/b66c225c19e2)
 
 [Hybrid APP基础篇(一)->什么是Hybrid App](https://www.cnblogs.com/dailc/p/5930231.html)
+
+[如何实现一个Hybrid框架](https://github.com/quickhybrid/quickhybrid/issues/12)

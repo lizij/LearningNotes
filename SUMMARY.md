@@ -13,7 +13,6 @@
     * [Data Binding](Android/library/DataBinding.md)
     * [Event Bus](Android/library/EventBus.md)
     * [Flutter](Android/library/Flutter.md)
-    * [Hybrid](Android/library/Hybrid.md)
     * [Js Bridge](Android/library/JsBridge.md)
     * [Retrofit](Android/library/Retrofit.md)
   * [Components](Android/Components.md)
