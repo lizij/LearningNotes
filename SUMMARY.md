@@ -10,6 +10,7 @@
 - Android
   - Library
     * [Android Architecture Components](Android/library/Android Architecture Components.md)
+    * [Dagger](Android/library/Dagger.md)
     * [Data Binding](Android/library/DataBinding.md)
     * [Event Bus](Android/library/EventBus.md)
     * [Flutter](Android/library/Flutter.md)
