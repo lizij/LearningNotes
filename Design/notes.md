@@ -156,7 +156,7 @@ public class Singleton {
 public class Singleton {  
     private volatile static Singleton instance = null;  
     private Singleton() {}  
-    public static synchronized Singleton getInstance() {  
+    public static Singleton getInstance() {  
         if (instance == null) {
             synchronized(Singleton.class) {
                 if (instance == null) {
@@ -213,15 +213,21 @@ public enum Singleton {
 }
 ```
 
-优点：它在任何情况下都是单例的，也是最简单的。在上述的几种单例模式下，都会有一种情况，它们会出现重新创建对象的情况，那就是反序列化。要杜绝单例对象在反序列化时重新生成对象，那么必须加入如下方法
+优点：它在任何情况下都是单例的，也是最简单的。
+
+在上述的几种单例模式下，为了保证可序列化，而且反序列化时不会重新生成对象，不仅要保证所有实例域都需要用`transient`修饰，必须加入`readResolve()`
 
 ```java
-private Object readResolve() throws ObjectStreamException {
-    return instance;
-}
+class Singleton implements Serializable {
+    private static Singleton instance = new Singleton(); 
+    // ...
+    private Object readResolve() throws ObjectStreamException {
+        return instance;
+    }    
+} 
 ```
 
-但是枚举就不必要加这个方法，因为反序列化它也不会生成新的实例，同时也可以防止构造方法被反射调用创建新实例
+但是枚举就不必要加这个方法，因为java已经提供了相应的反序列化机制，不会生成新的实例，同时也可以防止构造方法被反射调用创建新实例
 
 缺点：内存占用大
 

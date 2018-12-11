@@ -1,4 +1,4 @@
-# Flutter
+Flutter
 
 [TOC]
 
@@ -297,6 +297,24 @@ class RandomWordsState extends State<RandomWords> {
 [Write Your First Flutter App](https://flutter.io/get-started/codelab/)
 
 [Flutter for Android Developers](https://flutter.io/flutter-for-android/)
+
+# Dart语法简记
+
+## const与final的区别
+
+* final：只能被设一次值，在声明处赋值，值和普通变量的设值一样，可以是对象、字符串、数字等，用于修饰值的表达式不变的变量
+* const：只能被设一次值，在声明处赋值，且值必须为编译时常量，用于修饰常量
+
+```dart
+int Func() {
+  // 代码
+}
+
+final int m1 = 60;
+final int m2 = Func(); // 正确
+const int n1 = 42;
+const int n2 = Func(); // 错误
+```
 
 # TODO
 
