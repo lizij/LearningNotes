@@ -1386,17 +1386,52 @@ abstract void fun();
 一般用于提供某个类的实例，用于复用实例、保证单例或错误检查等，主要目的是避免使用构造器
 
 * 构造器一般只能有一个，静态工厂方法可以实现多个，并且可以通过命名清晰地表示它们的用途
+
 * 静态工厂方法可以选择复用创建过的实例，避免多次创建的性能损耗，一般用于保证单例
-* 静态工厂方法可以返回当前类的子类
 
-## 常用名称
+* 静态工厂方法可以隐藏实现细节灵活实现，比如根据不同入参返回当前类的不同子类
 
-* valueOf：返回的参数具有和参数相同的值，一般用于转换类型，例如int装箱为Integer
-* of：valueOf的简写形式
-* getInstance：根据参数，返回一个实例，不一定是新建的
-* newInstance：根据参数，返回一个新建的实例
-* getType：类似于getInstance
-* newType：类似于newInstance
+* 静态工厂方法可以返回一个尚未实现的实例，通常会用于service provider framework，service可以将接口开放给client，由client提供部分实现
+
+  > service provider framework通常由这几部分构成，以JDBC为例
+  >
+  > |                                    | 说明                                                         | 对应JDBC类                   |
+  > | ---------------------------------- | ------------------------------------------------------------ | ---------------------------- |
+  > | service interface                  | 服务接口定义                                                 | Connection                   |
+  > | provider registration API          | 用于服务提供者注册接口的实现，如常见的di框架                 | DriverManager.registerDriver |
+  > | service access API                 | 用于client选择接口实现                                       | DriverManager.getConnection  |
+  > | service provider interface（可选） | 用于服务提供者实现接口，如果缺少则需要服务提供者通过反射实现 | Driver                       |
+
+* 静态工厂方法不方便继承，更多情况下使用组合方式进行扩展
+* 如果没有javadoc指引，静态工厂方法一般难以被找到
+
+## 常见形式
+
+```java
+// 1. from，类型转换
+Date d = Date.from(instant);
+
+// 2. valueOf，同值类型转换
+BigInteger prime = BigInteger.valueOf(Integer.MAX_VALUE);
+
+// 3. of，valueOf的简写形式
+Set<Rank> faceCards = EnumSet.of(JACK, QUEEN, KING);
+
+// 4. instance或getInstance，返回实例
+StackWalker luke = StackWalker.getInstance(options);
+
+// 5. create或newInstance，新建实例
+Object newArray = Array.newInstance(classObject, arrayLen);
+
+// 6. get<Type>，获取<Type>实例
+FileStore fs = Files.getFileStore(path);
+
+// 7. new<Type>，新建<Type>实例
+BufferedReader br = Files.newBufferedReader(path);
+
+// 8. <type>，getType或newType的简写形式
+List<Complaint> litany = Collections.list(legacyLitany);
+```
 
 # 枚举类
 
@@ -1758,13 +1793,26 @@ class A {
 
 ## protected void finalize()
 
-Runtime 类里有一个 runFinalizersOnExit 方法，可以让程序在退出时执行所有对象的未被自动调用 finalize 方法，即使该对象仍被引用。但是从官方文档可以看出，该方法已经废弃，不建议使用
+1. 发生 GC 时一个对象的内存是否释放取决于是否存在该对象的引用，如果该对象包含对象成员，那对象成员也遵循本条。
+2. 对象里包含的对象成员按声明顺序进行释放。
+
+### 不建议使用的原因
 
 1. 对象的 `finalize` 方法不一定会被调用，即使是进程退出前。
-2. 发生 GC 时一个对象的内存是否释放取决于是否存在该对象的引用，如果该对象包含对象成员，那对象成员也遵循本条。
-3. 对象里包含的对象成员按声明顺序进行释放。
+
+   > Runtime 类里有一个 runFinalizersOnExit 方法，可以让程序在退出时执行所有对象的未被自动调用 finalize 方法，即使该对象仍被引用。但是从官方文档可以看出，该方法已经废弃，不建议使用
+
+2. `finalize()`会显式阻止更为高效的垃圾回收机制，造成严重的性能问题
+
+3. 可能造成finalize attack
+
+   > finalize attack是指，在构造器或`readResolve`、`readObject`等方法执行时，如果抛出了异常，子类的finalizer可能执行到一半并在object静态域中注册了一个引用，并可能会导致类无法被垃圾回收
+   >
+   > final类可以天然免疫这种攻击，因为它们子类的finalize无法被覆盖
 
 良好的终止方式是使用显式终止方式，在私有域里记录下“该对象已不再使用”，并使用`try-finally`块释放，例如`InputStream`
+
+### 子类覆盖方式
 
 子类覆盖了`finalize()`时，子类方法必须手动调用超类的`finalize()`，例如
 
@@ -1779,7 +1827,35 @@ protected void finalize() throws Throwable {
 }
 ```
 
+### 正确使用的方式
 
+* 作为安全网，保证正确调用`close()`，例如
+
+  ```java
+  public class FileInputStream extends InputStream {
+      /* File Descriptor - handle to the open file */
+      private final FileDescriptor fd;
+      /**
+       * Ensures that the <code>close</code> method of this file input stream is
+       * called when there are no more references to it.
+       *
+       * @exception  IOException  if an I/O error occurs.
+       * @see        java.io.FileInputStream#close()
+       */
+      protected void finalize() throws IOException {
+          if ((fd != null) &&  (fd != FileDescriptor.in)) {
+              /* if fd is shared, the references in FileDescriptor
+               * will ensure that finalizer is only called when
+               * safe to do so. All references using the fd have
+               * become unreachable. We can call close()
+               */
+              close();
+          }
+      }
+  }
+  ```
+
+* 
 
 ## Class< > getClass()
 
