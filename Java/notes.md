@@ -1738,7 +1738,13 @@ button.setOnClickListener(new OnClickListener() {
 
 ## protected Object clone()
 
-Object将clone()作为一个本地方法来实现，这意味着它的代码存放在本地的库中。当代码执行的时候，将会检查调用对象的类(或者父类)是否实现了java.lang.Cloneable接口(Object类不实现Cloneable)。如果没有实现这个接口，clone()将会抛出一个检查异常()——java.lang.CloneNotSupportedException,如果实现了这个接口，clone()会创建一个新的对象，并将原来对象的内容复制到新对象，最后返回这个新对象的引用
+### Cloneable
+
+实现了接口的类调用clone()会返回一个域拷贝的新实例
+
+没有实现接口的类调用clone()会抛出CloneNotSupportedException
+
+### 浅克隆和深克隆
 
 **浅克隆**(也叫做浅拷贝)仅仅复制了这个对象本身的成员变量，该对象如果引用了其他对象的话，也不对其复制。新的对象中的数据包含在了这个对象本身中，不涉及对别的对象的引用。
 
@@ -1746,7 +1752,7 @@ Object将clone()作为一个本地方法来实现，这意味着它的代码存�
 
 **深克隆**(也叫做深复制)会复制这个对象和它所引用的对象的成员变量，如果该对象引用了其他对象，深克隆也会对其复制
 
-一般需要保证以下几点
+### 实现原则
 
 ```java
 x.clone() != x; // true
@@ -1754,25 +1760,24 @@ x.clone().getClass() == x.getClass(); // true
 x.clone().equals(x); // true
 ```
 
-
-
 ## boolean equals(Object obj)
 
 equals()函数可以用来检查一个对象与调用这个equals()的这个对象是否相等
 
 调用它的对象和传入的对象的引用是否相等。也就是说，默认的equals()进行的是引用比较。如果两个引用是相同的，equals()函数返回true；否则，返回false
 
-覆盖equals()函数的时候需要遵守的规则在Oracle官方的文档中都有申明：
+### 覆盖equals()函数需要遵守的规则
+
+在Oracle官方的文档中都有申明：
 
 * 自反性：对于任意非空的引用值x，x.equals(x)返回值为真。
 * 对称性：对于任意非空的引用值x和y，x.equals(y)必须和y.equals(x)返回相同的结果。
 * 传递性：对于任意的非空引用值x,y和z,如果x.equals(y)返回真，y.equals(z)返回真，那么x.equals(z)也必须返回真。
 * 一致性：对于任意非空的引用值x和y，无论调用x.equals(y)多少次，都要返回相同的结果。在比较的过程中，对象中的数据不能被修改。
 * 对于任意的非空引用值x，x.equals(null)必须返回假。
+* equals()不应依赖于不可靠的资源
 
-equals()不应依赖于不可靠的资源
-
-正确覆盖equals的方式
+### 正确覆盖equals的方式
 
 ```java
 class A {
@@ -1855,7 +1860,6 @@ protected void finalize() throws Throwable {
   }
   ```
 
-* 
 
 ## Class< > getClass()
 
@@ -1867,11 +1871,33 @@ hashCode()方法返回给调用者此对象的哈希码（其值由一个hash函
 
 在覆盖equals()的时候同时覆盖hashCode()可以保证对象的功能兼容于hash集合。这是一个好习惯，即使这些对象不会被存储在hash集合中
 
-java规范中提到的覆盖hashcode的原则
+### 覆盖hashcode的原则
 
 * equals()所用的信息没有被修改时，同一对象多次调用hashcode()应返回同一个值
 * equals()返回true时，hashcode()应返回相同的值
 * hashcode()应尽量把集合中不同对象的实例均匀分布在所有可能的散列值上，以提高hash表性能
+
+### 实现hashcode的简单方法
+
+需要以下几个步骤
+
+1. 确定参与equals实现的几个关键域，声明`int result`，值为第一个关键域的hashcode
+
+2. 对于每一个关键域`f`，如何获得hashcode `c`
+
+   * 基本类型：`c = Type.hashcode(f)`
+   * 引用类型：`c = f != null ? f.hashcode() : 0`
+   * 数组类型：将数组中的每一个关键元素都作为关键域对待，如果都是关键元素则`c = f != null && f.length > 0 ? Arrays.hashcode(f) : 0`
+
+3. 按关键域的顺序组合`c`：`result = 31 * result + c`
+
+   > 之所以选择31是因为31是一个奇素数，如果选择偶数并且数值溢出，会导致信息丢失，因为result * 2后溢出相当于移位操作
+   >
+   > 并且`31 * result`等价于`(result << 5) - result`，乘法运算可以被转换为更快速的移位和加法运算，现代Java VM都可以自动完成这种优化
+
+4. `return result`
+
+参考String类的hashcode
 
 ```java
 // java.lang.String#hashcode
