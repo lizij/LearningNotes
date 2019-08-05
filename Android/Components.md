@@ -41,11 +41,14 @@
 **指定方式**
 
 1. 在Manifest中指定`android:taskAffinity` 属性
-2. 在Intent中使用`addFlags（Intent.FLAG_ACTIVITY_xxx）`
+2. 如果不指定，task栈名默认为包名
+3. 可以存在同一栈名不同id的task栈
 
-第一种方式优先级低，无法指定`FLAG_ACTIVITY_CLEAR_TOP`等
+#### 指定启动模式
 
-第二种方式优先级高，无法指定singleInstance模式
+1. 在Manifest中指定，优先级低，无法指定`FLAG_ACTIVITY_CLEAR_TOP`等
+
+2. 在Intent中使用`addFlags（Intent.FLAG_ACTIVITY_xxx）`指定，优先级高，但无法指定singleInstance模式
 
 > 可以使用`adb shell dumpsys activity` 查看任务栈
 
@@ -65,6 +68,24 @@ taskAffinity和singleTask配对使用时，它是具有该模式的Activity的�
 ### singleInstance
 
 除了具备singleTask模式的所有特性外，与它的区别就是，这种模式下的Activity会单独占用一个Task栈，具有全局唯一性，即整个系统中就这么一个实例，由于栈内复用的特性，后续的请求均不会创建新的Activity实例，除非这个特殊的任务栈被销毁了。以singleInstance模式启动的Activity在整个系统中是单例的，如果在启动这样的Activiyt时，已经存在了一个实例，那么会把它所在的任务调度到前台，重用这个实例
+
+### 各种启动模式和taskAffinity的配合
+
+不指定taskAffinity时，task栈名为包名，以下称为主栈
+
+singleInstance无论是否指定taskAffinity，都会创建一个新的栈，栈名可能与其他栈重复，以下称为主单例栈或XX单例栈
+
+| 模式           | taskAffinity | 表现                                                         |
+| -------------- | ------------ | ------------------------------------------------------------ |
+| standard       | 无           | 在当前栈新建一个Activity，并加入栈顶                         |
+| standard       | task1        | 同上                                                         |
+| singleTop      | 无           | 如果该Activity在当前栈顶，则调用onNewIntent<br>如果该Activity不在当前栈顶，则在当前栈新建一个Activity |
+| singleTop      | task1        | 同上                                                         |
+| singleTask     | 无           | 如果主栈不在前台，则将主栈调整换到前台<br>如果主栈中存在该Activity，则clear栈中该Activity上的所有Activity，将该Activity换至栈顶，并调用onNewIntent<br>如果主栈中不存在该Activity，则新建一个Activity，并加入栈顶 |
+| singleTask     | task1        | 如果task1栈不存在，则创建task1栈<br>如果task1栈不在前台，则将task1栈换到前台<br>如果task1栈中存在该Activity，则clear栈中该Activity上的所有Activity，将该Activity换至栈顶，并调用onNewIntent<br/>如果task1栈中不存在该Activity，则新建一个Activity，并加入栈顶 |
+| singleInstance | 无           | 如果不存在主单例栈，则创建主单例栈，并创建Activity<br>如果存在主单例栈但不在前台，则换到前台<br>如果主单例栈中存在该Activity，则调用onNewIntent |
+| singleInstance | task1        | 如果不存在task1单例栈，则创建task1单例栈，并创建Activity<br/>如果存在task1单例栈但不在前台，则换到前台
+如果task1单例栈中存在该Activity，则调用onNewIntent |
 
 [彻底弄懂Activity四大启动模式](http://blog.csdn.net/mynameishuangshuai/article/details/51491074)
 
