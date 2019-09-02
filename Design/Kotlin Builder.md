@@ -61,7 +61,7 @@ class Bean(
 ### 不标准的写法
 
 * 优点：相对标准写法更简短，可以不需要在Builder中不需要写对应的变量
-* 缺点：Builder中仍然需要一个对应字段的方法
+* 缺点：字段变成了var，Builder中仍然需要一个对应字段的方法
 
 ```kotlin
 class Bean (
@@ -98,9 +98,9 @@ class Bean(
 ) {
     companion object {
     	@JvmStatic
-        fun build(init: Bean.() -> Unit): Bean {
+        fun build(block: Bean.() -> Unit): Bean {
             val inst = Bean()
-            inst.init()
+            inst.block()
             return inst
         } 
     }
