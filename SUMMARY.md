@@ -28,6 +28,7 @@
   * [View](Android/View.md)
   * [Webview](Android/Webview.md)
 - Design
+  * [Kotlin Builder](Design/Kotlin Builder.md)
   * [Notes](Design/notes.md)
 - Java
   * [Notes](Java/notes.md)
